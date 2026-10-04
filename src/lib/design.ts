@@ -1,40 +1,69 @@
-import { templatesConfig, type UploadRule } from '../config';
+import { effectsConfig, type UploadRule } from '../config';
 import type { Booking, DesignState, HoldingDesign, MediaKind, Phase } from '../types';
 
+export const DESIGN_VERSION = 3;
+
 export function defaultHoldingDesign(booking: Pick<Booking, 'coupleNames'>): HoldingDesign {
-  const d = templatesConfig.defaults;
-  return {
-    templateId: d.templateId,
-    names: booking.coupleNames,
-    secondLine: '',
-    fontId: d.fontId,
-    textColour: d.textColour,
-    backgroundColour: d.backgroundColour,
-    accentColour: d.accentColour,
-    photo: { file: null, zoom: 1, posX: 50, posY: 50 },
-  };
+  return { styleId: null, names: booking.coupleNames, media: null };
 }
 
 export function createDefaultDesign(booking: Pick<Booking, 'coupleNames'>, now = new Date()): DesignState {
-  const holding = defaultHoldingDesign(booking);
+  const blank = defaultHoldingDesign(booking);
   return {
-    version: 1,
+    version: DESIGN_VERSION,
     status: 'draft',
     updatedAt: now.toISOString(),
     submittedAt: null,
-    separatePostBridal: false,
-    holding: { pre: holding, post: structuredClone(holding) },
-    reactions: { pre: [], post: [] },
+    designs: { holding: blank, after: { ...blank }, dancing: { ...blank } },
+    afterMode: 'same',
+    dancingMode: 'blank',
+    reactions: [],
     media: [],
     invite: null,
+    invitePreview: null,
+    invitePalette: [],
+    inviteNamesColour: null,
+    invitePaper: null,
+    inviteStyle: null,
     stylingNote: '',
     liveContentRequested: false,
   };
 }
 
-/** When the post bridal toggle is off, one design is used for both phases. */
-export function holdingFor(design: DesignState, phase: Phase): HoldingDesign {
-  return phase === 'post' && design.separatePostBridal ? design.holding.post : design.holding.pre;
+/**
+ * Fields added within a version are filled from the defaults. Saved designs from
+ * an older version are seed data only, so they are replaced rather than migrated.
+ */
+export function usableDesign(saved: DesignState | null, booking: Pick<Booking, 'coupleNames'>): DesignState {
+  const fresh = createDefaultDesign(booking);
+  if (saved?.version !== DESIGN_VERSION) return fresh;
+  const merged = { ...fresh, ...saved };
+  // Reactions retired from effects.json are dropped.
+  merged.reactions = merged.reactions.filter((id) => effectsConfig.effects.some((e) => e.id === id));
+  // A blank floor after the entrance is no longer offered.
+  return (merged.afterMode as string) === 'blank' ? { ...merged, afterMode: 'same' } : merged;
+}
+
+/** The design shown in a phase, or null for a blank floor. */
+export function holdingFor(design: DesignState, phase: Phase): HoldingDesign | null {
+  if (phase === 'holding') return design.designs.holding;
+  if (phase === 'after') return design.afterMode === 'different' ? design.designs.after : design.designs.holding;
+  return design.dancingMode === 'different' ? design.designs.dancing : null;
+}
+
+/** True while dancing time plays the colourful videos. */
+export function showsDancingVideos(design: DesignState, phase: Phase): boolean {
+  return phase === 'dancing' && design.dancingMode === 'videos';
+}
+
+/**
+ * Reactions for a phase. Dancing time cycles through every effect instead of the
+ * couple's picks, except while the colourful videos play, which have none.
+ */
+export function reactionsFor(design: DesignState, phase: Phase): { ids: string[]; assorted: boolean } {
+  if (phase !== 'dancing') return { ids: design.reactions, assorted: false };
+  if (design.dancingMode === 'videos') return { ids: [], assorted: false };
+  return { ids: effectsConfig.effects.map((e) => e.id), assorted: true };
 }
 
 export function mediaKindOf(mimeType: string): MediaKind | null {

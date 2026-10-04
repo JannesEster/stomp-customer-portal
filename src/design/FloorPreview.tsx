@@ -1,24 +1,13 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react';
-import { effectsConfig, findEffect, findFont, findTemplate, portalConfig, type EffectDef } from '../config';
+import { useEffect, useRef, useState } from 'react';
+import { dancingVideosConfig, findEffect, findStyle, holdingStylesConfig, portalConfig, type EffectDef } from '../config';
 import { floorPixels } from '../lib/dimensions';
-import { holdingFor } from '../lib/design';
-import { drawHoldingScreen } from '../lib/holdingRender';
-import { useFileUrl, useImage } from '../hooks/useFileUrl';
+import { holdingFor, reactionsFor, showsDancingVideos } from '../lib/design';
+import { drawFloor } from '../lib/floorRender';
+import { fontsToLoad } from '../lib/liveText';
+import { generatedFonts } from '../lib/generatedRender';
+import { INVITE_STYLE_ID } from '../lib/inviteStyle';
 import type { Booking, DesignState, Phase } from '../types';
-import { Accent, EffectAsset, PhaseSwitch, Section, phaseLabel } from './common';
-
-interface Burst {
-  id: number;
-  effect: EffectDef;
-  x: number;
-  y: number;
-  dx: number;
-  dy: number;
-  delay: number;
-}
-
-const STEP_THROTTLE_MS = 110;
-const AUTO_STEP_MS = 380;
+import { Accent, PhaseSwitch, Section, phaseLabel } from './common';
 
 export function FloorPreview({
   booking,
@@ -33,44 +22,60 @@ export function FloorPreview({
 }) {
   const px = floorPixels(booking.floor.widthM, booking.floor.lengthM);
   const holding = holdingFor(design, phase);
-  const photo = useImage(useFileUrl(holding.photo.file));
+  const generated = holding?.styleId === INVITE_STYLE_ID ? design.inviteStyle : null;
+  const style = generated ? undefined : findStyle(holding?.styleId ?? null);
   const [grid, setGrid] = useState(false);
-  const [autoSteps, setAutoSteps] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const message = holding && !style && !generated ? 'Choose a style above' : null;
+  const playlist = showsDancingVideos(design, phase) ? dancingVideosConfig.videos : null;
+  const clipTurn = useRotation(!!playlist, dancingVideosConfig.rotateSeconds);
+  const clip = playlist ? playlist[clipTurn % playlist.length] : null;
+  const videoSrc = style?.video ?? clip?.src ?? null;
+  const names = holding?.names ?? '';
+  const namesColour = design.inviteNamesColour;
+  const eventDate = booking.eventDate;
+  const fonts = holdingStylesConfig.fonts;
+
+  useEffect(() => {
+    const list = generated ? generatedFonts(generated, fonts) : style ? fontsToLoad(style.live, fonts) : [];
+    for (const f of list) void document.fonts.load(f);
+  }, [style, generated, fonts]);
 
   useEffect(() => {
     const ctx = canvasRef.current?.getContext('2d');
     if (!ctx) return;
-    drawHoldingScreen(ctx, {
-      width: px.width,
-      height: px.height,
-      design: holding,
-      template: findTemplate(holding.templateId),
-      font: findFont(holding.fontId),
-      photo,
-      grid: grid ? { tilePx: portalConfig.floor.tilePx } : null,
-    });
-  }, [px.width, px.height, holding, photo, grid]);
+    const video = videoSrc ? videoRef.current : null;
+    const live = style ? { def: style.live, names, eventDate, namesColour, fonts } : null;
+    const gen = generated ? { style: generated, names, eventDate, fonts } : null;
+    let raf = 0;
+    let drawn = false;
+    const frame = () => {
+      // Hold the last frame while the next video loads, rather than flashing black.
+      if (drawn && video && video.readyState < 2) {
+        raf = requestAnimationFrame(frame);
+        return;
+      }
+      drawn = true;
+      drawFloor(ctx, {
+        width: px.width,
+        height: px.height,
+        video,
+        live,
+        generated: gen,
+        message,
+        gridTilePx: grid ? portalConfig.floor.tilePx : null,
+      });
+      if (video || gen) raf = requestAnimationFrame(frame);
+    };
+    frame();
+    return () => cancelAnimationFrame(raf);
+  }, [px.width, px.height, videoSrc, style, generated, names, eventDate, namesColour, fonts, message, grid]);
 
-  const effects = design.reactions[phase].map(findEffect).filter((e): e is EffectDef => !!e);
-  const { bursts, spawn } = useBursts(effects);
-  const lastStep = useRef(0);
-
-  const stepAt = (e: PointerEvent<HTMLDivElement>, force: boolean) => {
-    const now = performance.now();
-    if (!force && now - lastStep.current < STEP_THROTTLE_MS) return;
-    lastStep.current = now;
-    const r = e.currentTarget.getBoundingClientRect();
-    spawn(((e.clientX - r.left) / r.width) * 100, ((e.clientY - r.top) / r.height) * 100);
-  };
-
-  useEffect(() => {
-    if (!autoSteps) return;
-    const t = window.setInterval(() => spawn(5 + Math.random() * 90, 5 + Math.random() * 90), AUTO_STEP_MS);
-    return () => window.clearInterval(t);
-  }, [autoSteps, spawn]);
-
-  const sizePct = ((effectsConfig.sizeTiles * portalConfig.floor.tilePx) / px.width) * 100;
+  const plan = reactionsFor(design, phase);
+  const picked = plan.ids.map(findEffect).filter((e): e is EffectDef => !!e);
+  const [reactionTurn, setReactionTurn] = useState(0);
+  const reaction = picked.length ? picked[reactionTurn % picked.length] : null;
   const ratio = px.width / px.height;
 
   return (
@@ -80,16 +85,12 @@ export function FloorPreview({
           Floor <Accent>preview</Accent>
         </>
       }
-      intro="This is your dance floor at its exact size. Tap or move across it to see the reactions you've picked."
+      intro="This is your dance floor at its exact size. The reactions are recordings from Stomp's floor, with someone walking across it."
     >
       <div className="toolbar">
         <PhaseSwitch value={phase} onChange={onPhaseChange} label="Preview phase" />
         <label className="check">
           <input type="checkbox" checked={grid} onChange={(e) => setGrid(e.target.checked)} /> Show tile grid
-        </label>
-        <label className="check">
-          <input type="checkbox" checked={autoSteps} onChange={(e) => setAutoSteps(e.target.checked)} /> Simulate
-          dancers
         </label>
       </div>
 
@@ -97,37 +98,47 @@ export function FloorPreview({
         className="floor-frame"
         style={{ aspectRatio: `${px.width} / ${px.height}`, width: `min(100%, calc(62vh * ${ratio}))` }}
       >
+        {/* Kept on screen under the canvas, because browsers pause muted videos they consider hidden */}
+        {videoSrc && (
+          <video
+            key={videoSrc}
+            ref={videoRef}
+            className="floor-video"
+            src={videoSrc}
+            poster={style?.poster ?? clip?.poster}
+            autoPlay
+            muted
+            loop
+            playsInline
+            aria-hidden
+          />
+        )}
         <canvas
           ref={canvasRef}
           width={px.width}
           height={px.height}
           className="floor-canvas"
-          aria-label={`${phaseLabel(phase)} holding screen preview`}
+          aria-label={
+            holding
+              ? `${phaseLabel(phase)} holding screen preview`
+              : playlist
+                ? `${phaseLabel(phase)} colourful videos preview`
+                : `${phaseLabel(phase)} blank floor preview`
+          }
         />
-        <div
-          className="reaction-layer"
-          onPointerDown={(e) => stepAt(e, true)}
-          onPointerMove={(e) => stepAt(e, false)}
-        >
-          {bursts.map((b) => (
-            <EffectAsset
-              key={b.id}
-              effect={b.effect}
-              className={`reaction anim-${b.effect.animation}`}
-              style={
-                {
-                  left: `${b.x}%`,
-                  top: `${b.y}%`,
-                  width: `${sizePct}%`,
-                  animationDuration: `${effectsConfig.durationMs}ms`,
-                  animationDelay: `${b.delay}ms`,
-                  '--dx': `${b.dx}%`,
-                  '--dy': `${b.dy}%`,
-                } as CSSProperties
-              }
-            />
-          ))}
-        </div>
+        {reaction && (
+          <video
+            key={reaction.id}
+            className={reaction.fillsFloor ? 'reaction-video fills' : 'reaction-video'}
+            src={reaction.video}
+            autoPlay
+            muted
+            loop={picked.length === 1}
+            playsInline
+            onEnded={() => setReactionTurn((t) => t + 1)}
+            aria-hidden
+          />
+        )}
       </div>
 
       <p className="floor-meta">
@@ -138,39 +149,46 @@ export function FloorPreview({
           {booking.floor.widthM}m x {booking.floor.lengthM}m, {px.tilesX} x {px.tilesY} tiles
         </span>
       </p>
-      {effects.length === 0 && (
-        <p className="muted small">No reactions picked for {phaseLabel(phase).toLowerCase()} yet. Choose some below.</p>
+      {generated ? (
+        <p className="muted small center">
+          Made from your invite{generated.noteCues.length ? ' and styling note' : ''}, with the date from your
+          booking.{generated.inverted ? ' Your invite is light, so it is flipped to a dark floor with light lettering.' : ''}{' '}
+          Stomp will refine the finished version.
+        </p>
+      ) : style ? (
+        <p className="muted small center">
+          Your names on the {style.name} style{style.live.date ? ', with the date from your booking' : ''}. Stomp will
+          make the finished version{style.usesPhoto ? ' with your photo' : ''}.
+        </p>
+      ) : clip ? (
+        <p className="muted small center">
+          Colourful videos, now showing {clip.name}. Stomp mixes visuals like these through the dancing.
+        </p>
+      ) : null}
+      {reaction && (
+        <p className="muted small center">
+          {plan.assorted
+            ? `Assorted reactions, now showing ${reaction.name}. They take turns while people dance.`
+            : picked.length > 1
+              ? `Your reactions take turns, now showing ${reaction.name}.`
+              : `Showing ${reaction.name}.`}
+          {reaction.fillsFloor && holding ? ' It brings its own scene, so it covers the design while it plays.' : ''}
+        </p>
+      )}
+      {!reaction && !playlist && (
+        <p className="muted small center">No reactions picked yet. Choose some in the Holding screen tab.</p>
       )}
     </Section>
   );
 }
 
-function useBursts(effects: EffectDef[]) {
-  const [bursts, setBursts] = useState<Burst[]>([]);
-  const nextId = useRef(1);
-  const effectsRef = useRef(effects);
-  effectsRef.current = effects;
-
-  const spawn = useCallback((x: number, y: number) => {
-    const list = effectsRef.current;
-    if (!list.length) return;
-    const effect = list[Math.floor(Math.random() * list.length)];
-    const created: Burst[] = Array.from({ length: Math.max(1, effect.count) }, (_, i) => ({
-      id: nextId.current++,
-      effect,
-      x: x + (effect.count > 1 ? (Math.random() - 0.5) * 6 : 0),
-      y: y + (effect.count > 1 ? (Math.random() - 0.5) * 6 : 0),
-      dx: (Math.random() - 0.5) * 120,
-      dy: -60 - Math.random() * 120,
-      delay: i * 70,
-    }));
-    setBursts((b) => [...b, ...created]);
-    const ids = new Set(created.map((c) => c.id));
-    window.setTimeout(
-      () => setBursts((b) => b.filter((x) => !ids.has(x.id))),
-      effectsConfig.durationMs + created.length * 70 + 50,
-    );
-  }, []);
-
-  return { bursts, spawn };
+/** Counts up every few seconds while active, to step through the colourful videos. */
+function useRotation(active: boolean, seconds: number): number {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    if (!active) return;
+    const t = window.setInterval(() => setN((x) => x + 1), seconds * 1000);
+    return () => window.clearInterval(t);
+  }, [active, seconds]);
+  return n;
 }

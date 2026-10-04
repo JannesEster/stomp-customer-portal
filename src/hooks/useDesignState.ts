@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useServices } from '../services';
-import { createDefaultDesign } from '../lib/design';
+import { usableDesign } from '../lib/design';
 import type { Booking, DesignState } from '../types';
 
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
@@ -21,7 +21,7 @@ export function useDesignState(booking: Booking) {
     dirty.current = false;
     setDesign(null);
     storage.loadData<DesignState>(key).then((saved) => {
-      if (!cancelled) setDesign(saved ?? createDefaultDesign(booking));
+      if (!cancelled) setDesign(usableDesign(saved, booking));
     });
     return () => {
       cancelled = true;

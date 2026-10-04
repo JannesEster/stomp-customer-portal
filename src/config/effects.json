@@ -1,38 +1,237 @@
 {
-  "sizeTiles": 1.5,
-  "durationMs": 1400,
   "effects": [
     {
-      "id": "hearts",
-      "name": "Hearts",
-      "description": "Soft hearts float up from every step.",
-      "preview": { "type": "image", "src": "/effects/hearts.svg" },
-      "animation": "float",
-      "count": 3
+      "id": "fantasy-lightning",
+      "name": "Fantasy lightning",
+      "description": "Blue electric glows chase every step, with crackling sparks.",
+      "video": "/effects/fantasy-lightning.mp4",
+      "poster": "/effects/fantasy-lightning.jpg",
+      "popular": true,
+      "program": "23 魔幻闪电 (Fantasy 8)"
     },
     {
-      "id": "stars",
-      "name": "Stars",
-      "description": "Golden stars spin out from under each foot.",
-      "preview": { "type": "image", "src": "/effects/stars.svg" },
-      "animation": "spin",
-      "count": 2
+      "id": "fantasy-bubbles",
+      "name": "Fantasy bubbles",
+      "description": "Soft blue bubbles gather under each step and pop into sparkles.",
+      "video": "/effects/fantasy-bubbles.mp4",
+      "poster": "/effects/fantasy-bubbles.jpg",
+      "popular": true,
+      "program": "21 梦幻气泡 (GroundInteractiove_7)"
     },
     {
-      "id": "explosions",
-      "name": "Little explosions",
-      "description": "A quick burst of colour wherever someone lands.",
-      "preview": { "type": "image", "src": "/effects/explosion.svg" },
-      "animation": "burst",
-      "count": 1
+      "id": "firework-sparks",
+      "name": "Firework sparks",
+      "description": "Golden sparks burst out wherever guests land.",
+      "video": "/effects/firework-sparks.mp4",
+      "poster": "/effects/firework-sparks.jpg",
+      "popular": true,
+      "program": "15 火花四溅 (Fantasy 0)"
     },
     {
-      "id": "twinkles",
-      "name": "Twinkles",
-      "description": "Tiny sparkles twinkle around each footstep.",
-      "preview": { "type": "image", "src": "/effects/twinkle.svg" },
-      "animation": "twinkle",
-      "count": 4
+      "id": "bursting-hearts",
+      "name": "Bursting hearts",
+      "description": "Clouds of little red hearts spill out of every step.",
+      "video": "/effects/bursting-hearts.mp4",
+      "poster": "/effects/bursting-hearts.jpg",
+      "popular": true,
+      "program": "29 心花怒放 (Fantasy 4)"
+    },
+    {
+      "id": "snow-flurry",
+      "name": "Snow flurry",
+      "description": "Icy glows and snowflakes swirl along behind the dancers.",
+      "video": "/effects/snow-flurry.mp4",
+      "poster": "/effects/snow-flurry.jpg",
+      "popular": true,
+      "program": "10 飞舞雪花 (Fantasy 7)"
+    },
+    {
+      "id": "starry-sky",
+      "name": "Starry sky",
+      "description": "A sky full of stars, with bright glowing trails that follow each step.",
+      "video": "/effects/starry-sky.mp4",
+      "poster": "/effects/starry-sky.jpg",
+      "popular": true,
+      "program": "5 灿烂星空 (Fantasy 1)"
+    },
+    {
+      "id": "magic-splashes",
+      "name": "Magic splashes",
+      "description": "Violet and pink sparkles splash up under every foot.",
+      "video": "/effects/magic-splashes.mp4",
+      "poster": "/effects/magic-splashes.jpg",
+      "popular": true,
+      "program": "26 神奇水花 (Fantasy 10)"
+    },
+    {
+      "id": "galaxy-dust",
+      "name": "Galaxy dust",
+      "description": "Green and gold stardust drifts in clouds around the dancers.",
+      "video": "/effects/galaxy-dust.mp4",
+      "poster": "/effects/galaxy-dust.jpg",
+      "popular": true,
+      "program": "30 星际时空 (Fantasy 6)"
+    },
+    {
+      "id": "light-spots",
+      "name": "Light spots",
+      "description": "Bright aqua spots of light trail along every path.",
+      "video": "/effects/light-spots.mp4",
+      "poster": "/effects/light-spots.jpg",
+      "popular": true,
+      "program": "31 绚丽光斑 (Fantasy 3)"
+    },
+    {
+      "id": "comet-trails",
+      "name": "Comet trails",
+      "description": "Aqua and gold comets streak along behind each step, with floating rings.",
+      "video": "/effects/comet-trails.mp4",
+      "poster": "/effects/comet-trails.jpg",
+      "popular": true,
+      "program": "33 移动金币 (Fantasy 9)"
+    },
+    {
+      "id": "rolling-suns",
+      "name": "Rolling suns",
+      "description": "Blazing little suns roll along wherever guests walk.",
+      "video": "/effects/rolling-suns.mp4",
+      "poster": "/effects/rolling-suns.jpg",
+      "popular": true,
+      "program": "11 滚动烈日 (Fantasy 2)"
+    },
+    {
+      "id": "fantasy-shapes",
+      "name": "Fantasy shapes",
+      "description": "Neon stars, squares and dots in every colour scatter across the floor.",
+      "video": "/effects/fantasy-shapes.mp4",
+      "poster": "/effects/fantasy-shapes.jpg",
+      "popular": true,
+      "program": "9 动态魔幻图 (MultipleShape)"
+    },
+    {
+      "id": "floating-squares",
+      "name": "Floating squares",
+      "description": "Outlined squares pop up and drift around each footstep.",
+      "video": "/effects/floating-squares.mp4",
+      "poster": "/effects/floating-squares.jpg",
+      "popular": true,
+      "program": "39 黑方 (FantasyPassage)"
+    },
+    {
+      "id": "lotus-blooms",
+      "name": "Lotus blooms",
+      "description": "Lotus flowers and lily pads open up under each step, with koi swimming between.",
+      "video": "/effects/lotus-blooms.mp4",
+      "poster": "/effects/lotus-blooms.jpg",
+      "program": "4 步步升莲 (Water Plants)"
+    },
+    {
+      "id": "rose-petals",
+      "name": "Rose petals",
+      "description": "Red rose petals scatter across the floor as guests walk through.",
+      "video": "/effects/rose-petals.mp4",
+      "poster": "/effects/rose-petals.jpg",
+      "program": "20 玫瑰花瓣 (FlowerPassage_V2)"
+    },
+    {
+      "id": "heart-balloons",
+      "name": "Heart balloons",
+      "description": "A floor full of pink heart balloons that part as people walk through.",
+      "video": "/effects/heart-balloons.mp4",
+      "poster": "/effects/heart-balloons.jpg",
+      "program": "34 移动气球 (MoveBalloon)"
+    },
+    {
+      "id": "butterfly-meadow",
+      "name": "Butterfly meadow",
+      "description": "A meadow of glowing flowers, where butterflies take off as guests walk through.",
+      "video": "/effects/butterfly-meadow.mp4",
+      "poster": "/effects/butterfly-meadow.jpg",
+      "fillsFloor": true,
+      "program": "14 花海蝴蝶 (Butterfly)"
+    },
+    {
+      "id": "koi-pond",
+      "name": "Koi pond",
+      "description": "A lily pond full of koi that dart away from people's feet.",
+      "video": "/effects/koi-pond.mp4",
+      "poster": "/effects/koi-pond.jpg",
+      "fillsFloor": true,
+      "program": "13 荷花池鱼 (Fish)"
+    },
+    {
+      "id": "shooting-stars",
+      "name": "Shooting stars",
+      "description": "Rainbow stars shoot out from every step, leaving bright trails.",
+      "video": "/effects/shooting-stars.mp4",
+      "poster": "/effects/shooting-stars.jpg",
+      "program": "24 七彩飞星 (ColourfullStart)"
+    },
+    {
+      "id": "flower-sparkles",
+      "name": "Flower sparkles",
+      "description": "Tiny glowing flowers in every colour burst up around each step.",
+      "video": "/effects/flower-sparkles.mp4",
+      "poster": "/effects/flower-sparkles.jpg",
+      "program": "19 粒子飞花 (FlowerAndParticle)"
+    },
+    {
+      "id": "magic-crystals",
+      "name": "Magic crystals",
+      "description": "Golden green crystals glow in rings around each step.",
+      "video": "/effects/magic-crystals.mp4",
+      "poster": "/effects/magic-crystals.jpg",
+      "program": "22 魔法水晶 (Crystal)"
+    },
+    {
+      "id": "music-notes",
+      "name": "Music notes",
+      "description": "Colourful music notes bounce up from the dancers' feet.",
+      "video": "/effects/music-notes.mp4",
+      "poster": "/effects/music-notes.jpg",
+      "program": "35 音乐符号 (MusicLogo)"
+    },
+    {
+      "id": "balloon-glow",
+      "name": "Balloon glow",
+      "description": "Glowing balloons in bright colours bob out from every step.",
+      "video": "/effects/balloon-glow.mp4",
+      "poster": "/effects/balloon-glow.jpg",
+      "program": "12 滚动气球 (BalloonAndParticle)"
+    },
+    {
+      "id": "constellations",
+      "name": "Constellations",
+      "description": "A starry night where bright blue stars follow each guest, linked by constellation lines.",
+      "video": "/effects/constellations.mp4",
+      "poster": "/effects/constellations.jpg",
+      "program": "37 TaillingPassage01"
+    },
+    {
+      "id": "broken-glass",
+      "name": "Broken glass",
+      "description": "The floor seems to crack like glass under each step.",
+      "video": "/effects/broken-glass.mp4",
+      "poster": "/effects/broken-glass.jpg",
+      "program": "27 碎玻璃 (Glass Break)"
+    },
+    {
+      "id": "snow-footprints",
+      "name": "Footprints in snow",
+      "description": "A fresh snowfield that shows every footprint.",
+      "video": "/effects/snow-footprints.mp4",
+      "poster": "/effects/snow-footprints.jpg",
+      "fillsFloor": true,
+      "program": "32 雪地脚印 (SnowField)"
+    },
+    {
+      "id": "cheeky-cars",
+      "name": "Cheeky cars",
+      "description": "Little cars zip around a green field and swerve away from people's feet.",
+      "video": "/effects/cheeky-cars.mp4",
+      "poster": "/effects/cheeky-cars.jpg",
+      "fillsFloor": true,
+      "program": "28 顽皮的汽车 (NaughtyCar)"
     }
   ]
 }

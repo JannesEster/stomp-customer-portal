@@ -1,0 +1,182 @@
+{
+  "fonts": {
+    "malibu-ring": "'Malibu Ring', 'Monsieur La Doulaise', cursive",
+    "playfair": "'Playfair Display', Georgia, serif",
+    "brittany": "'Brittany Signature', Brittany, Sacramento, cursive",
+    "tt-ramillas": "'TT Ramillas', 'Bodoni Moda', Georgia, serif",
+    "tan-pearl": "'TAN Pearl', 'TAN-PEARL', 'Gilda Display', Georgia, serif",
+    "parisienne": "Parisienne, cursive",
+    "gistesy": "Gistesy, Hurricane, cursive",
+    "hatton": "Hatton, Fraunces, Georgia, serif",
+    "roxborough": "RoxboroughCF, Gloock, Georgia, serif",
+    "the-seasons": "'The Seasons', Prata, Georgia, serif",
+    "cormorant": "'Cormorant Garamond', Georgia, serif",
+    "josefin": "'Josefin Sans', system-ui, sans-serif"
+  },
+  "styles": [
+    {
+      "id": "blue-silk",
+      "name": "Blue silk",
+      "description": "Flowing script names over rippling midnight blue satin.",
+      "video": "/templates/clean/floor-01.mp4",
+      "sampleVideo": "/templates/floor-01.mp4",
+      "poster": "/templates/posters/floor-01.jpg",
+      "usesPhoto": false,
+      "live": {
+        "names": { "layout": "line", "x": 0.5, "y": 0.5, "size": 0.17, "font": "malibu-ring", "colour": "#ffffff", "maxWidth": 0.8 }
+      }
+    },
+    {
+      "id": "golden-hour-hands",
+      "name": "Golden hour hands",
+      "description": "Holding hands at sunset with framed names.",
+      "video": "/templates/clean/floor-02.mp4",
+      "sampleVideo": "/templates/floor-02.mp4",
+      "poster": "/templates/posters/floor-02.jpg",
+      "usesPhoto": true,
+      "live": {
+        "names": { "layout": "twoLines", "x": 0.5, "y": 0.7, "size": 0.12, "lineHeight": 0.13, "font": "playfair", "weight": 700, "colour": "#ffffff", "maxWidth": 0.42, "shadow": true }
+      }
+    },
+    {
+      "id": "portrait-date",
+      "name": "Portrait and date",
+      "description": "Your portrait with script names and a date band.",
+      "video": "/templates/clean/floor-03.mp4",
+      "sampleVideo": "/templates/floor-03.mp4",
+      "poster": "/templates/posters/floor-03.jpg",
+      "usesPhoto": true,
+      "live": {
+        "names": { "layout": "line", "x": 0.5, "y": 0.46, "size": 0.15, "font": "brittany", "colour": "#ffffff", "maxWidth": 0.86, "shadow": true },
+        "date": { "format": "D MMMM YYYY", "x": 0.5, "y": 0.688, "size": 0.036, "font": "cormorant", "weight": 600, "colour": "#ffffff", "maxWidth": 0.55, "uppercase": true, "letterSpacing": 0.3 }
+      }
+    },
+    {
+      "id": "gold-monogram",
+      "name": "Gold monogram",
+      "description": "Your initials in a gold ring over your photo.",
+      "video": "/templates/clean/floor-04.mp4",
+      "sampleVideo": "/templates/floor-04.mp4",
+      "poster": "/templates/posters/floor-04.jpg",
+      "usesPhoto": true,
+      "live": {
+        "names": { "layout": "initials", "x": 0.5, "y": 0.51, "size": 0.15, "font": "tt-ramillas", "colour": "#ffffff", "maxWidth": 0.28, "shadow": true }
+      }
+    },
+    {
+      "id": "woodland-frame",
+      "name": "Woodland frame",
+      "description": "A fine frame and classic lettering over your photo.",
+      "video": "/templates/clean/floor-05.mp4",
+      "sampleVideo": "/templates/floor-05.mp4",
+      "poster": "/templates/posters/floor-05.jpg",
+      "usesPhoto": true,
+      "live": {
+        "names": { "layout": "line", "x": 0.5, "y": 0.425, "size": 0.13, "font": "tan-pearl", "colour": "#ffffff", "maxWidth": 0.8, "shadow": true },
+        "date": { "format": "DD - MM - YYYY", "x": 0.5, "y": 0.714, "size": 0.034, "font": "josefin", "weight": 600, "colour": "#ffffff", "maxWidth": 0.5, "letterSpacing": 0.3, "shadow": true }
+      }
+    },
+    {
+      "id": "gold-rings",
+      "name": "Gold rings",
+      "description": "Wedding rings on black with sparkling gold script.",
+      "video": "/templates/clean/floor-06.mp4",
+      "sampleVideo": "/templates/floor-06.mp4",
+      "poster": "/templates/posters/floor-06.jpg",
+      "usesPhoto": true,
+      "live": {
+        "names": { "layout": "line", "x": 0.52, "y": 0.44, "size": 0.16, "font": "parisienne", "colour": "#ffffff", "maxWidth": 0.82, "rotate": -8, "shadow": true },
+        "date": { "format": "D - M - YYYY", "x": 0.52, "y": 0.668, "size": 0.04, "font": "cormorant", "weight": 500, "italic": true, "colour": "#ffffff", "maxWidth": 0.4, "shadow": true }
+      }
+    },
+    {
+      "id": "black-white-veil",
+      "name": "Black and white veil",
+      "description": "A soft monochrome photo with flowing script names.",
+      "video": "/templates/clean/floor-07.mp4",
+      "sampleVideo": "/templates/floor-07.mp4",
+      "poster": "/templates/posters/floor-07.jpg",
+      "usesPhoto": true,
+      "live": {
+        "names": { "layout": "stacked", "connector": "&", "x": 0.5, "y": 0.5, "size": 0.14, "lineHeight": 0.145, "connectorSize": 0.09, "font": "malibu-ring", "colour": "#ffffff", "maxWidth": 0.7, "shadow": true }
+      }
+    },
+    {
+      "id": "brushstroke",
+      "name": "Brushstroke",
+      "description": "Black with soft peach brushstrokes and script names.",
+      "video": "/templates/clean/floor-08.mp4",
+      "sampleVideo": "/templates/floor-08.mp4",
+      "poster": "/templates/posters/floor-08.jpg",
+      "usesPhoto": false,
+      "live": {
+        "names": { "layout": "line", "x": 0.5, "y": 0.513, "size": 0.14, "font": "gistesy", "colour": "#e2d9cf", "maxWidth": 0.7 },
+        "date": { "format": "DD.MM.YYYY", "x": 0.5, "y": 0.667, "size": 0.03, "font": "josefin", "weight": 400, "colour": "#b3aba3", "maxWidth": 0.4, "letterSpacing": 0.25 }
+      }
+    },
+    {
+      "id": "party-poster",
+      "name": "Party poster",
+      "description": "Bold names, a fun photo and a playful message.",
+      "video": "/templates/clean/floor-09.mp4",
+      "sampleVideo": "/templates/floor-09.mp4",
+      "poster": "/templates/posters/floor-09.jpg",
+      "usesPhoto": true,
+      "live": {
+        "names": { "layout": "line", "suffix": "'s", "x": 0.5, "y": 0.175, "size": 0.085, "font": "hatton", "weight": 600, "colour": "#e8914b", "maxWidth": 0.56 },
+        "fixed": [
+          { "text": "wedding", "x": 0.51, "y": 0.285, "size": 0.1, "font": "parisienne", "colour": "#ffffff", "maxWidth": 0.3 }
+        ]
+      }
+    },
+    {
+      "id": "mustard-botanical",
+      "name": "Mustard botanical",
+      "description": "Warm mustard with leaf illustrations and a thank you line.",
+      "video": "/templates/clean/floor-10.mp4",
+      "sampleVideo": "/templates/floor-10.mp4",
+      "poster": "/templates/posters/floor-10.jpg",
+      "usesPhoto": false,
+      "live": {
+        "names": { "layout": "twoLines", "suffix": "'s", "x": 0.5, "y": 0.386, "size": 0.12, "lineHeight": 0.144, "font": "roxborough", "colour": "#a5612b", "maxWidth": 0.5 },
+        "date": { "format": "DD.MM.YYYY", "x": 0.5, "y": 0.772, "size": 0.034, "font": "cormorant", "weight": 600, "colour": "#3b2a1c", "maxWidth": 0.4, "letterSpacing": 0.1 }
+      }
+    },
+    {
+      "id": "welcome-circles",
+      "name": "Welcome circles",
+      "description": "Welcome to our wedding, with your photos in circles.",
+      "video": "/templates/clean/floor-11.mp4",
+      "sampleVideo": "/templates/floor-11.mp4",
+      "poster": "/templates/posters/floor-11.jpg",
+      "usesPhoto": true,
+      "live": {
+        "names": { "layout": "line", "suffix": "'s Wedding", "x": 0.244, "y": 0.634, "size": 0.032, "font": "hatton", "weight": 600, "colour": "#ffffff", "maxWidth": 0.28 }
+      }
+    },
+    {
+      "id": "red-gold-florals",
+      "name": "Red and gold florals",
+      "description": "Black with a red and gold floral illustration.",
+      "video": "/templates/clean/floor-12.mp4",
+      "sampleVideo": "/templates/floor-12.mp4",
+      "poster": "/templates/posters/floor-12.jpg",
+      "usesPhoto": false,
+      "live": {
+        "names": { "layout": "twoLines", "x": 0.65, "y": 0.506, "size": 0.115, "lineHeight": 0.125, "font": "the-seasons", "colour": "#ffffff", "maxWidth": 0.4 }
+      }
+    },
+    {
+      "id": "gold-bokeh",
+      "name": "Gold bokeh",
+      "description": "Sparkling gold bokeh with classic capitals.",
+      "video": "/templates/clean/floor-13.mp4",
+      "sampleVideo": "/templates/floor-13.mp4",
+      "poster": "/templates/posters/floor-13.jpg",
+      "usesPhoto": false,
+      "live": {
+        "names": { "layout": "stacked", "connector": "and", "connectorFont": "parisienne", "uppercase": true, "letterSpacing": 0.15, "x": 0.5, "y": 0.505, "size": 0.11, "lineHeight": 0.145, "connectorSize": 0.06, "font": "cormorant", "weight": 600, "colour": "#e6bb69", "maxWidth": 0.66 }
+      }
+    }
+  ]
+}

@@ -1,10 +1,10 @@
-import type { CSSProperties, ReactNode } from 'react';
-import type { EffectDef } from '../config';
+import type { ReactNode } from 'react';
 import type { DesignState, Phase } from '../types';
 
-export const PHASES: { id: Phase; label: string }[] = [
-  { id: 'pre', label: 'Pre-bridal' },
-  { id: 'post', label: 'Post-bridal' },
+export const PHASES: { id: Phase; label: string; short: string }[] = [
+  { id: 'holding', label: 'Holding screen', short: 'Holding screen' },
+  { id: 'after', label: 'After bridal entrance', short: 'After entrance' },
+  { id: 'dancing', label: 'Dancing time', short: 'Dancing time' },
 ];
 
 export function phaseLabel(p: Phase): string {
@@ -31,8 +31,47 @@ export function PhaseSwitch({
           className={value === p.id ? 'active' : ''}
           onClick={() => onChange(p.id)}
         >
-          {p.label}
+          {p.short}
         </button>
+      ))}
+    </div>
+  );
+}
+
+export interface OptionDef<T extends string> {
+  id: T;
+  label: string;
+  hint: string;
+  recommended?: boolean;
+}
+
+/** Radio cards, used for what the floor shows in each part of the night. */
+export function OptionList<T extends string>({
+  name,
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  name: string;
+  label: string;
+  options: OptionDef<T>[];
+  value: T;
+  onChange: (v: T) => void;
+}) {
+  return (
+    <div className="option-list" role="radiogroup" aria-label={label}>
+      {options.map((o) => (
+        <label key={o.id} className={value === o.id ? 'option active' : 'option'}>
+          <input type="radio" name={name} checked={value === o.id} onChange={() => onChange(o.id)} />
+          <span>
+            <span className="option-label">
+              {o.label}
+              {o.recommended && <span className="badge-recommended">Recommended</span>}
+            </span>
+            <span className="option-hint">{o.hint}</span>
+          </span>
+        </label>
       ))}
     </div>
   );
@@ -71,29 +110,12 @@ export function Section({
   );
 }
 
-/** Renders an effect's preview asset from config, image or video. */
-export function EffectAsset({
-  effect,
-  className,
-  style,
-}: {
-  effect: EffectDef;
-  className?: string;
-  style?: CSSProperties;
-}) {
-  if (effect.preview.type === 'video') {
-    return (
-      <video className={className} style={style} src={effect.preview.src} autoPlay muted loop playsInline aria-hidden />
-    );
-  }
-  return <img className={className} style={style} src={effect.preview.src} alt="" draggable={false} />;
-}
-
 /** True if any part of the design other than `except` still uses this file. */
-export function fileStillUsed(design: DesignState, fileId: string, except: 'pre' | 'post' | 'media' | 'invite'): boolean {
-  if (except !== 'pre' && design.holding.pre.photo.file?.id === fileId) return true;
-  if (except !== 'post' && design.holding.post.photo.file?.id === fileId) return true;
-  if (except !== 'invite' && design.invite?.id === fileId) return true;
+export function fileStillUsed(design: DesignState, fileId: string, except: Phase | 'media' | 'invite'): boolean {
+  for (const p of PHASES) {
+    if (p.id !== except && design.designs[p.id].media?.id === fileId) return true;
+  }
+  if (except !== 'invite' && (design.invite?.id === fileId || design.invitePreview?.id === fileId)) return true;
   if (except !== 'media' && design.media.some((m) => m.file.id === fileId)) return true;
   return false;
 }

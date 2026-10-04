@@ -1,6 +1,7 @@
 import portalJson from './portal.json';
 import effectsJson from './effects.json';
-import templatesJson from './templates.json';
+import holdingStylesJson from './holding-styles.json';
+import dancingVideosJson from './dancing-videos.json';
 import extrasJson from './extras.json';
 import type { Timing } from '../types';
 
@@ -27,62 +28,111 @@ export interface PortalConfig {
   floor: FloorConfig;
   screen: ScreenConfig;
   timings: { id: Timing; label: string }[];
-  uploads: { media: UploadRule; holdingPhoto: UploadRule; invite: UploadRule };
+  uploads: { media: UploadRule; holdingMedia: UploadRule; invite: UploadRule };
 }
 
-export type EffectAnimation = 'float' | 'spin' | 'burst' | 'twinkle';
-
+/**
+ * A floor reaction. `video` is a recording of the real effect on Stomp's floor with
+ * someone walking across it, on black so it can play over a holding screen.
+ */
 export interface EffectDef {
   id: string;
   name: string;
   description: string;
-  preview: { type: 'image' | 'video'; src: string };
-  animation: EffectAnimation;
-  count: number;
+  video: string;
+  poster: string;
+  /** The fantasy reactions, listed first as the most popular */
+  popular?: boolean;
+  /** Brings its own scene, so it covers the holding screen while it plays */
+  fillsFloor?: boolean;
+  /** The floor program it comes from, numbered as in Stomp's U3D folder */
+  program: string;
 }
 
 export interface EffectsConfig {
-  sizeTiles: number;
-  durationMs: number;
   effects: EffectDef[];
 }
 
-export type PhotoShape = 'circle' | 'arch' | 'rect' | 'full';
-
-export interface TextSlot {
+/** Positions are fractions of the style's video frame. Sizes are fractions of its height. */
+export interface TextSlotDef {
   x: number;
   y: number;
   size: number;
+  /** Key into the fonts map in holding-styles.json */
+  font: string;
+  weight?: number;
+  italic?: boolean;
+  colour: string;
   maxWidth: number;
-  align: CanvasTextAlign;
+  uppercase?: boolean;
+  /** In ems */
+  letterSpacing?: number;
+  /** Degrees, around the slot's centre */
+  rotate?: number;
+  /** A soft dark glow behind the text, for busy photo backgrounds */
+  shadow?: boolean;
 }
 
-export interface TemplateDef {
+export interface NamesSlotDef extends TextSlotDef {
+  /** line: "Sam & Alex". stacked: Sam / & / Alex. twoLines: "Sam &" / "Alex". initials: "S & A". firstInitial and secondInitial: one big letter. */
+  layout: 'line' | 'stacked' | 'twoLines' | 'initials' | 'firstInitial' | 'secondInitial';
+  lineHeight?: number;
+  connector?: string;
+  connectorFont?: string;
+  connectorSize?: number;
+  /** Added after the last name, for styles like "Sam & Alex's wedding" */
+  suffix?: string;
+}
+
+export interface DateSlotDef extends TextSlotDef {
+  /** Tokens: D, DD, M, MM, MMMM, YYYY. For example "D MMMM YYYY" or "DD.MM.YYYY". */
+  format: string;
+}
+
+export interface FixedTextDef extends TextSlotDef {
+  text: string;
+}
+
+export interface LiveTextDef {
+  names: NamesSlotDef;
+  /** Filled in from the booking's event date */
+  date?: DateSlotDef;
+  /** Wording that is part of the style but was removed from the video with the names */
+  fixed?: FixedTextDef[];
+}
+
+/**
+ * A holding screen style. `video` has no names or date, which are drawn live
+ * over it; `sampleVideo` and `poster` show the style with example names.
+ */
+export interface HoldingStyleDef {
   id: string;
   name: string;
-  background: 'solid' | 'glow' | 'photo';
-  border: boolean;
-  photo: { shape: PhotoShape; x: number; y: number; w: number; h: number } | null;
-  names: TextSlot;
-  secondLine: TextSlot;
+  description: string;
+  video: string;
+  sampleVideo: string;
+  poster: string;
+  usesPhoto: boolean;
+  live: LiveTextDef;
 }
 
-export interface FontDef {
+export interface HoldingStylesConfig {
+  fonts: Record<string, string>;
+  styles: HoldingStyleDef[];
+}
+
+/** A colourful visual for dancing time. The files in public/dancing are short previews of Stomp's full loops. */
+export interface DancingVideoDef {
   id: string;
-  label: string;
-  css: string;
+  name: string;
+  src: string;
+  poster: string;
 }
 
-export interface TemplatesConfig {
-  defaults: {
-    templateId: string;
-    fontId: string;
-    textColour: string;
-    backgroundColour: string;
-    accentColour: string;
-  };
-  fonts: FontDef[];
-  templates: TemplateDef[];
+export interface DancingVideosConfig {
+  /** The preview moves to the next video this often */
+  rotateSeconds: number;
+  videos: DancingVideoDef[];
 }
 
 export interface ExtraDef {
@@ -100,15 +150,12 @@ export interface ExtrasConfig {
 
 export const portalConfig = portalJson as PortalConfig;
 export const effectsConfig = effectsJson as EffectsConfig;
-export const templatesConfig = templatesJson as TemplatesConfig;
+export const holdingStylesConfig = holdingStylesJson as HoldingStylesConfig;
+export const dancingVideosConfig = dancingVideosJson as DancingVideosConfig;
 export const extrasConfig = extrasJson as ExtrasConfig;
 
-export function findTemplate(id: string): TemplateDef {
-  return templatesConfig.templates.find((t) => t.id === id) ?? templatesConfig.templates[0];
-}
-
-export function findFont(id: string): FontDef {
-  return templatesConfig.fonts.find((f) => f.id === id) ?? templatesConfig.fonts[0];
+export function findStyle(id: string | null): HoldingStyleDef | undefined {
+  return id ? holdingStylesConfig.styles.find((s) => s.id === id) : undefined;
 }
 
 export function findEffect(id: string): EffectDef | undefined {

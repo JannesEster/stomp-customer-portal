@@ -1,4 +1,4 @@
-export type Phase = 'pre' | 'post';
+export type Phase = 'holding' | 'after' | 'dancing';
 export type Timing = 'start' | 'middle' | 'end';
 export type MediaKind = 'image' | 'video';
 
@@ -37,38 +37,61 @@ export interface MediaItem {
   addedAt: string;
 }
 
-export interface HoldingPhoto {
-  file: StoredFile | null;
-  /** 1 = cover fit, up to 3 */
-  zoom: number;
-  /** Focal point in percent, 0 to 100 */
-  posX: number;
-  posY: number;
+export interface HoldingDesign {
+  /** Style id from src/config/holding-styles.json, null until chosen */
+  styleId: string | null;
+  names: string;
+  /** A photo or video of the couple */
+  media: StoredFile | null;
 }
 
-export interface HoldingDesign {
-  templateId: string;
-  names: string;
-  secondLine: string;
-  fontId: string;
-  textColour: string;
-  backgroundColour: string;
-  accentColour: string;
-  photo: HoldingPhoto;
+export type AfterEntranceMode = 'same' | 'different';
+
+export type InviteTypography = 'modern' | 'classic' | 'romantic' | 'boho' | 'deco';
+export type InviteLayout = 'monogram' | 'stacked' | 'frame' | 'minimal';
+
+/** A holding screen design generated from the couple's invite colours and styling note. */
+export interface GeneratedStyle {
+  variant: number;
+  typography: InviteTypography;
+  layout: InviteLayout;
+  background: string;
+  text: string;
+  accent: string;
+  /** True when a light invite was flipped to a dark floor with light lettering */
+  inverted: boolean;
+  /** Words from the styling note that shaped the design */
+  noteCues: string[];
+  /** What it was generated from, so a changed invite or note starts again from the best match */
+  basedOn: string;
 }
+export type DancingMode = 'blank' | 'videos' | 'different';
 
 export type DesignStatus = 'draft' | 'submitted';
 
 export interface DesignState {
-  version: 1;
+  version: 3;
   status: DesignStatus;
   updatedAt: string;
   submittedAt: string | null;
-  separatePostBridal: boolean;
-  holding: Record<Phase, HoldingDesign>;
-  reactions: Record<Phase, string[]>;
+  /** `after` and `dancing` are only used when their mode is 'different' */
+  designs: Record<Phase, HoldingDesign>;
+  afterMode: AfterEntranceMode;
+  dancingMode: DancingMode;
+  /** Chosen during the holding screen and kept after the entrance. Dancing time uses an assortment instead. */
+  reactions: string[];
   media: MediaItem[];
   invite: StoredFile | null;
+  /** First page of a PDF invite as an image, for the thumbnail */
+  invitePreview: StoredFile | null;
+  /** Main colours picked out of the invite, most characteristic first */
+  invitePalette: string[];
+  /** The invite colour to use for the names, chosen to be readable on the floor */
+  inviteNamesColour: string | null;
+  /** The invite's paper colour */
+  invitePaper: string | null;
+  /** Chosen by setting a design's styleId to INVITE_STYLE_ID */
+  inviteStyle: GeneratedStyle | null;
   stylingNote: string;
   /** Only meaningful when the booking does not already include live content */
   liveContentRequested: boolean;

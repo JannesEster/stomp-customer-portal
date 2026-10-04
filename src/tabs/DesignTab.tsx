@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { useDesignState } from '../hooks/useDesignState';
 import { formatDateTime } from '../lib/format';
 import { FloorPreview } from '../design/FloorPreview';
-import { HoldingSection } from '../design/HoldingSection';
-import { ReactionsSection } from '../design/ReactionsSection';
+import { FloorDesignSection } from '../design/FloorDesignSection';
 import { ScreensSection } from '../design/ScreensSection';
 import { LiveContentSection } from '../design/LiveContentSection';
 import { SummaryDialog } from '../design/Summary';
@@ -19,7 +18,7 @@ const SAVE_LABEL = {
 
 export function DesignTab({ booking }: { booking: Booking }) {
   const { design, update, submit, saveStatus } = useDesignState(booking);
-  const [phase, setPhase] = useState<Phase>('pre');
+  const [phase, setPhase] = useState<Phase>('holding');
   const [showSummary, setShowSummary] = useState(false);
 
   if (!design) return <p className="muted">Loading your design…</p>;
@@ -37,9 +36,14 @@ export function DesignTab({ booking }: { booking: Booking }) {
         <div className="banner">You've made changes since you submitted. Submit again so Stomp has the latest.</div>
       ) : null}
 
+      <FloorDesignSection
+        design={design}
+        update={update}
+        phase={phase}
+        onPhaseChange={setPhase}
+        eventDate={booking.eventDate}
+      />
       <FloorPreview booking={booking} design={design} phase={phase} onPhaseChange={setPhase} />
-      <HoldingSection booking={booking} design={design} update={update} phase={phase} onPhaseChange={setPhase} />
-      <ReactionsSection design={design} update={update} />
       <ScreensSection booking={booking} design={design} update={update} />
       <LiveContentSection booking={booking} design={design} update={update} />
 

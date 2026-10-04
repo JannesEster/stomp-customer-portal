@@ -1,10 +1,11 @@
-import { findEffect, findFont, findTemplate, timingLabel, portalConfig } from '../config';
+import { findEffect, findStyle, timingLabel, portalConfig } from '../config';
 import { floorPixels, screenCount } from '../lib/dimensions';
-import { holdingFor } from '../lib/design';
 import { formatAud, formatDateTime, formatEventDate } from '../lib/format';
 import { liveContentView } from '../lib/liveContent';
-import type { Booking, DesignState, HoldingDesign, Phase } from '../types';
-import { Accent, PHASES, phaseLabel } from './common';
+import { formatStyleDate } from '../lib/liveText';
+import { INVITE_STYLE_ID, LAYOUT_LABELS, TYPOGRAPHY_LABELS } from '../lib/inviteStyle';
+import type { Booking, DesignState, GeneratedStyle, HoldingDesign } from '../types';
+import { Accent } from './common';
 
 export function SummaryDialog({
   booking,
@@ -18,7 +19,6 @@ export function SummaryDialog({
   const px = floorPixels(booking.floor.widthM, booking.floor.lengthM);
   const screens = screenCount(booking.screensBooked);
   const live = liveContentView(booking, design.liveContentRequested);
-  const holdingPhases: Phase[] = design.separatePostBridal ? ['pre', 'post'] : ['pre'];
 
   return (
     <div className="modal-backdrop" role="presentation" onClick={onClose}>
@@ -49,31 +49,54 @@ export function SummaryDialog({
         </ul>
 
         <h3>Holding screen</h3>
-        {!design.separatePostBridal && <p className="muted small">Same design before and after the bridal entrance.</p>}
-        {holdingPhases.map((p) => (
-          <HoldingSummary
-            key={p}
-            title={design.separatePostBridal ? phaseLabel(p) : undefined}
-            h={holdingFor(design, p)}
-          />
-        ))}
+        <HoldingSummary h={design.designs.holding} eventDate={booking.eventDate} inviteStyle={design.inviteStyle} />
+        <ul>
+          <li>
+            Floor reactions:{' '}
+            {design.reactions.length
+              ? design.reactions.map((id) => findEffect(id)?.name ?? id).join(', ')
+              : 'None'}
+          </li>
+        </ul>
+
+        <h3>After the bridal entrance</h3>
+        {design.afterMode === 'same' ? (
+          <p>The holding screen stays on until dancing time.</p>
+        ) : (
+          <HoldingSummary h={design.designs.after} eventDate={booking.eventDate} inviteStyle={design.inviteStyle} />
+        )}
+
+        <h3>Dancing time</h3>
+        {design.dancingMode === 'blank' ? (
+          <p>Blank floor with assorted reactions.</p>
+        ) : design.dancingMode === 'videos' ? (
+          <p>Colourful videos.</p>
+        ) : (
+          <HoldingSummary h={design.designs.dancing} eventDate={booking.eventDate} inviteStyle={design.inviteStyle} />
+        )}
 
         <h3>Invite and styling</h3>
         <ul>
           <li>{design.invite ? `Uploaded: ${design.invite.name}` : 'No invite or styling file'}</li>
+          {design.inviteNamesColour && (
+            <li>
+              Names colour from the invite:{' '}
+              <span className="swatch small" style={{ background: design.inviteNamesColour }} title={design.inviteNamesColour}>
+                <span className="sr-only">{design.inviteNamesColour}</span>
+              </span>
+            </li>
+          )}
+          {design.invitePalette.length > 0 && (
+            <li>
+              Invite colours:{' '}
+              {design.invitePalette.map((c) => (
+                <span key={c} className="swatch small" style={{ background: c }} title={c}>
+                  <span className="sr-only">{c}</span>
+                </span>
+              ))}
+            </li>
+          )}
           <li>{design.stylingNote.trim() ? `Note: ${design.stylingNote.trim()}` : 'No styling note'}</li>
-        </ul>
-
-        <h3>Floor reactions</h3>
-        <ul>
-          {PHASES.map((p) => {
-            const names = design.reactions[p.id].map((id) => findEffect(id)?.name ?? id);
-            return (
-              <li key={p.id}>
-                {p.label}: {names.length ? names.join(', ') : 'None'}
-              </li>
-            );
-          })}
         </ul>
 
         {screens > 0 && (
@@ -111,29 +134,41 @@ export function SummaryDialog({
   );
 }
 
-function HoldingSummary({ title, h }: { title?: string; h: HoldingDesign }) {
+function HoldingSummary({
+  h,
+  eventDate,
+  inviteStyle,
+}: {
+  h: HoldingDesign;
+  eventDate: string;
+  inviteStyle: GeneratedStyle | null;
+}) {
+  const style = findStyle(h.styleId);
+  const generated = h.styleId === INVITE_STYLE_ID ? inviteStyle : null;
+  const styleName = generated
+    ? `From your invite (${TYPOGRAPHY_LABELS[generated.typography]}, ${LAYOUT_LABELS[generated.layout]})`
+    : (style?.name ?? 'Not chosen yet');
   return (
-    <div className="summary-block">
-      {title && <h4>{title}</h4>}
-      <ul>
-        <li>Template: {findTemplate(h.templateId).name}</li>
-        <li>Names: {h.names || 'None'}</li>
-        <li>Second line: {h.secondLine || 'None'}</li>
-        <li>Font: {findFont(h.fontId).label}</li>
+    <ul>
+      <li>Style: {styleName}</li>
+      {generated && (
         <li>
-          Colours: text <Swatch c={h.textColour} />, background <Swatch c={h.backgroundColour} />, accent{' '}
-          <Swatch c={h.accentColour} />
+          Generated colours:{' '}
+          {[generated.background, generated.text, generated.accent].map((c, i) => (
+            <span key={i} className="swatch small" style={{ background: c }} title={c}>
+              <span className="sr-only">{c}</span>
+            </span>
+          ))}
         </li>
-        <li>Photo: {h.photo.file ? h.photo.file.name : 'None'}</li>
-      </ul>
-    </div>
-  );
-}
-
-function Swatch({ c }: { c: string }) {
-  return (
-    <span className="swatch" style={{ background: c }} title={c}>
-      <span className="sr-only">{c}</span>
-    </span>
+      )}
+      <li>Names: {h.names || 'None'}</li>
+      {(style?.live.date || generated) && (
+        <li>
+          Date, from your booking:{' '}
+          {style?.live.date ? formatStyleDate(eventDate, style.live.date.format) : formatEventDate(eventDate)}
+        </li>
+      )}
+      <li>Photo or video: {h.media ? h.media.name : 'None'}</li>
+    </ul>
   );
 }

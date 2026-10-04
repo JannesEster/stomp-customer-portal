@@ -20,9 +20,10 @@
       "maxImageMb": 20,
       "maxVideoMb": 200
     },
-    "holdingPhoto": {
-      "accept": ["image/jpeg", "image/png", "image/webp"],
-      "maxMb": 20
+    "holdingMedia": {
+      "accept": ["image/jpeg", "image/png", "image/webp", "video/mp4", "video/webm", "video/quicktime"],
+      "maxImageMb": 20,
+      "maxVideoMb": 200
     },
     "invite": {
       "accept": ["application/pdf", "image/jpeg", "image/png", "image/webp"],

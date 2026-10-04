@@ -1,0 +1,21 @@
+{
+  "rotateSeconds": 8,
+  "videos": [
+    { "id": "golden-swirl", "name": "Golden swirl", "src": "/dancing/golden-26103.mp4", "poster": "/dancing/posters/golden-26103.jpg" },
+    { "id": "neon-corridor", "name": "Neon corridor", "src": "/dancing/tunnel-26475.mp4", "poster": "/dancing/posters/tunnel-26475.jpg" },
+    { "id": "purple-rings", "name": "Purple rings", "src": "/dancing/animation-loop-107965.mp4", "poster": "/dancing/posters/animation-loop-107965.jpg" },
+    { "id": "neon-triangles", "name": "Neon triangles", "src": "/dancing/neon-38433.mp4", "poster": "/dancing/posters/neon-38433.jpg" },
+    { "id": "red-kaleidoscope", "name": "Red kaleidoscope", "src": "/dancing/design-31718.mp4", "poster": "/dancing/posters/design-31718.jpg" },
+    { "id": "pink-neon-hall", "name": "Pink neon hall", "src": "/dancing/wireframe-26592.mp4", "poster": "/dancing/posters/wireframe-26592.jpg" },
+    { "id": "retro-sunset", "name": "Retro sunset", "src": "/dancing/neon-21368.mp4", "poster": "/dancing/posters/neon-21368.jpg" },
+    { "id": "violet-portal", "name": "Violet portal", "src": "/dancing/tunnel-65493.mp4", "poster": "/dancing/posters/tunnel-65493.jpg" },
+    { "id": "coral-squares", "name": "Coral squares", "src": "/dancing/tunnel-63885.mp4", "poster": "/dancing/posters/tunnel-63885.jpg" },
+    { "id": "amber-circuit", "name": "Amber circuit", "src": "/dancing/wireframe-26097.mp4", "poster": "/dancing/posters/wireframe-26097.jpg" },
+    { "id": "blue-corridor", "name": "Blue corridor", "src": "/dancing/tunnel-37139.mp4", "poster": "/dancing/posters/tunnel-37139.jpg" },
+    { "id": "triangle-tunnel", "name": "Triangle tunnel", "src": "/dancing/wireframe-36028.mp4", "poster": "/dancing/posters/wireframe-36028.jpg" },
+    { "id": "kaleidoscope-portal", "name": "Kaleidoscope portal", "src": "/dancing/tunnel-65495.mp4", "poster": "/dancing/posters/tunnel-65495.jpg" },
+    { "id": "purple-crystal", "name": "Purple crystal tunnel", "src": "/dancing/tunnel-64814.mp4", "poster": "/dancing/posters/tunnel-64814.jpg" },
+    { "id": "red-ribbon", "name": "Red ribbon", "src": "/dancing/vj-loop-102930.mp4", "poster": "/dancing/posters/vj-loop-102930.jpg" },
+    { "id": "teal-dots", "name": "Teal dots", "src": "/dancing/dots-background-108198.mp4", "poster": "/dancing/posters/dots-background-108198.jpg" }
+  ]
+}
