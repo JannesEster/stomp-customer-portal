@@ -1,0 +1,12 @@
+{
+  "currency": "AUD",
+  "liveContentExtraId": "live-event-streaming",
+  "extras": [
+    {
+      "id": "live-event-streaming",
+      "name": "Live event streaming",
+      "priceAud": 500,
+      "description": "After the ceremony and before the reception, the photographer or videographer films the couple, and Stomp plays that footage on the floor during the reception."
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+[
+  {
+    "id": "cust-sam-alex",
+    "name": "Sam and Alex",
+    "email": "sam.and.alex@example.com",
+    "bookingIds": ["bk-1001"]
+  },
+  {
+    "id": "cust-jordan-casey",
+    "name": "Jordan and Casey",
+    "email": "jordan.and.casey@example.com",
+    "bookingIds": ["bk-1002"]
+  },
+  {
+    "id": "cust-riley-morgan",
+    "name": "Riley and Morgan",
+    "email": "riley.and.morgan@example.com",
+    "bookingIds": ["bk-1003"]
+  }
+]

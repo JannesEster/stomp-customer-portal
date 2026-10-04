@@ -1,0 +1,63 @@
+{
+  "defaults": {
+    "templateId": "classic",
+    "fontId": "script",
+    "textColour": "#fdf6ec",
+    "backgroundColour": "#1c1a2e",
+    "accentColour": "#d9b77e"
+  },
+  "fonts": [
+    { "id": "script", "label": "Script", "css": "'Segoe Script', 'Brush Script MT', 'Snell Roundhand', cursive" },
+    { "id": "serif", "label": "Classic serif", "css": "Georgia, 'Times New Roman', serif" },
+    { "id": "elegant", "label": "Elegant serif", "css": "'Palatino Linotype', Palatino, 'Book Antiqua', serif" },
+    { "id": "fashion", "label": "Fashion serif", "css": "'Bodoni MT', Didot, 'Bodoni 72', serif" },
+    { "id": "modern", "label": "Modern sans", "css": "'Segoe UI', 'Helvetica Neue', Arial, sans-serif" }
+  ],
+  "templates": [
+    {
+      "id": "classic",
+      "name": "Classic circle",
+      "background": "solid",
+      "border": true,
+      "photo": { "shape": "circle", "x": 0.3, "y": 0.08, "w": 0.4, "h": 0.54 },
+      "names": { "x": 0.5, "y": 0.74, "size": 0.1, "maxWidth": 0.85, "align": "center" },
+      "secondLine": { "x": 0.5, "y": 0.86, "size": 0.045, "maxWidth": 0.8, "align": "center" }
+    },
+    {
+      "id": "arch",
+      "name": "Garden arch",
+      "background": "glow",
+      "border": false,
+      "photo": { "shape": "arch", "x": 0.37, "y": 0.07, "w": 0.26, "h": 0.56 },
+      "names": { "x": 0.5, "y": 0.75, "size": 0.1, "maxWidth": 0.85, "align": "center" },
+      "secondLine": { "x": 0.5, "y": 0.87, "size": 0.045, "maxWidth": 0.8, "align": "center" }
+    },
+    {
+      "id": "split",
+      "name": "Side by side",
+      "background": "solid",
+      "border": false,
+      "photo": { "shape": "rect", "x": 0, "y": 0, "w": 0.5, "h": 1 },
+      "names": { "x": 0.75, "y": 0.47, "size": 0.085, "maxWidth": 0.42, "align": "center" },
+      "secondLine": { "x": 0.75, "y": 0.6, "size": 0.04, "maxWidth": 0.42, "align": "center" }
+    },
+    {
+      "id": "full",
+      "name": "Full photo",
+      "background": "photo",
+      "border": true,
+      "photo": { "shape": "full", "x": 0, "y": 0, "w": 1, "h": 1 },
+      "names": { "x": 0.5, "y": 0.5, "size": 0.12, "maxWidth": 0.85, "align": "center" },
+      "secondLine": { "x": 0.5, "y": 0.63, "size": 0.05, "maxWidth": 0.8, "align": "center" }
+    },
+    {
+      "id": "names",
+      "name": "Names only",
+      "background": "glow",
+      "border": true,
+      "photo": null,
+      "names": { "x": 0.5, "y": 0.47, "size": 0.14, "maxWidth": 0.85, "align": "center" },
+      "secondLine": { "x": 0.5, "y": 0.62, "size": 0.055, "maxWidth": 0.8, "align": "center" }
+    }
+  ]
+}

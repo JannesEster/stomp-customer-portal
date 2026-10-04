@@ -1,0 +1,38 @@
+{
+  "sizeTiles": 1.5,
+  "durationMs": 1400,
+  "effects": [
+    {
+      "id": "hearts",
+      "name": "Hearts",
+      "description": "Soft hearts float up from every step.",
+      "preview": { "type": "image", "src": "/effects/hearts.svg" },
+      "animation": "float",
+      "count": 3
+    },
+    {
+      "id": "stars",
+      "name": "Stars",
+      "description": "Golden stars spin out from under each foot.",
+      "preview": { "type": "image", "src": "/effects/stars.svg" },
+      "animation": "spin",
+      "count": 2
+    },
+    {
+      "id": "explosions",
+      "name": "Little explosions",
+      "description": "A quick burst of colour wherever someone lands.",
+      "preview": { "type": "image", "src": "/effects/explosion.svg" },
+      "animation": "burst",
+      "count": 1
+    },
+    {
+      "id": "twinkles",
+      "name": "Twinkles",
+      "description": "Tiny sparkles twinkle around each footstep.",
+      "preview": { "type": "image", "src": "/effects/twinkle.svg" },
+      "animation": "twinkle",
+      "count": 4
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+[
+  {
+    "id": "bk-1001",
+    "customerId": "cust-sam-alex",
+    "coupleNames": "Sam & Alex",
+    "eventDate": "2027-03-13",
+    "venue": "Demo Estate, Swan Valley",
+    "floor": { "widthM": 6, "lengthM": 4.5 },
+    "screensBooked": 2,
+    "extras": ["live-event-streaming"]
+  },
+  {
+    "id": "bk-1002",
+    "customerId": "cust-jordan-casey",
+    "coupleNames": "Jordan & Casey",
+    "eventDate": "2027-04-24",
+    "venue": "Demo Ballroom, Perth",
+    "floor": { "widthM": 4, "lengthM": 3 },
+    "screensBooked": 1,
+    "extras": []
+  },
+  {
+    "id": "bk-1003",
+    "customerId": "cust-riley-morgan",
+    "coupleNames": "Riley & Morgan",
+    "eventDate": "2027-11-06",
+    "venue": "Demo Winery, Margaret River",
+    "floor": { "widthM": 5, "lengthM": 4 },
+    "screensBooked": 0,
+    "extras": []
+  }
+]

@@ -1,0 +1,32 @@
+{
+  "floor": {
+    "tileSizeMm": 500,
+    "tilePx": 128
+  },
+  "screen": {
+    "widthPx": 512,
+    "heightPx": 1536,
+    "maxScreens": 2,
+    "slideSeconds": 5
+  },
+  "timings": [
+    { "id": "start", "label": "Start of night" },
+    { "id": "middle", "label": "Middle of night" },
+    { "id": "end", "label": "End of night" }
+  ],
+  "uploads": {
+    "media": {
+      "accept": ["image/jpeg", "image/png", "image/webp", "image/gif", "video/mp4", "video/webm", "video/quicktime"],
+      "maxImageMb": 20,
+      "maxVideoMb": 200
+    },
+    "holdingPhoto": {
+      "accept": ["image/jpeg", "image/png", "image/webp"],
+      "maxMb": 20
+    },
+    "invite": {
+      "accept": ["application/pdf", "image/jpeg", "image/png", "image/webp"],
+      "maxMb": 20
+    }
+  }
+}
