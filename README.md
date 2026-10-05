@@ -4,6 +4,10 @@ A web portal where a booked Stomp Sphere customer plans what appears on their LE
 
 Everything runs locally on seed data. There are no live external services, no real customer data, and nothing leaves the browser.
 
+## Live site
+
+The demo is published with GitHub Pages at https://jannesester.github.io/stomp-customer-portal/. On every push to `main`, `.github/workflows/deploy.yml` runs the tests, builds with `--mode pages` (which serves the site from the `/stomp-customer-portal/` subfolder) and deploys it. It runs on the same seed data, so each visitor's design is saved only in their own browser. Media paths in the config files start from the site root, and `fromRoot` in `src/config/index.ts` adds the subfolder.
+
 ## Setup
 
 Requires Node 20 or newer.

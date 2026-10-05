@@ -148,10 +148,33 @@ export interface ExtrasConfig {
   extras: ExtraDef[];
 }
 
+/** Media paths in the config start at the site root, but the site can be served from a subfolder. */
+export function fromRoot(path: string): string {
+  return path.startsWith('/') ? import.meta.env.BASE_URL + path.slice(1) : path;
+}
+
+const effects = effectsJson as EffectsConfig;
+const holdingStyles = holdingStylesJson as HoldingStylesConfig;
+const dancingVideos = dancingVideosJson as DancingVideosConfig;
+
 export const portalConfig = portalJson as PortalConfig;
-export const effectsConfig = effectsJson as EffectsConfig;
-export const holdingStylesConfig = holdingStylesJson as HoldingStylesConfig;
-export const dancingVideosConfig = dancingVideosJson as DancingVideosConfig;
+export const effectsConfig: EffectsConfig = {
+  ...effects,
+  effects: effects.effects.map((e) => ({ ...e, video: fromRoot(e.video), poster: fromRoot(e.poster) })),
+};
+export const holdingStylesConfig: HoldingStylesConfig = {
+  ...holdingStyles,
+  styles: holdingStyles.styles.map((s) => ({
+    ...s,
+    video: fromRoot(s.video),
+    sampleVideo: fromRoot(s.sampleVideo),
+    poster: fromRoot(s.poster),
+  })),
+};
+export const dancingVideosConfig: DancingVideosConfig = {
+  ...dancingVideos,
+  videos: dancingVideos.videos.map((v) => ({ ...v, src: fromRoot(v.src), poster: fromRoot(v.poster) })),
+};
 export const extrasConfig = extrasJson as ExtrasConfig;
 
 export function findStyle(id: string | null): HoldingStyleDef | undefined {

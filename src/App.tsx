@@ -5,6 +5,7 @@ import { MyBookingsTab } from './tabs/MyBookingsTab';
 import { NotesTab } from './tabs/NotesTab';
 import { DesignTab } from './tabs/DesignTab';
 import { Accent } from './design/common';
+import { fromRoot } from './config';
 import { formatEventDate } from './lib/format';
 import type { Booking, Customer } from './types';
 
@@ -52,7 +53,13 @@ export function App() {
     <div className="app">
       <header className="app-header">
         <span className="header-label">Customer portal</span>
-        <img className="logo" src="/brand/stomp-sphere-logo-white.svg" alt="Stomp Sphere" width={200} height={38} />
+        <img
+          className="logo"
+          src={fromRoot('/brand/stomp-sphere-logo-white.svg')}
+          alt="Stomp Sphere"
+          width={200}
+          height={38}
+        />
         <span className="signed-in">{customer ? `Hi ${customer.name}` : ''}</span>
       </header>
 
