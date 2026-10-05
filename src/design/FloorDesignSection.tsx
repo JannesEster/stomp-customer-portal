@@ -1,7 +1,7 @@
 import type { UpdateDesign } from '../hooks/useDesignState';
 import type { AfterEntranceMode, DancingMode, DesignState, Phase } from '../types';
 import { Accent, OptionList, PHASES, Section, type OptionDef } from './common';
-import { HoldingFields } from './HoldingFields';
+import { CouplePhoto, HoldingFields, NamesField, StylePicker } from './HoldingFields';
 import { InviteUpload } from './InviteUpload';
 import { ReactionsPicker } from './ReactionsPicker';
 import { DancingVideosStrip } from './DancingVideosStrip';
@@ -100,8 +100,14 @@ export function FloorDesignSection({
               it with your names and photo.
             </p>
             <div className="two-col">
-              <HoldingFields design={design} update={update} phase="holding" eventDate={eventDate} />
-              <InviteUpload design={design} update={update} eventDate={eventDate} />
+              <div className="builder">
+                <StylePicker design={design} update={update} phase="holding" eventDate={eventDate} />
+              </div>
+              <div className="side-col">
+                <NamesField design={design} update={update} phase="holding" />
+                <InviteUpload design={design} update={update} eventDate={eventDate} />
+                <CouplePhoto design={design} update={update} phase="holding" />
+              </div>
             </div>
             <ReactionsPicker design={design} update={update} />
           </>

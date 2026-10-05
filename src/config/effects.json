@@ -48,7 +48,7 @@
     {
       "id": "starry-sky",
       "name": "Starry sky",
-      "description": "A sky full of stars, with bright glowing trails that follow each step.",
+      "description": "Bright starlight trails and twinkles follow each step.",
       "video": "/effects/starry-sky.mp4",
       "poster": "/effects/starry-sky.jpg",
       "popular": true,
@@ -100,15 +100,6 @@
       "program": "11 滚动烈日 (Fantasy 2)"
     },
     {
-      "id": "fantasy-shapes",
-      "name": "Fantasy shapes",
-      "description": "Neon stars, squares and dots in every colour scatter across the floor.",
-      "video": "/effects/fantasy-shapes.mp4",
-      "poster": "/effects/fantasy-shapes.jpg",
-      "popular": true,
-      "program": "9 动态魔幻图 (MultipleShape)"
-    },
-    {
       "id": "floating-squares",
       "name": "Floating squares",
       "description": "Outlined squares pop up and drift around each footstep.",
@@ -116,6 +107,14 @@
       "poster": "/effects/floating-squares.jpg",
       "popular": true,
       "program": "39 黑方 (FantasyPassage)"
+    },
+    {
+      "id": "fantasy-shapes",
+      "name": "Fantasy shapes",
+      "description": "Neon stars, squares and dots in every colour scatter across the floor.",
+      "video": "/effects/fantasy-shapes.mp4",
+      "poster": "/effects/fantasy-shapes.jpg",
+      "program": "9 动态魔幻图 (MultipleShape)"
     },
     {
       "id": "lotus-blooms",
@@ -144,10 +143,9 @@
     {
       "id": "butterfly-meadow",
       "name": "Butterfly meadow",
-      "description": "A meadow of glowing flowers, where butterflies take off as guests walk through.",
+      "description": "Glowing flowers bloom and butterflies flutter up as guests walk through.",
       "video": "/effects/butterfly-meadow.mp4",
       "poster": "/effects/butterfly-meadow.jpg",
-      "fillsFloor": true,
       "program": "14 花海蝴蝶 (Butterfly)"
     },
     {
@@ -216,22 +214,37 @@
       "program": "27 碎玻璃 (Glass Break)"
     },
     {
-      "id": "snow-footprints",
-      "name": "Footprints in snow",
-      "description": "A fresh snowfield that shows every footprint.",
-      "video": "/effects/snow-footprints.mp4",
-      "poster": "/effects/snow-footprints.jpg",
-      "fillsFloor": true,
-      "program": "32 雪地脚印 (SnowField)"
+      "id": "neon-ribbons",
+      "name": "Neon ribbons",
+      "description": "Glowing ribbons of coloured light swirl along behind every step.",
+      "video": "/effects/neon-ribbons.mp4",
+      "poster": "/effects/neon-ribbons.jpg",
+      "program": "129款互动游戏 27 彩条"
     },
     {
-      "id": "cheeky-cars",
-      "name": "Cheeky cars",
-      "description": "Little cars zip around a green field and swerve away from people's feet.",
-      "video": "/effects/cheeky-cars.mp4",
-      "poster": "/effects/cheeky-cars.jpg",
+      "id": "coral-reef",
+      "name": "Coral reef",
+      "description": "A sunlit coral reef where shoals of bright tropical fish swim along with the dancers.",
+      "video": "/effects/coral-reef.mp4",
+      "poster": "/effects/coral-reef.jpg",
       "fillsFloor": true,
-      "program": "28 顽皮的汽车 (NaughtyCar)"
+      "program": "129款互动游戏 38 海底游鱼"
+    },
+    {
+      "id": "autumn-leaves",
+      "name": "Autumn leaves",
+      "description": "Red and golden maple leaves cover the floor and swirl up around each step.",
+      "video": "/effects/autumn-leaves.mp4",
+      "poster": "/effects/autumn-leaves.jpg",
+      "program": "129款互动游戏 104 枫叶情怀"
+    },
+    {
+      "id": "blooming-flowers",
+      "name": "Blooming flowers",
+      "description": "Bright daisies and gerberas burst into bloom wherever guests walk.",
+      "video": "/effects/blooming-flowers.mp4",
+      "poster": "/effects/blooming-flowers.jpg",
+      "program": "129款互动游戏 106 花开大地"
     }
   ]
 }

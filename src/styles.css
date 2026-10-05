@@ -922,6 +922,14 @@ legend {
   align-self: start;
 }
 
+.side-col {
+  min-width: 0;
+}
+
+.side-col .invite {
+  margin-bottom: 1.1rem;
+}
+
 .invite h3 {
   margin-top: 0;
 }
@@ -1087,7 +1095,15 @@ legend {
 }
 
 .effect-more {
-  margin-top: 0.75rem;
+  margin: 1rem 0 0.75rem;
+}
+
+.effect-more svg {
+  transition: transform 0.2s;
+}
+
+.effect-more[aria-expanded='true'] svg {
+  transform: rotate(180deg);
 }
 
 /* Screens */

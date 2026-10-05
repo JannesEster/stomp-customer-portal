@@ -8,7 +8,8 @@ const MORE = effectsConfig.effects.filter((e) => !e.popular);
 
 export function ReactionsPicker({ design, update }: { design: DesignState; update: UpdateDesign }) {
   const [playing, setPlaying] = useState<string | null>(null);
-  const [showMore, setShowMore] = useState(() => MORE.some((e) => design.reactions.includes(e.id)));
+  const [showMore, setShowMore] = useState(false);
+  const pickedMore = MORE.filter((e) => design.reactions.includes(e.id)).length;
 
   const toggle = (id: string, on: boolean) =>
     update((d) => {
@@ -36,15 +37,18 @@ export function ReactionsPicker({ design, update }: { design: DesignState; updat
       </p>
       <h4>Fantasy reactions, our most popular</h4>
       <div className="effect-grid">{POPULAR.map(card)}</div>
-      {showMore && (
-        <>
-          <h4>More reactions</h4>
-          <div className="effect-grid">{MORE.map(card)}</div>
-        </>
-      )}
-      <button type="button" className="link effect-more" onClick={() => setShowMore((s) => !s)}>
-        {showMore ? 'Show fewer reactions' : `Show ${MORE.length} more reactions`}
+      <button
+        type="button"
+        className="secondary effect-more"
+        aria-expanded={showMore}
+        onClick={() => setShowMore((s) => !s)}
+      >
+        More reactions{pickedMore > 0 && ` (${pickedMore} picked)`}
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+          <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" strokeWidth="2" />
+        </svg>
       </button>
+      {showMore && <div className="effect-grid">{MORE.map(card)}</div>}
     </div>
   );
 }
