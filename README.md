@@ -6,7 +6,7 @@ A link shaped `/p/<token>` loads one booking from Airtable through a small Node 
 
 ## Live site
 
-The seed demo is published with GitHub Pages at https://jannesester.github.io/stomp-customer-portal/. On every push to `main`, `.github/workflows/deploy.yml` runs the tests, builds with `--mode pages` (which serves the site from the `/stomp-customer-portal/` subfolder) and deploys it. GitHub Pages is static. It has no API, so it cannot show real Airtable bookings. It keeps using the seed data, and each visitor's design is saved only in their own browser. Whether Pages stays up is pending Jannes's decision. Real portal links are served by the Render service described below.
+The seed demo stays up separately as a static site at https://jannesester.github.io/stomp-customer-portal/. On every push to `main`, `.github/workflows/deploy.yml` runs the tests, builds with `--mode pages` (which serves the site from the `/stomp-customer-portal/` subfolder) and deploys it. GitHub Pages is static. It has no API, so it cannot show real Airtable bookings. It keeps using the seed data, and each visitor's design is saved only in their own browser. Real portal links are served by the Render service `stomp-portal` at https://stomp-portal.onrender.com.
 
 Media paths in the config files start from the site root, and `fromRoot` in `src/config/index.ts` adds the subfolder.
 
@@ -29,7 +29,7 @@ Other scripts:
 | `npm test` | Unit tests (Vitest): floor pixel formula, screen count, live content rules, upload validation, phase logic, screen timings, token lookup, the token generator, and that every media file named in the config exists |
 | `npm run typecheck` | TypeScript check |
 | `npm run build` | Typecheck and production build to `dist/` |
-| `npm run portal:tokens` | Dry run. Lists bookings with an empty Portal token. Add `-- --write` to save tokens. |
+| `npm run portal:tokens` | Dry run. Lists bookings with an empty Portal token. Add `-- --write` to save tokens. Add `-- --record <recId>` to target one booking. |
 
 ### Demo bookings
 
@@ -154,7 +154,7 @@ The server reads these. Defaults match the Stomp base as of 7 October 2026. Only
 | `PORTAL_TOKEN_FIELD` | `Portal token` | Field name used in `filterByFormula`. If you set a field id here, also set `PORTAL_TOKEN_FIELD_NAME`. |
 | `PORTAL_TOKEN_FIELD_ID` | unset | Optional write key. The known id is `fldBr9O48s8nRuxrm`. The filter still uses the field name. |
 | `PORTAL_TOKEN_FIELD_NAME` | `Portal token` | Used only when `PORTAL_TOKEN_FIELD` is a field id. |
-| `PUBLIC_BASE_URL` | unset | When set, the API adds `portalUrl` as `{PUBLIC_BASE_URL}/p/{token}`. Example: `https://stomp-customer-portal.onrender.com`. |
+| `PUBLIC_BASE_URL` | unset | When set, the API adds `portalUrl` as `{PUBLIC_BASE_URL}/p/{token}`. On Render this is `https://stomp-portal.onrender.com`. |
 | `PORT` | `3000` | Render sets this. The server listens on `0.0.0.0`. |
 | `BOOKING_NAME_FIELD` | `Booking name` | |
 | `LEAD_LINK_FIELD` | `Lead` | |
@@ -177,11 +177,13 @@ When `AIRTABLE_TOKEN` is unset, `GET /api/portal/:token` returns 503 for a well 
 Each booking needs an unguessable token in **Portal token** (single line text). The customer link is `/p/<token>`.
 
 ```bash
-npm run portal:tokens                 # dry run, writes nothing
-npm run portal:tokens -- --write      # set a token on bookings that do not have one
+npm run portal:tokens                                      # dry run, writes nothing
+npm run portal:tokens -- --write                           # set a token on bookings that do not have one
+npm run portal:tokens -- --record recFAKEBOOK000001        # dry run for one booking
+npm run portal:tokens -- --record recFAKEBOOK000001 --write
 ```
 
-The script needs `AIRTABLE_TOKEN`. It lists only bookings whose Portal token is blank, and on `--write` it patches that field alone. It never overwrites a token that is already set, and it never writes **Portal link**. Tokens are 32 bytes (256 bits) of URL-safe base64. Do not run `--write` until you mean to fill blank tokens.
+The script needs `AIRTABLE_TOKEN`. It never prints that token. Without `--record` it lists only bookings whose Portal token is blank. `--record` takes one Airtable record id (`rec` plus 14 letters or numbers) and ignores every other booking. On `--write` it patches the Portal token field alone, and only when that value is blank. It never overwrites a token that is already set, and it never writes **Portal link**. When the booking has a token, or one was just written, the script prints the portal URL from `PUBLIC_BASE_URL`. Tokens are 32 bytes (256 bits) of URL-safe base64. Do not run `--write` until you mean to fill blank tokens. The record id above is a fake example.
 
 **Portal link** (`fldMBLZi5ooEBu7kP`) is a formula on the booking. Airtable builds it. The server does not read or write it. If `PUBLIC_BASE_URL` is set, the API returns a link it built itself, which is useful while the formula still points at a placeholder domain.
 
@@ -210,7 +212,7 @@ Missing date, venue, floor, or screens stay blank in the UI. The floor preview s
 
 ## Deploy on Render
 
-`render.yaml` defines a free Node web service named `stomp-customer-portal`.
+`render.yaml` defines a free Node web service named `stomp-portal`. Its public URL is https://stomp-portal.onrender.com. The static site `stomp-customer-portal` (GitHub Pages) stays up separately for now and still has no API.
 
 | | |
 | --- | --- |
@@ -224,11 +226,11 @@ The service listens on `0.0.0.0:$PORT`. Requests such as `/p/<token>` that are n
 
 Free web services sleep after a stretch of no traffic. The first visit after that is slow.
 
-GitHub Pages is unchanged and still has no API. It will not show real bookings.
+The static site `stomp-customer-portal` stays up separately for now. It still has no API and will not show real bookings.
 
 ## Open questions
 
-1. **Hosting.** The Render blueprint is in the repo. GitHub Pages remains for the seed demo and has no API. Which address customers should use is pending Jannes's decision.
+1. **Hosting.** The Render service in the blueprint is `stomp-portal`. The static site `stomp-customer-portal` stays up separately for now and has no API. Which address customers should use is pending Jannes's decision.
 2. **Customer login.** The portal link is the login for now (`TokenAuthProvider`). `AuthProvider` stays so a real account login can replace it later.
 3. **Storage and upload limits.** Pending Jannes's decision. `LocalStorageProvider` still keeps designs and files in this browser.
 4. **Floor size and screens.** Airtable has square metres, not width and length, and no screens count. Only 12 sqm and 27 sqm map to a size. Screens are inferred from lead add-ons when the option says so.

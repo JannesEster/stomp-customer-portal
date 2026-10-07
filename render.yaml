@@ -2,7 +2,7 @@
 # AIRTABLE_TOKEN is set in the dashboard. sync: false keeps that value off the blueprint.
 services:
   - type: web
-    name: stomp-customer-portal
+    name: stomp-portal
     runtime: node
     plan: free
     region: singapore
@@ -27,7 +27,7 @@ services:
       - key: PORTAL_TOKEN_FIELD_ID
         value: fldBr9O48s8nRuxrm
       - key: PUBLIC_BASE_URL
-        value: https://stomp-customer-portal.onrender.com
+        value: https://stomp-portal.onrender.com
       - key: BOOKING_NAME_FIELD
         value: Booking name
       - key: LEAD_LINK_FIELD

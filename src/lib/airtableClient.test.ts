@@ -9,7 +9,7 @@ function config() {
   return readPortalConfig({
     AIRTABLE_TOKEN: 'pat_fake_not_real',
     PORTAL_TOKEN_FIELD_ID: 'fldBr9O48s8nRuxrm',
-    PUBLIC_BASE_URL: 'https://stomp-customer-portal.onrender.com',
+    PUBLIC_BASE_URL: 'https://stomp-portal.onrender.com',
   });
 }
 
@@ -43,7 +43,22 @@ describe('Airtable client', () => {
     });
     await expect(client.findBookingsByFormula('   ')).rejects.toThrow(/empty/i);
     expect(await client.getLead('not-a-record')).toBeNull();
+    expect(await client.getBookingForTokenFill('not-a-record')).toBeNull();
     expect(called).toBe(false);
+  });
+
+  it('loads one booking and only its portal token field', async () => {
+    const calls: string[] = [];
+    const client = createAirtableClient(config(), async (url) => {
+      calls.push(String(url));
+      return Response.json({ id: 'recFAKEBOOK000001', fields: { 'Portal token': '' } });
+    });
+    const record = await client.getBookingForTokenFill('recFAKEBOOK000001');
+    expect(record?.id).toBe('recFAKEBOOK000001');
+    const url = new URL(calls[0]);
+    expect(url.pathname).toBe('/v0/appwMfJFb7rLDqJ30/Bookings/recFAKEBOOK000001');
+    expect(url.searchParams.getAll('fields[]')).toEqual(['Portal token']);
+    expect(url.search).not.toContain('Important');
   });
 
   it('does not echo Airtable error bodies', async () => {

@@ -36,8 +36,8 @@ describe('portal tokens', () => {
 
   it('builds a blank check and a public portal URL', () => {
     expect(blankTokenFormula('Portal token')).toBe('{Portal token} = BLANK()');
-    expect(buildPortalUrl('https://stomp-customer-portal.onrender.com/', TOKEN)).toBe(
-      `https://stomp-customer-portal.onrender.com/p/${TOKEN}`,
+    expect(buildPortalUrl('https://stomp-portal.onrender.com/', TOKEN)).toBe(
+      `https://stomp-portal.onrender.com/p/${TOKEN}`,
     );
     expect(buildPortalUrl('http://localhost:3000', TOKEN)).toBe(`http://localhost:3000/p/${TOKEN}`);
     expect(buildPortalUrl(null, TOKEN)).toBeNull();

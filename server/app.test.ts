@@ -25,7 +25,7 @@ async function start(gateway: AirtableGateway | null, rateLimit?: { windowMs: nu
   const app = createApp({
     config: readPortalConfig({
       AIRTABLE_TOKEN: gateway ? 'pat_fake_not_real' : undefined,
-      PUBLIC_BASE_URL: 'https://stomp-customer-portal.onrender.com',
+      PUBLIC_BASE_URL: 'https://stomp-portal.onrender.com',
     }),
     gateway,
     staticDir: dir,
@@ -92,7 +92,7 @@ describe('portal HTTP API', () => {
     expect(body.booking.coupleNames).toBe('Fake Customer');
     expect(body.booking.floor).toEqual({ widthM: 6, lengthM: 4.5 });
     expect(body.booking.screensBooked).toBe(2);
-    expect(body.portalUrl).toBe(`https://stomp-customer-portal.onrender.com/p/${TOKEN}`);
+    expect(body.portalUrl).toBe(`https://stomp-portal.onrender.com/p/${TOKEN}`);
     const json = JSON.stringify(body);
     expect(json).not.toContain('INTERNAL-NOTE-DO-NOT-LEAK');
     expect(json).not.toContain('xero-admin');

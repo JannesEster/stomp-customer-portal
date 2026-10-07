@@ -1,53 +1,52 @@
 import { createAirtableClient } from '../src/lib/airtableClient';
+import { executePortalTokens, redactSecret } from '../src/lib/portalTokenCommand';
 import { PortalConfigError, portalTokenWriteKey, readPortalConfig } from '../src/lib/portalConfig';
-import { runPortalTokens } from '../src/lib/tokenBatch';
+import { generatePortalToken } from '../src/lib/portalTokenGenerate';
 
 /**
  * Fill blank Portal token values. Dry run unless --write is passed.
- * Never writes Portal link, and never replaces a token that is already set.
+ * --record limits the run to one booking. Never writes Portal link, and never replaces a token.
  */
 async function main(): Promise<void> {
-  const args = process.argv.slice(2);
-  if (args.includes('--help')) {
-    console.log('Usage: npm run portal:tokens [-- --write]');
-    console.log('Dry run by default. --write stores a new token on bookings that do not have one.');
-    return;
-  }
-  const unknown = args.filter((arg) => arg !== '--write');
-  if (unknown.length) {
-    console.error('Unknown argument. Use --write to save tokens, or no arguments for a dry run.');
-    process.exitCode = 1;
-    return;
-  }
-
   let config;
   try {
     config = readPortalConfig(process.env);
   } catch (err) {
-    console.error(err instanceof PortalConfigError ? err.message : 'Could not read portal config');
-    process.exitCode = 1;
-    return;
-  }
-  if (!config.airtableToken) {
-    console.error('AIRTABLE_TOKEN is not set. Refusing to continue.');
+    const message = err instanceof PortalConfigError ? err.message : 'Could not read portal config';
+    console.error(redactSecret(message, process.env.AIRTABLE_TOKEN));
     process.exitCode = 1;
     return;
   }
 
-  const client = createAirtableClient(config);
-  const records = await client.listBookingsForTokenFill();
-  await runPortalTokens({
-    write: args.includes('--write'),
-    records,
-    fieldName: config.tokenFieldName,
+  const client = config.airtableToken ? createAirtableClient(config) : null;
+  const code = await executePortalTokens({
+    argv: process.argv.slice(2),
+    publicBaseUrl: config.publicBaseUrl,
+    tokenFieldName: config.tokenFieldName,
     fieldKey: portalTokenWriteKey(config),
+    airtableTokenSet: !!config.airtableToken,
+    secret: config.airtableToken,
+    listMissing: () => {
+      if (!client) throw new Error('AIRTABLE_TOKEN is not set');
+      return client.listBookingsForTokenFill();
+    },
+    getRecord: (id) => {
+      if (!client) throw new Error('AIRTABLE_TOKEN is not set');
+      return client.getBookingForTokenFill(id);
+    },
+    writeTokens: (patches) => {
+      if (!client) throw new Error('AIRTABLE_TOKEN is not set');
+      return client.writePortalTokens(patches);
+    },
     log: (line) => console.log(line),
-    writeTokens: (patches) => client.writePortalTokens(patches),
+    error: (line) => console.error(line),
+    generateToken: generatePortalToken,
   });
+  if (code !== 0) process.exitCode = code;
 }
 
 main().catch((err: unknown) => {
   const message = err instanceof Error ? err.message : 'Portal token script failed';
-  console.error(message);
+  console.error(redactSecret(message, process.env.AIRTABLE_TOKEN));
   process.exitCode = 1;
 });

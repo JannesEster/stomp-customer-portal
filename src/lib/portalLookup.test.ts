@@ -52,7 +52,7 @@ function gateway(overrides: Partial<AirtableGateway> = {}): AirtableGateway & { 
   };
 }
 
-function lookup(token: string, source: AirtableGateway, publicBaseUrl: string | null = 'https://stomp-customer-portal.onrender.com') {
+function lookup(token: string, source: AirtableGateway, publicBaseUrl: string | null = 'https://stomp-portal.onrender.com') {
   return lookupBookingByToken(token, {
     gateway: source,
     tokenFieldName: 'Portal token',
@@ -73,7 +73,7 @@ describe('token lookup', () => {
     expect(result.portal.booking.coupleNames).toBe('Fake Customer');
     expect(result.portal.booking.floor).toEqual({ widthM: 4, lengthM: 3 });
     expect(result.portal.booking.extras).toEqual(['live-event-streaming']);
-    expect(result.portalUrl).toBe(`https://stomp-customer-portal.onrender.com/p/${TOKEN}`);
+    expect(result.portalUrl).toBe(`https://stomp-portal.onrender.com/p/${TOKEN}`);
     const json = JSON.stringify(result);
     expect(json).not.toContain('INTERNAL-NOTE-DO-NOT-LEAK');
     expect(json).not.toContain('xero-admin');
