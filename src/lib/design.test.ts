@@ -12,6 +12,7 @@ import {
   validateUpload,
 } from './design';
 import { dancingVideosConfig, effectsConfig, holdingStylesConfig, portalConfig, screenStylesConfig } from '../config';
+import { stepsFor } from '../design/steps';
 import type { DesignState, MediaItem, Phase, Timing } from '../types';
 
 const booking = { coupleNames: 'Sam & Alex' };
@@ -30,10 +31,11 @@ describe('holdingFor', () => {
     expect(usableDesign(saved, booking).afterMode).toBe('same');
   });
 
-  it('uses each phase design when a different style is chosen', () => {
+  it('uses a different style after the entrance, and leaves dancing time blank for a described design', () => {
     const d: DesignState = { ...createDefaultDesign(booking), afterMode: 'different', dancingMode: 'different' };
     expect(holdingFor(d, 'after')).toBe(d.designs.after);
-    expect(holdingFor(d, 'dancing')).toBe(d.designs.dancing);
+    expect(holdingFor(d, 'dancing')).toBeNull();
+    expect(reactionsFor(d, 'dancing')).toEqual({ ids: [], assorted: false });
   });
 
   it('defaults names to the couple on the booking, with no style or photo', () => {
@@ -46,6 +48,22 @@ describe('reactionsFor', () => {
     const d: DesignState = { ...createDefaultDesign(booking), reactions: ['fantasy-lightning'] };
     expect(reactionsFor(d, 'holding')).toEqual({ ids: ['fantasy-lightning'], assorted: false });
     expect(reactionsFor(d, 'after')).toEqual({ ids: ['fantasy-lightning'], assorted: false });
+  });
+
+  it('uses reactions chosen for after the entrance when none were picked before', () => {
+    const d: DesignState = { ...createDefaultDesign(booking), afterReactions: ['koi-pond'] };
+    expect(reactionsFor(d, 'holding')).toEqual({ ids: [], assorted: false });
+    expect(reactionsFor(d, 'after')).toEqual({ ids: ['koi-pond'], assorted: false });
+  });
+
+  it('keeps the before entrance reactions after the entrance when both are set', () => {
+    const d: DesignState = {
+      ...createDefaultDesign(booking),
+      reactions: ['fantasy-lightning'],
+      afterReactions: ['koi-pond'],
+    };
+    expect(reactionsFor(d, 'holding').ids).toEqual(['fantasy-lightning']);
+    expect(reactionsFor(d, 'after').ids).toEqual(['fantasy-lightning']);
   });
 
   it('uses every effect, assorted, for dancing time', () => {
@@ -71,8 +89,31 @@ describe('usableDesign', () => {
   });
 
   it('drops reactions that are no longer offered', () => {
-    const saved: DesignState = { ...createDefaultDesign(booking), reactions: ['hearts', 'koi-pond', 'twinkles'] };
+    const saved: DesignState = {
+      ...createDefaultDesign(booking),
+      reactions: ['hearts', 'koi-pond', 'twinkles'],
+      afterReactions: ['snow-footprints', 'coral-reef'],
+    };
     expect(usableDesign(saved, booking).reactions).toEqual(['koi-pond']);
+    expect(usableDesign(saved, booking).afterReactions).toEqual(['coral-reef']);
+  });
+
+  it('fills in after entrance reactions for a design saved before that field existed', () => {
+    const { afterReactions: _dropped, ...saved } = createDefaultDesign(booking);
+    expect(usableDesign(saved as DesignState, booking).afterReactions).toEqual([]);
+  });
+
+  it('fills in the dancing note for a design saved before that field existed', () => {
+    const { dancingNote: _dropped, ...saved } = createDefaultDesign(booking);
+    expect(usableDesign(saved as DesignState, booking).dancingNote).toBe('');
+  });
+
+  it('fills in the night times for a design saved before those fields existed', () => {
+    const { entranceTime: _e, dancingStarts: _d, submittedWithoutTimes: _s, ...saved } = createDefaultDesign(booking);
+    const usable = usableDesign(saved as DesignState, booking);
+    expect(usable.entranceTime).toBe('');
+    expect(usable.dancingStarts).toBe('');
+    expect(usable.submittedWithoutTimes).toBe(false);
   });
 
   it('replaces a design saved by an older version', () => {
@@ -194,6 +235,17 @@ describe('validateUpload', () => {
   it('falls back to maxMb', () => {
     const doc = { accept: ['application/pdf'], maxMb: 2 };
     expect(validateUpload({ name: 'i.pdf', type: 'application/pdf', size: 3 * mb }, doc)).toMatch(/2 MB/);
+  });
+});
+
+describe('stepsFor', () => {
+  it('adds a reactions step after the entrance only when none were picked before', () => {
+    const ids = (show: boolean) => stepsFor(2, show).map((s) => s.id);
+    expect(ids(false)).not.toContain('floor-after-reactions');
+    const withStep = ids(true);
+    expect(withStep.indexOf('floor-after-reactions')).toBe(withStep.indexOf('floor-after') + 1);
+    expect(withStep.indexOf('floor-dancing')).toBe(withStep.indexOf('floor-after-reactions') + 1);
+    expect(stepsFor(0, true).some((s) => s.group === 'screens')).toBe(false);
   });
 });
 

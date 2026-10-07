@@ -94,12 +94,21 @@ export interface DesignState {
   status: DesignStatus;
   updatedAt: string;
   submittedAt: string | null;
-  /** `after` and `dancing` are only used when their mode is 'different' */
+  /** `after` is only used when its mode is 'different' */
   designs: Record<Phase, HoldingDesign>;
   afterMode: AfterEntranceMode;
   dancingMode: DancingMode;
-  /** Chosen during the holding screen and kept after the entrance. Dancing time uses an assortment instead. */
+  /** What the couple has in mind when dancing time uses a different design */
+  dancingNote: string;
+  /** 24 hour HH:MM, or empty until the couple sets it. When the floor and screens change. */
+  entranceTime: string;
+  dancingStarts: string;
+  /** True after a submit that left either night time blank. Cleared by a later submit that includes both. */
+  submittedWithoutTimes: boolean;
+  /** Chosen before the bridal entrance and kept after it. Dancing time uses an assortment instead. */
   reactions: string[];
+  /** Used after the entrance only when nothing was picked before it. */
+  afterReactions: string[];
   media: MediaItem[];
   screens: ScreensDesign;
   invite: StoredFile | null;
@@ -113,6 +122,8 @@ export interface DesignState {
   invitePaper: string | null;
   /** Chosen by setting a design's styleId to INVITE_STYLE_ID */
   inviteStyle: GeneratedStyle | null;
+  /** Another generated version, for after the entrance. Chosen with INVITE_AFTER_STYLE_ID */
+  afterInviteStyle: GeneratedStyle | null;
   stylingNote: string;
   /** Only meaningful when the booking does not already include live content */
   liveContentRequested: boolean;

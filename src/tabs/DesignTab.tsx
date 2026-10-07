@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useDesignState, type UpdateDesign } from '../hooks/useDesignState';
 import { screenCount } from '../lib/dimensions';
 import { formatDateTime } from '../lib/format';
@@ -14,6 +14,27 @@ import { stepsFor, type StepDef, type StepId } from '../design/steps';
 import { ArrowIcon, Section } from '../design/common';
 import type { Booking, DesignState, Phase } from '../types';
 
+const STEP_KEY = (bookingId: string) => `stomp-portal:design-step:${bookingId}`;
+
+function storedStep(bookingId: string, steps: StepDef[]): StepId {
+  try {
+    const saved = sessionStorage.getItem(STEP_KEY(bookingId));
+    if (saved && steps.some((s) => s.id === saved)) return saved as StepId;
+  } catch {
+    /* sessionStorage can be blocked */
+  }
+  return steps[0].id;
+}
+
+function timeReminder(stepId: StepId, design: DesignState): string | null {
+  if (stepId === 'floor-design' && !design.entranceTime) return "You haven't specified a time for this.";
+  if (stepId === 'floor-dancing' && !design.dancingStarts) return "You haven't specified a time for this.";
+  if (stepId === 'review' && (!design.entranceTime || !design.dancingStarts)) {
+    return design.submittedWithoutTimes ? 'Submitted without times.' : "You haven't selected times.";
+  }
+  return null;
+}
+
 const SAVE_LABEL = {
   idle: 'Draft',
   saving: 'Saving…',
@@ -23,13 +44,34 @@ const SAVE_LABEL = {
 
 export function DesignTab({ booking }: { booking: Booking }) {
   const { design, update, submit, saveStatus } = useDesignState(booking);
-  const steps = stepsFor(screenCount(booking.screensBooked));
-  const [stepId, setStepId] = useState<StepId>(steps[0].id);
-  const [previewPhase, setPreviewPhase] = useState<Phase>(steps[0].phase);
+  const showAfterReactions = !design || design.reactions.length === 0;
+  const steps = useMemo(
+    () => stepsFor(screenCount(booking.screensBooked), showAfterReactions),
+    [booking.screensBooked, showAfterReactions],
+  );
+  const [stepId, setStepId] = useState<StepId>(() => storedStep(booking.id, steps));
+  const [previewPhase, setPreviewPhase] = useState<Phase>(
+    () => steps.find((s) => s.id === storedStep(booking.id, steps))?.phase ?? steps[0].phase,
+  );
   const [showSummary, setShowSummary] = useState(false);
   const top = useRef<HTMLDivElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const moved = useRef(false);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(STEP_KEY(booking.id), stepId);
+    } catch {
+      /* sessionStorage can be blocked */
+    }
+  }, [booking.id, stepId]);
+
+  useEffect(() => {
+    if (steps.some((s) => s.id === stepId)) return;
+    const fallback = steps.find((s) => s.id === 'floor-dancing') ?? steps[0];
+    setStepId(fallback.id);
+    setPreviewPhase(fallback.phase);
+  }, [steps, stepId]);
 
   useEffect(() => {
     if (!moved.current) return;
@@ -43,7 +85,8 @@ export function DesignTab({ booking }: { booking: Booking }) {
 
   if (!design) return <p className="muted">Loading your design…</p>;
 
-  const index = steps.findIndex((s) => s.id === stepId);
+  const found = steps.findIndex((s) => s.id === stepId);
+  const index = found === -1 ? steps.findIndex((s) => s.id === 'floor-dancing') : found;
   const step = steps[index];
   const prev = steps[index - 1];
   const next = steps[index + 1];
@@ -62,12 +105,15 @@ export function DesignTab({ booking }: { booking: Booking }) {
       <StepIndicator steps={steps} current={step.id} onSelect={goTo} />
 
       {submitted && design.submittedAt ? (
-        <div className="banner success">
-          Submitted to Stomp on {formatDateTime(design.submittedAt)}. Any changes go back to draft until you submit
-          again.
+        <div className={design.submittedWithoutTimes ? 'banner times-missing' : 'banner success'}>
+          Submitted to Stomp on {formatDateTime(design.submittedAt)}.
+          {design.submittedWithoutTimes && <TimesTag />} Any changes go back to draft until you submit again.
         </div>
       ) : design.submittedAt ? (
-        <div className="banner">You've made changes since you submitted. Submit again so Stomp has the latest.</div>
+        <div className="banner">
+          You've made changes since you submitted.
+          {design.submittedWithoutTimes && <TimesTag />} Submit again so Stomp has the latest.
+        </div>
       ) : null}
 
       {booking.screensBooked == null && (
@@ -83,6 +129,16 @@ export function DesignTab({ booking }: { booking: Booking }) {
         title={step.title}
         intro={step.intro}
         headingRef={heading}
+        notice={
+          timeReminder(step.id, design) && (
+            <div className="time-alert" role="alert">
+              <p>{timeReminder(step.id, design)}</p>
+              <button type="button" onClick={() => { window.location.hash = 'notes'; }}>
+                Insert times here
+              </button>
+            </div>
+          )
+        }
       >
         <StepBody
           step={step}
@@ -93,6 +149,11 @@ export function DesignTab({ booking }: { booking: Booking }) {
         />
       </Section>
 
+      {step.id === 'details' && (
+        <p className="preview-lead">
+          Below is a preview of your floor right now, but nothing has been set. Click Next to make it better.
+        </p>
+      )}
       {step.preview === 'floor' && (
         <FloorPreview booking={booking} design={design} phase={previewPhase} onPhaseChange={setPreviewPhase} />
       )}
@@ -102,7 +163,7 @@ export function DesignTab({ booking }: { booking: Booking }) {
 
       <div className="submit-bar">
         <span className="muted small" aria-live="polite">
-          {submitted ? 'Submitted' : SAVE_LABEL[saveStatus]}
+          {submitted ? (design.submittedWithoutTimes ? 'Submitted without times' : 'Submitted') : SAVE_LABEL[saveStatus]}
         </span>
         <div className="row">
           {prev && (
@@ -140,6 +201,10 @@ export function DesignTab({ booking }: { booking: Booking }) {
   );
 }
 
+function TimesTag() {
+  return <span className="time-tag">Times not included</span>;
+}
+
 function StepBody({
   step,
   booking,
@@ -161,6 +226,8 @@ function StepBody({
       return <HoldingScreenStep {...props} />;
     case 'floor-reactions':
       return <ReactionsPicker design={design} update={update} />;
+    case 'floor-after-reactions':
+      return <ReactionsPicker design={design} update={update} field="afterReactions" />;
     case 'floor-after':
       return <AfterEntranceStep {...props} />;
     case 'floor-dancing':

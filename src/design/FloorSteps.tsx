@@ -1,20 +1,33 @@
 import type { UpdateDesign } from '../hooks/useDesignState';
 import { formatEventDate } from '../lib/format';
-import type { AfterEntranceMode, Booking, DancingMode, DesignState } from '../types';
+import {
+  generatedFor,
+  INVITE_AFTER_STYLE_ID,
+  inviteInputs,
+  LAYOUT_LABELS,
+  otherInviteStyles,
+  TYPOGRAPHY_LABELS,
+} from '../lib/inviteStyle';
+import type { AfterEntranceMode, Booking, DancingMode, DesignState, GeneratedStyle } from '../types';
 import { OptionList, type OptionDef } from './common';
 import { CouplePhoto, HoldingFields, NamesField, StylePicker } from './HoldingFields';
 import { InviteUpload } from './InviteUpload';
 import { DancingVideosStrip } from './DancingVideosStrip';
+import { GeneratedThumb } from './GeneratedThumb';
 
-const AFTER_OPTIONS: OptionDef<AfterEntranceMode>[] = [
-  {
-    id: 'same',
-    label: 'Keep the holding screen',
-    hint: 'Your holding screen and its reactions stay on until dancing time.',
-    recommended: true,
-  },
-  { id: 'different', label: 'Use a different style', hint: 'Pick a second design to show until dancing time.' },
-];
+function afterOptions(hasBeforeReactions: boolean): OptionDef<AfterEntranceMode>[] {
+  return [
+    {
+      id: 'same',
+      label: 'Keep the holding screen',
+      hint: hasBeforeReactions
+        ? 'Your holding screen and its reactions stay on until dancing time.'
+        : 'Your holding screen stays on until dancing time. You can add reactions for after the entrance on the next step.',
+      recommended: true,
+    },
+    { id: 'different', label: 'Use a different style', hint: 'Pick a second design to show until dancing time.' },
+  ];
+}
 
 const DANCING_OPTIONS: OptionDef<DancingMode>[] = [
   {
@@ -25,13 +38,13 @@ const DANCING_OPTIONS: OptionDef<DancingMode>[] = [
   },
   {
     id: 'videos',
-    label: 'Colourful videos',
-    hint: 'Bright moving visuals, like neon tunnels, golden swirls and kaleidoscopes, play across the floor.',
+    label: 'Assorted colourful videos',
+    hint: 'Bright moving visuals, like neon tunnels, golden swirls and kaleidoscopes, change from one to the next across the floor.',
   },
   {
     id: 'different',
-    label: 'Use a different style',
-    hint: 'Show a design while people dance. A busy design can make the reactions harder to see.',
+    label: 'Use a different design',
+    hint: 'Tell Stomp what you have in mind for the floor while people dance.',
   },
 ];
 
@@ -98,27 +111,71 @@ export function AfterEntranceStep({ design, update, eventDate }: StepProps) {
       <OptionList
         name="after-entrance"
         label="After the bridal entrance"
-        options={AFTER_OPTIONS}
+        options={afterOptions(design.reactions.length > 0)}
         value={design.afterMode}
         onChange={setAfter}
       />
       {design.afterMode === 'different' && (
-        <div className="post-design">
-          <h3>Your design after the entrance</h3>
-          <HoldingFields design={design} update={update} phase="after" eventDate={eventDate} />
+        <div className={design.inviteStyle ? 'two-col post-design' : 'post-design'}>
+          <div>
+            <h3>Your design after the entrance</h3>
+            <HoldingFields design={design} update={update} phase="after" eventDate={eventDate} />
+          </div>
+          {design.inviteStyle && <InviteVersions design={design} update={update} eventDate={eventDate} />}
         </div>
       )}
     </>
   );
 }
 
-export function DancingStep({ design, update, eventDate }: StepProps) {
-  const setDancing = (mode: DancingMode) =>
+/** The other versions made from the invite, so after the entrance can use a different one. */
+function InviteVersions({ design, update, eventDate }: StepProps) {
+  const current = design.inviteStyle;
+  if (!current) return null;
+  const shown = otherInviteStyles(current, inviteInputs(design)).slice(0, 10);
+  const chosen = generatedFor(design, design.designs.after.styleId);
+
+  const pick = (style: GeneratedStyle) =>
     update((d) => ({
       ...d,
-      dancingMode: mode,
-      designs: mode === 'different' ? { ...d.designs, dancing: startDesign(d, 'dancing') } : d.designs,
+      afterInviteStyle: style,
+      designs: { ...d.designs, after: { ...d.designs.after, styleId: INVITE_AFTER_STYLE_ID } },
     }));
+
+  return (
+    <aside className="invite invite-versions">
+      <h3>Other designs from your invite</h3>
+      <p className="muted small">
+        These are the other versions made from your invite and styling note. Pick one for after the entrance.
+      </p>
+      <div className="style-grid" role="radiogroup" aria-label="Other designs from your invite">
+        {shown.map((style) => {
+          const active = chosen?.variant === style.variant && chosen.basedOn === style.basedOn;
+          return (
+            <button
+              key={style.variant}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              className={active ? 'style-card active' : 'style-card'}
+              onClick={() => pick(style)}
+            >
+              <span className="style-thumb">
+                <GeneratedThumb style={style} names={design.designs.after.names} eventDate={eventDate} />
+              </span>
+              <span className="style-name">
+                {TYPOGRAPHY_LABELS[style.typography]}, {LAYOUT_LABELS[style.layout]}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </aside>
+  );
+}
+
+export function DancingStep({ design, update }: StepProps) {
+  const setDancing = (mode: DancingMode) => update((d) => ({ ...d, dancingMode: mode }));
 
   return (
     <>
@@ -131,10 +188,15 @@ export function DancingStep({ design, update, eventDate }: StepProps) {
       />
       {design.dancingMode === 'videos' && <DancingVideosStrip />}
       {design.dancingMode === 'different' && (
-        <div className="post-design">
-          <h3>Your design for dancing time</h3>
-          <HoldingFields design={design} update={update} phase="dancing" eventDate={eventDate} />
-        </div>
+        <label className="field">
+          <span>What do you have in mind?</span>
+          <textarea
+            rows={4}
+            value={design.dancingNote ?? ''}
+            placeholder="Describe the look you want while people dance"
+            onChange={(e) => update((d) => ({ ...d, dancingNote: e.target.value }))}
+          />
+        </label>
       )}
     </>
   );

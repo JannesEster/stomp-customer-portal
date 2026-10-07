@@ -48,7 +48,10 @@ export function useDesignState(booking: Booking) {
       if (dirty.current && latest.current) void storage.saveData(key, latest.current);
     };
     window.addEventListener('pagehide', flush);
-    return () => window.removeEventListener('pagehide', flush);
+    return () => {
+      window.removeEventListener('pagehide', flush);
+      flush();
+    };
   }, [key, storage]);
 
   /** Any edit puts a submitted design back into draft until it is submitted again. */
@@ -60,7 +63,17 @@ export function useDesignState(booking: Booking) {
   const submit = useCallback(() => {
     dirty.current = true;
     const now = new Date().toISOString();
-    setDesign((d) => (d ? { ...d, status: 'submitted', submittedAt: now, updatedAt: now } : d));
+    setDesign((d) =>
+      d
+        ? {
+            ...d,
+            status: 'submitted',
+            submittedAt: now,
+            updatedAt: now,
+            submittedWithoutTimes: !d.entranceTime || !d.dancingStarts,
+          }
+        : d,
+    );
   }, []);
 
   return { design, update, submit, saveStatus };

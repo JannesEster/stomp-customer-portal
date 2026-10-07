@@ -4,7 +4,7 @@ import { acceptAttr, mediaKindOf, validateUpload } from '../lib/design';
 import { useFileUrl } from '../hooks/useFileUrl';
 import { useServices } from '../services';
 import type { UpdateDesign } from '../hooks/useDesignState';
-import { INVITE_STYLE_ID, LAYOUT_LABELS, TYPOGRAPHY_LABELS } from '../lib/inviteStyle';
+import { generatedFor, INVITE_STYLE_ID, LAYOUT_LABELS, TYPOGRAPHY_LABELS } from '../lib/inviteStyle';
 import type { DesignState, HoldingDesign, Phase } from '../types';
 import { fileStillUsed } from './common';
 import { GeneratedThumb } from './GeneratedThumb';
@@ -69,7 +69,7 @@ export function StylePicker({ design, update, phase, eventDate }: PartProps & { 
 
 export function NamesField({ design, update, phase }: PartProps) {
   const h = design.designs[phase];
-  const showsDate = findStyle(h.styleId)?.live.date || (h.styleId === INVITE_STYLE_ID && !!design.inviteStyle);
+  const showsDate = findStyle(h.styleId)?.live.date || !!generatedFor(design, h.styleId);
   const set = setterFor(update, phase);
   return (
     <div className="names-field">

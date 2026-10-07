@@ -96,6 +96,7 @@ export function Section({
   title,
   eyebrow,
   intro,
+  notice,
   children,
   className,
   headingRef,
@@ -104,12 +105,15 @@ export function Section({
   /** A small line above the title, like "Step 3 of 10" */
   eyebrow?: ReactNode;
   intro?: ReactNode;
+  /** Shown above the title */
+  notice?: ReactNode;
   children: ReactNode;
   className?: string;
   headingRef?: Ref<HTMLHeadingElement>;
 }) {
   return (
     <section className={`card ${className ?? ''}`}>
+      {notice}
       <h2 ref={headingRef} tabIndex={headingRef ? -1 : undefined}>
         {eyebrow && <span className="eyebrow">{eyebrow}</span>}
         {title}

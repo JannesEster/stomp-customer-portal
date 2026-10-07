@@ -6,22 +6,32 @@ import type { DesignState } from '../types';
 const POPULAR = effectsConfig.effects.filter((e) => e.popular);
 const MORE = effectsConfig.effects.filter((e) => !e.popular);
 
-export function ReactionsPicker({ design, update }: { design: DesignState; update: UpdateDesign }) {
+export function ReactionsPicker({
+  design,
+  update,
+  field = 'reactions',
+}: {
+  design: DesignState;
+  update: UpdateDesign;
+  /** Before the entrance, or the picks that only apply after it. */
+  field?: 'reactions' | 'afterReactions';
+}) {
   const [playing, setPlaying] = useState<string | null>(null);
   const [showMore, setShowMore] = useState(false);
-  const pickedMore = MORE.filter((e) => design.reactions.includes(e.id)).length;
+  const picked = design[field];
+  const pickedMore = MORE.filter((e) => picked.includes(e.id)).length;
 
   const toggle = (id: string, on: boolean) =>
     update((d) => {
-      const rest = d.reactions.filter((x) => x !== id);
-      return { ...d, reactions: on ? [...rest, id] : rest };
+      const rest = d[field].filter((x) => x !== id);
+      return { ...d, [field]: on ? [...rest, id] : rest };
     });
 
   const card = (e: EffectDef) => (
     <EffectCard
       key={e.id}
       effect={e}
-      checked={design.reactions.includes(e.id)}
+      checked={picked.includes(e.id)}
       playing={playing === e.id}
       onToggle={(on) => toggle(e.id, on)}
       onPlay={(on) => setPlaying((p) => (on ? e.id : p === e.id ? null : p))}

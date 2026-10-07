@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { generateInviteStyle, readStylingNote, type InviteInputs } from './inviteStyle';
+import { generateInviteStyle, INVITE_VARIANT_COUNT, otherInviteStyles, readStylingNote, type InviteInputs } from './inviteStyle';
 import { contrastRatio, hexLuminance } from './palette';
 
 const blackOnWhite: InviteInputs = { paper: '#fefefe', colours: ['#010101'], note: '' };
@@ -53,6 +53,14 @@ describe('generateInviteStyle', () => {
     expect(g.noteCues).toEqual(['romantic', 'garden', 'sage green', 'navy']);
     expect(g.accent).not.toBe(g.text);
     expect(g.background).not.toBe('#000000');
+  });
+
+  it('lists every other version, leaving out the one already generated', () => {
+    const current = generateInviteStyle(goldOnCream, 2);
+    const others = otherInviteStyles(current, goldOnCream);
+    expect(others).toHaveLength(INVITE_VARIANT_COUNT - 1);
+    expect(others.some((s) => s.variant === 2)).toBe(false);
+    expect(new Set(others.map((s) => `${s.typography}:${s.layout}`)).size).toBe(others.length);
   });
 
   it('steps through layouts, then lettering, and is repeatable', () => {

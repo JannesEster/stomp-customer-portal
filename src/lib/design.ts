@@ -17,7 +17,12 @@ export function createDefaultDesign(booking: Pick<Booking, 'coupleNames'>, now =
     designs: { holding: blank, after: { ...blank }, dancing: { ...blank } },
     afterMode: 'same',
     dancingMode: 'blank',
+    dancingNote: '',
+    entranceTime: '',
+    dancingStarts: '',
+    submittedWithoutTimes: false,
     reactions: [],
+    afterReactions: [],
     media: [],
     screens: { styleId: null, modes: { holding: 'design', after: 'design', dancing: 'design' } },
     invite: null,
@@ -26,6 +31,7 @@ export function createDefaultDesign(booking: Pick<Booking, 'coupleNames'>, now =
     inviteNamesColour: null,
     invitePaper: null,
     inviteStyle: null,
+    afterInviteStyle: null,
     stylingNote: '',
     liveContentRequested: false,
   };
@@ -40,7 +46,13 @@ export function usableDesign(saved: DesignState | null, booking: Pick<Booking, '
   if (saved?.version !== DESIGN_VERSION) return fresh;
   const merged = { ...fresh, ...saved };
   // Reactions retired from effects.json are dropped.
-  merged.reactions = merged.reactions.filter((id) => effectsConfig.effects.some((e) => e.id === id));
+  const offered = (id: string) => effectsConfig.effects.some((e) => e.id === id);
+  merged.reactions = merged.reactions.filter(offered);
+  merged.afterReactions = merged.afterReactions.filter(offered);
+  merged.dancingNote = merged.dancingNote ?? '';
+  merged.entranceTime = merged.entranceTime ?? '';
+  merged.dancingStarts = merged.dancingStarts ?? '';
+  merged.submittedWithoutTimes = merged.submittedWithoutTimes ?? false;
   // A blank floor after the entrance is no longer offered.
   return (merged.afterMode as string) === 'blank' ? { ...merged, afterMode: 'same' } : merged;
 }
@@ -49,7 +61,7 @@ export function usableDesign(saved: DesignState | null, booking: Pick<Booking, '
 export function holdingFor(design: DesignState, phase: Phase): HoldingDesign | null {
   if (phase === 'holding') return design.designs.holding;
   if (phase === 'after') return design.afterMode === 'different' ? design.designs.after : design.designs.holding;
-  return design.dancingMode === 'different' ? design.designs.dancing : null;
+  return null;
 }
 
 /** True while dancing time plays the colourful videos. */
@@ -58,12 +70,16 @@ export function showsDancingVideos(design: DesignState, phase: Phase): boolean {
 }
 
 /**
- * Reactions for a phase. Dancing time cycles through every effect instead of the
- * couple's picks, except while the colourful videos play, which have none.
+ * Reactions for a phase. Picks from before the entrance carry on after it.
+ * When none were picked before, after the entrance uses its own picks.
+ * Dancing time cycles through every effect instead, except for colourful videos or a described design, which have none.
  */
 export function reactionsFor(design: DesignState, phase: Phase): { ids: string[]; assorted: boolean } {
-  if (phase !== 'dancing') return { ids: design.reactions, assorted: false };
-  if (design.dancingMode === 'videos') return { ids: [], assorted: false };
+  if (phase === 'holding') return { ids: design.reactions, assorted: false };
+  if (phase === 'after') {
+    return { ids: design.reactions.length ? design.reactions : design.afterReactions, assorted: false };
+  }
+  if (design.dancingMode === 'videos' || design.dancingMode === 'different') return { ids: [], assorted: false };
   return { ids: effectsConfig.effects.map((e) => e.id), assorted: true };
 }
 

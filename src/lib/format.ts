@@ -20,6 +20,13 @@ export function formatEventDate(isoDate: string): string {
   }).format(new Date(y, m - 1, d));
 }
 
+/** A 24 hour HH:MM time, shown the Australian way, such as 6:30 pm. */
+export function formatTime(hhmm: string): string {
+  const [h, m] = hhmm.split(':').map(Number);
+  if (!hhmm || Number.isNaN(h) || Number.isNaN(m)) return '';
+  return new Intl.DateTimeFormat('en-AU', { hour: 'numeric', minute: '2-digit' }).format(new Date(2000, 0, 1, h, m));
+}
+
 export function formatDateTime(iso: string): string {
   return new Intl.DateTimeFormat('en-AU', {
     day: 'numeric',

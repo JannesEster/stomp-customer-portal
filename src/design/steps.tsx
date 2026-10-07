@@ -7,6 +7,7 @@ export type StepId =
   | 'floor-design'
   | 'floor-reactions'
   | 'floor-after'
+  | 'floor-after-reactions'
   | 'floor-dancing'
   | 'screens-design'
   | 'screens-holding'
@@ -69,15 +70,15 @@ const STEPS: StepDef[] = [
   {
     id: 'floor-reactions',
     group: 'floor',
-    name: 'Floor reactions',
+    name: 'Reactions before the entrance',
     short: 'Reactions',
     title: (
       <>
-        Floor <Accent>reactions</Accent>
+        Reactions before the bridal <Accent>entrance</Accent>
       </>
     ),
     intro:
-      "Pick what happens when guests walk across your holding screen. They carry on after the bridal entrance, and if you pick a few they take turns. These are recordings from Stomp's floor, so hover or tap one to see it move.",
+      "Before the bridal entrance, while guests arrive, the floor can react when people walk across your holding screen. Pick as many as you like and they take turns, then they carry on after the entrance. If you'd rather wait, leave them all unticked and you can choose reactions for after the entrance instead. These are recordings from Stomp's floor, so hover or tap one to see it move.",
     preview: 'floor',
     phase: 'holding',
   },
@@ -92,6 +93,21 @@ const STEPS: StepDef[] = [
       </>
     ),
     intro: "Once you've made your entrance, what should the floor show until the dancing starts?",
+    preview: 'floor',
+    phase: 'after',
+  },
+  {
+    id: 'floor-after-reactions',
+    group: 'floor',
+    name: 'Reactions after the entrance',
+    short: 'Reactions after',
+    title: (
+      <>
+        Reactions after the bridal <Accent>entrance</Accent>
+      </>
+    ),
+    intro:
+      "You didn't pick any reactions before the entrance, so the floor stays still while guests arrive. After the bridal entrance, it can react when people walk across it until the dancing starts. Pick as many as you like and they take turns. If you'd rather not have any reactions at all, leave them unticked. These are recordings from Stomp's floor, so hover or tap one to see it move.",
     preview: 'floor',
     phase: 'after',
   },
@@ -183,7 +199,12 @@ const STEPS: StepDef[] = [
   },
 ];
 
-/** Bookings without portrait screens skip the screens steps. */
-export function stepsFor(screens: number): StepDef[] {
-  return screens > 0 ? STEPS : STEPS.filter((s) => s.group !== 'screens');
+/**
+ * Bookings without portrait screens skip the screens steps.
+ * The reactions step after the entrance only appears when nothing was picked before it.
+ */
+export function stepsFor(screens: number, showAfterReactions = false): StepDef[] {
+  return STEPS.filter(
+    (s) => (screens > 0 || s.group !== 'screens') && (showAfterReactions || s.id !== 'floor-after-reactions'),
+  );
 }

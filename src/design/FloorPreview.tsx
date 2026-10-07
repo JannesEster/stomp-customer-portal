@@ -13,7 +13,7 @@ import { holdingFor, reactionsFor, showsDancingVideos } from '../lib/design';
 import { drawFloor } from '../lib/floorRender';
 import { fontsToLoad } from '../lib/liveText';
 import { generatedFonts } from '../lib/generatedRender';
-import { INVITE_STYLE_ID } from '../lib/inviteStyle';
+import { generatedFor } from '../lib/inviteStyle';
 import type { Booking, DesignState, Phase } from '../types';
 import { Accent, PhaseSwitch, Section, phaseLabel } from './common';
 
@@ -46,7 +46,7 @@ export function FloorPreview({
   const floor = booking.floor ?? SAMPLE_FLOOR;
   const px = floorPixels(floor.widthM, floor.lengthM);
   const holding = holdingFor(design, phase);
-  const generated = holding?.styleId === INVITE_STYLE_ID ? design.inviteStyle : null;
+  const generated = generatedFor(design, holding?.styleId);
   const style = generated ? undefined : findStyle(holding?.styleId ?? null);
   const [grid, setGrid] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -110,6 +110,7 @@ export function FloorPreview({
   }, [px.width, px.height, videoSrc, liveDef, generated, names, eventDate, namesColour, fonts, message, grid]);
 
   const plan = reactionsFor(design, phase);
+  const dancingNote = phase === 'dancing' && design.dancingMode === 'different';
   const picked = plan.ids.map(findEffect).filter((e): e is EffectDef => !!e);
   const [reactionTurn, setReactionTurn] = useState(0);
   const reaction = picked.length ? picked[reactionTurn % picked.length] : null;
@@ -165,8 +166,10 @@ export function FloorPreview({
             holding
               ? `${phaseLabel(phase)} holding screen preview`
               : playlist
-                ? `${phaseLabel(phase)} colourful videos preview`
-                : `${phaseLabel(phase)} blank floor preview`
+                ? `${phaseLabel(phase)} assorted colourful videos preview`
+                : dancingNote
+                  ? `${phaseLabel(phase)} different design preview`
+                  : `${phaseLabel(phase)} blank floor preview`
           }
         />
         {reaction && (
@@ -182,6 +185,7 @@ export function FloorPreview({
             aria-hidden
           />
         )}
+        {reaction && <span className="preview-chip">Shown with people walking across it</span>}
       </div>
 
       <p className="floor-meta">
@@ -215,7 +219,13 @@ export function FloorPreview({
         <p className="muted small center">Your names on a plain floor for now. Once you pick a style, it shows here.</p>
       ) : clip ? (
         <p className="muted small center">
-          Colourful videos, now showing {clip.name}. Stomp mixes visuals like these through the dancing.
+          Assorted colourful videos, now showing {clip.name}. They change from one to the next through the dancing.
+        </p>
+      ) : dancingNote ? (
+        <p className="muted small center">
+          {(design.dancingNote ?? '').trim()
+            ? 'Stomp will follow your note for a different design while people dance.'
+            : 'Describe what you have in mind, and Stomp will follow that for dancing time.'}
         </p>
       ) : null}
       {reaction && (
@@ -225,11 +235,12 @@ export function FloorPreview({
             : picked.length > 1
               ? `Your reactions take turns, now showing ${reaction.name}.`
               : `Showing ${reaction.name}.`}
-          {reaction.fillsFloor && holding ? ' It brings its own scene, so it covers the design while it plays.' : ''}
+          {reaction.fillsFloor && holding ? ' It brings its own scene, so it covers the design while it plays.' : ''}{' '}
+          The preview shows people walking across the floor, not how it looks when nobody's on it.
         </p>
       )}
-      {!reaction && !playlist && (
-        <p className="muted small center">No reactions picked yet. Choose some in the Floor reactions step.</p>
+      {!reaction && !playlist && !dancingNote && (
+        <p className="muted small center">No reactions picked, so the floor won't react when people walk on it. You can add some in the reactions step.</p>
       )}
     </Section>
   );

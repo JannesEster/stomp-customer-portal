@@ -1,11 +1,11 @@
 import { findEffect, findScreenStyle, findStyle, timingLabel } from '../config';
 import { floorPixels, screenCount } from '../lib/dimensions';
 import { mediaFor, timingFor } from '../lib/design';
-import { formatAud, formatDateTime, formatEventDate } from '../lib/format';
+import { formatAud, formatDateTime, formatEventDate, formatTime } from '../lib/format';
 import { liveContentView } from '../lib/liveContent';
 import { formatStyleDate } from '../lib/liveText';
-import { INVITE_STYLE_ID, LAYOUT_LABELS, TYPOGRAPHY_LABELS } from '../lib/inviteStyle';
-import type { Booking, DesignState, GeneratedStyle, HoldingDesign } from '../types';
+import { generatedFor, LAYOUT_LABELS, TYPOGRAPHY_LABELS } from '../lib/inviteStyle';
+import type { Booking, DesignState, HoldingDesign } from '../types';
 import { Accent, PHASES } from './common';
 import { SCREEN_KIND_LABELS } from './ScreenSteps';
 
@@ -33,7 +33,10 @@ export function SummaryDialog({
           Your design <Accent>summary</Accent>
         </h2>
         {design.status === 'submitted' && design.submittedAt ? (
-          <p className="note">Submitted to Stomp on {formatDateTime(design.submittedAt)}.</p>
+          <p className="note">
+            Submitted to Stomp on {formatDateTime(design.submittedAt)}.
+            {design.submittedWithoutTimes && <span className="time-tag">Times not included</span>}
+          </p>
         ) : (
           <p className="note">This is still a draft. Stomp hasn't received it yet.</p>
         )}
@@ -76,6 +79,14 @@ export function DesignSummary({ booking, design }: { booking: Booking; design: D
             {booking.venue ? `, ${booking.venue}` : ''}
           </li>
           <li>
+            Bridal entrance: {design.entranceTime ? formatTime(design.entranceTime) : 'Not set'}
+            {design.submittedWithoutTimes && !design.entranceTime && <span className="time-tag">Times not included</span>}
+          </li>
+          <li>
+            Dancing starts: {design.dancingStarts ? formatTime(design.dancingStarts) : 'Not set'}
+            {design.submittedWithoutTimes && !design.dancingStarts && <span className="time-tag">Times not included</span>}
+          </li>
+          <li>
             {booking.floor && px
               ? `Floor ${booking.floor.widthM}m x ${booking.floor.lengthM}m (${px.width} x ${px.height} px)`
               : booking.floorSqm != null
@@ -94,7 +105,7 @@ export function DesignSummary({ booking, design }: { booking: Booking; design: D
 
       <div className="summary-group">
         <h3>Holding screen</h3>
-        <HoldingSummary h={design.designs.holding} eventDate={booking.eventDate} inviteStyle={design.inviteStyle} />
+        <HoldingSummary h={design.designs.holding} eventDate={booking.eventDate} design={design} />
         <ul>
           <li>
             Floor reactions:{' '}
@@ -110,7 +121,19 @@ export function DesignSummary({ booking, design }: { booking: Booking; design: D
         {design.afterMode === 'same' ? (
           <p>The holding screen stays on until dancing time.</p>
         ) : (
-          <HoldingSummary h={design.designs.after} eventDate={booking.eventDate} inviteStyle={design.inviteStyle} />
+          <HoldingSummary h={design.designs.after} eventDate={booking.eventDate} design={design} />
+        )}
+        {design.reactions.length > 0 ? (
+          <p>The reactions from before the entrance carry on.</p>
+        ) : (
+          <ul>
+            <li>
+              Floor reactions:{' '}
+              {design.afterReactions.length
+                ? design.afterReactions.map((id) => findEffect(id)?.name ?? id).join(', ')
+                : 'None'}
+            </li>
+          </ul>
         )}
       </div>
 
@@ -119,9 +142,12 @@ export function DesignSummary({ booking, design }: { booking: Booking; design: D
         {design.dancingMode === 'blank' ? (
           <p>Blank floor with assorted reactions.</p>
         ) : design.dancingMode === 'videos' ? (
-          <p>Colourful videos.</p>
+          <p>Assorted colourful videos.</p>
         ) : (
-          <HoldingSummary h={design.designs.dancing} eventDate={booking.eventDate} inviteStyle={design.inviteStyle} />
+          <p>
+            A different design.{' '}
+            {(design.dancingNote ?? '').trim() || 'No note yet.'}
+          </p>
         )}
       </div>
 
@@ -191,14 +217,14 @@ export function DesignSummary({ booking, design }: { booking: Booking; design: D
 function HoldingSummary({
   h,
   eventDate,
-  inviteStyle,
+  design,
 }: {
   h: HoldingDesign;
   eventDate: string;
-  inviteStyle: GeneratedStyle | null;
+  design: DesignState;
 }) {
   const style = findStyle(h.styleId);
-  const generated = h.styleId === INVITE_STYLE_ID ? inviteStyle : null;
+  const generated = generatedFor(design, h.styleId);
   const styleName = generated
     ? `From your invite (${TYPOGRAPHY_LABELS[generated.typography]}, ${LAYOUT_LABELS[generated.layout]})`
     : (style?.name ?? 'Not chosen yet');

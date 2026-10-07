@@ -4,6 +4,12 @@ import { contrastRatio, ensureContrast, hexLuminance, hexSaturation, mixHex } fr
 /** The styleId a design uses to show the style generated from its invite. */
 export const INVITE_STYLE_ID = 'invite';
 
+/** A different generated version, chosen for after the bridal entrance. */
+export const INVITE_AFTER_STYLE_ID = 'invite-after';
+
+/** Five kinds of lettering, each with four layouts, then the set repeats. */
+export const INVITE_VARIANT_COUNT = 20;
+
 export const TYPOGRAPHY_LABELS: Record<InviteTypography, string> = {
   modern: 'Modern',
   classic: 'Classic',
@@ -178,6 +184,21 @@ export function generateInviteStyle(input: InviteInputs, variant: number): Gener
     noteCues: note.cues,
     basedOn: basedOnKey(input),
   };
+}
+
+/** Every generated version except the one the couple already has. */
+export function otherInviteStyles(current: GeneratedStyle, input: InviteInputs): GeneratedStyle[] {
+  const taken = current.variant % INVITE_VARIANT_COUNT;
+  return Array.from({ length: INVITE_VARIANT_COUNT }, (_, v) => generateInviteStyle(input, v)).filter(
+    (s) => s.variant !== taken,
+  );
+}
+
+/** The generated design a style id points at, if it points at one. */
+export function generatedFor(design: DesignState, styleId: string | null | undefined): GeneratedStyle | null {
+  if (styleId === INVITE_STYLE_ID) return design.inviteStyle;
+  if (styleId === INVITE_AFTER_STYLE_ID) return design.afterInviteStyle;
+  return null;
 }
 
 function darkFloor(colour: string): string {
