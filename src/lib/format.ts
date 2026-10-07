@@ -7,7 +7,11 @@ export function formatAud(amount: number): string {
 }
 
 export function formatEventDate(isoDate: string): string {
-  const [y, m, d] = isoDate.split('-').map(Number);
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate);
+  if (!match) return '';
+  const y = Number(match[1]);
+  const m = Number(match[2]);
+  const d = Number(match[3]);
   return new Intl.DateTimeFormat('en-AU', {
     weekday: 'long',
     day: 'numeric',

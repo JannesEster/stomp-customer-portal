@@ -2,6 +2,11 @@ import { extrasConfig, type ExtrasConfig } from '../config';
 import type { Booking } from '../types';
 import { formatAud } from './format';
 
+/**
+ * PENDING Jannes's decision. Ticking live content records a request only.
+ * Whether the booking price changes is not decided yet.
+ */
+
 export interface LiveContentView {
   /** Already part of the booking, so no extra charge */
   included: boolean;

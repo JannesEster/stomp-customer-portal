@@ -8,7 +8,7 @@ import {
   type EffectDef,
   type LiveTextDef,
 } from '../config';
-import { floorPixels } from '../lib/dimensions';
+import { floorPixels, SAMPLE_FLOOR } from '../lib/dimensions';
 import { holdingFor, reactionsFor, showsDancingVideos } from '../lib/design';
 import { drawFloor } from '../lib/floorRender';
 import { fontsToLoad } from '../lib/liveText';
@@ -43,7 +43,8 @@ export function FloorPreview({
   phase: Phase;
   onPhaseChange: (p: Phase) => void;
 }) {
-  const px = floorPixels(booking.floor.widthM, booking.floor.lengthM);
+  const floor = booking.floor ?? SAMPLE_FLOOR;
+  const px = floorPixels(floor.widthM, floor.lengthM);
   const holding = holdingFor(design, phase);
   const generated = holding?.styleId === INVITE_STYLE_ID ? design.inviteStyle : null;
   const style = generated ? undefined : findStyle(holding?.styleId ?? null);
@@ -121,7 +122,13 @@ export function FloorPreview({
           Floor <Accent>preview</Accent>
         </>
       }
-      intro="This is your dance floor at its exact size. The reactions are recordings from Stomp's floor, with someone walking across it."
+      intro={
+        booking.floor
+          ? "This is your dance floor at its exact size. The reactions are recordings from Stomp's floor, with someone walking across it."
+          : booking.floorSqm != null
+            ? `This booking lists ${booking.floorSqm} sqm. That is not a floor size the portal can draw yet, so this is a ${SAMPLE_FLOOR.widthM}m x ${SAMPLE_FLOOR.lengthM}m sample. It is not your floor.`
+            : `Your floor size is not on this booking yet, so this is a ${SAMPLE_FLOOR.widthM}m x ${SAMPLE_FLOOR.lengthM}m sample. It is not your floor.`
+      }
     >
       <div className="toolbar">
         <PhaseSwitch value={phase} onChange={onPhaseChange} label="Preview phase" />
@@ -178,12 +185,20 @@ export function FloorPreview({
       </div>
 
       <p className="floor-meta">
-        <strong>
-          {px.width} x {px.height} px
-        </strong>{' '}
-        <span className="muted">
-          {booking.floor.widthM}m x {booking.floor.lengthM}m, {px.tilesX} x {px.tilesY} tiles
-        </span>
+        {booking.floor ? (
+          <>
+            <strong>
+              {px.width} x {px.height} px
+            </strong>{' '}
+            <span className="muted">
+              {booking.floor.widthM}m x {booking.floor.lengthM}m, {px.tilesX} x {px.tilesY} tiles
+            </span>
+          </>
+        ) : (
+          <span className="muted">
+            Sample preview, {SAMPLE_FLOOR.widthM}m x {SAMPLE_FLOOR.lengthM}m. It is not your floor.
+          </span>
+        )}
       </p>
       {generated ? (
         <p className="muted small center">

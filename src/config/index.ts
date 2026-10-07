@@ -168,7 +168,8 @@ export interface ExtrasConfig {
 
 /** Media paths in the config start at the site root, but the site can be served from a subfolder. */
 export function fromRoot(path: string): string {
-  return path.startsWith('/') ? import.meta.env.BASE_URL + path.slice(1) : path;
+  const base = import.meta.env?.BASE_URL ?? '/';
+  return path.startsWith('/') ? base + path.slice(1) : path;
 }
 
 const effects = effectsJson as EffectsConfig;

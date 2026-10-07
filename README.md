@@ -2,11 +2,13 @@
 
 A web portal where a booked Stomp Sphere customer plans what appears on their LED dance floor and portrait screens on the night. The **Design** tab is fully built, as a guided flow of one step at a time. **My Bookings** and **Notes/Details** are simple placeholders.
 
-Everything runs locally on seed data. There are no live external services, no real customer data, and nothing leaves the browser.
+A link shaped `/p/<token>` loads one booking from Airtable through a small Node server. The token never goes in the browser bundle. With no token in the URL, the app still runs on seed data so local demos and tests keep working.
 
 ## Live site
 
-The demo is published with GitHub Pages at https://jannesester.github.io/stomp-customer-portal/. On every push to `main`, `.github/workflows/deploy.yml` runs the tests, builds with `--mode pages` (which serves the site from the `/stomp-customer-portal/` subfolder) and deploys it. It runs on the same seed data, so each visitor's design is saved only in their own browser. Media paths in the config files start from the site root, and `fromRoot` in `src/config/index.ts` adds the subfolder.
+The seed demo is published with GitHub Pages at https://jannesester.github.io/stomp-customer-portal/. On every push to `main`, `.github/workflows/deploy.yml` runs the tests, builds with `--mode pages` (which serves the site from the `/stomp-customer-portal/` subfolder) and deploys it. GitHub Pages is static. It has no API, so it cannot show real Airtable bookings. It keeps using the seed data, and each visitor's design is saved only in their own browser. Whether Pages stays up is pending Jannes's decision. Real portal links are served by the Render service described below.
+
+Media paths in the config files start from the site root, and `fromRoot` in `src/config/index.ts` adds the subfolder.
 
 ## Setup
 
@@ -14,16 +16,20 @@ Requires Node 20 or newer.
 
 ```bash
 npm install
-npm start          # dev server at http://localhost:5173, opens the Design tab
+npm run dev        # seed data at http://localhost:5173, opens the Design tab
+npm start          # serves dist/ and the API on 0.0.0.0:$PORT (3000 locally)
 ```
+
+`npm start` needs `npm run build` first, because it serves the built files in `dist/`. While `npm run dev` is running, `/api` is proxied to `http://127.0.0.1:3000`, so a second terminal can run `npm start` if you want to try a token link against the dev UI.
 
 Other scripts:
 
 | Script | What it does |
 | --- | --- |
-| `npm test` | Unit tests (Vitest): floor pixel formula, screen count, live content rules, upload validation, phase logic, screen timings, and that every media file named in the config exists |
+| `npm test` | Unit tests (Vitest): floor pixel formula, screen count, live content rules, upload validation, phase logic, screen timings, token lookup, the token generator, and that every media file named in the config exists |
 | `npm run typecheck` | TypeScript check |
 | `npm run build` | Typecheck and production build to `dist/` |
+| `npm run portal:tokens` | Dry run. Lists bookings with an empty Portal token. Add `-- --write` to save tokens. |
 
 ### Demo bookings
 
@@ -40,11 +46,13 @@ Editing `src/mock/bookings.json` (floor size, `screensBooked`, `extras`) changes
 ## Architecture
 
 ```
+server/            Express app: /healthz, /api/portal/:token, and the built SPA
+scripts/           portal:tokens, the Airtable token filler
 src/
   config/          Editable JSON config plus typed loaders (index.ts)
   mock/            Seed customers and bookings
-  services/        The three swappable interfaces and their mocks
-  lib/             Pure logic: dimensions, floor renderer, live content rules, validation
+  services/        The three swappable interfaces, the token portal, and the mocks
+  lib/             Pure logic: dimensions, floor renderer, live content rules, Airtable mapping, validation
   hooks/           useDesignState (load, autosave, submit), useFileUrl, useImage
   design/          Design tab steps, step list, previews and summary
   tabs/            My Bookings, Notes/Details, Design
@@ -82,7 +90,7 @@ Styling follows stompsphere.com.au: black background, Inter for text, italic Pla
 
 ## The three interfaces
 
-All three are wired up in `src/services/index.tsx` (`defaultServices`). To swap one for a real implementation, change that file only.
+All three are wired up in `src/services/index.tsx` (`defaultServices`). A path under `/p/<token>` uses `TokenAuthProvider` and `ApiBookingSource`. Any other path uses the mocks. Storage is still the browser store.
 
 ### `AuthProvider` (`services/auth.ts`)
 
@@ -91,7 +99,7 @@ getCurrentCustomer(): Promise<Customer | null>
 signOut(): Promise<void>
 ```
 
-Mock: `MockAuthProvider` always signs in a seeded customer from `mock/customers.json`, chosen by `?customer=`. The demo picker only appears while the mock is in use.
+`TokenAuthProvider` treats the portal link as the login. `MockAuthProvider` signs in a seeded customer from `mock/customers.json`, chosen by `?customer=`. The demo picker only appears while the mock is in use. The interface stays so a real account login can replace the token link later.
 
 ### `BookingSource` (`services/bookings.ts`)
 
@@ -99,7 +107,7 @@ Mock: `MockAuthProvider` always signs in a seeded customer from `mock/customers.
 getBookingsForCustomer(customer: Customer): Promise<Booking[]>
 ```
 
-Mock: `MockBookingSource` reads `mock/bookings.json`. The portal shows the customer's first booking. Customers can't change floor size or screen count in the portal.
+`ApiBookingSource` reads the one booking returned by `GET /api/portal/:token`. `MockBookingSource` reads `mock/bookings.json`. The portal shows the customer's first booking. Customers can't change floor size or screen count in the portal.
 
 ### `StorageProvider` (`services/storage.ts`)
 
@@ -111,7 +119,7 @@ getFileUrl(fileId): Promise<string | null>
 deleteFile(fileId): Promise<void>
 ```
 
-Mock: `LocalStorageProvider` keeps JSON in `localStorage` (keys `stomp-portal:design:<bookingId>` and `stomp-portal:notes:<bookingId>`) and file blobs in IndexedDB (`stomp-portal-files`), because `localStorage` is too small for photos and video. Designs only store file references (`StoredFile`), never file contents.
+PENDING Jannes's decision. `LocalStorageProvider` keeps JSON in `localStorage` (keys `stomp-portal:design:<bookingId>` and `stomp-portal:notes:<bookingId>`) and file blobs in IndexedDB (`stomp-portal-files`), because `localStorage` is too small for photos and video. Designs only store file references (`StoredFile`), never file contents. The portal says this on the page.
 
 ## Config files (`src/config/`)
 
@@ -132,15 +140,99 @@ To add a holding screen style, export it from Canva twice: once as the sample wi
 
 To add a screen design, export it from Canva as a 512 x 1536 PNG, the exact size of the portrait screens, and convert it to a high quality JPEG in `public/screens/` named after the design, for example `ffmpeg -i design.png -pix_fmt yuvj444p -q:v 2 public/screens/cherry-blossom.jpg` (full colour detail keeps thin coloured lettering crisp). Then add an entry to `screen-styles.json`; the gallery and the screens preview update with no code change, and the tests check the image exists. Remove an entry to retire a design.
 
+## Environment variables
+
+The server reads these. Defaults match the Stomp base as of 7 October 2026. Only `AIRTABLE_TOKEN` is a secret. It stays on the server.
+
+| Variable | Default | Notes |
+| --- | --- | --- |
+| `AIRTABLE_TOKEN` | unset | Airtable personal access token. Required for real lookups and for `portal:tokens`. `sync: false` in `render.yaml`. |
+| `AIRTABLE_BASE_ID` | `appwMfJFb7rLDqJ30` | |
+| `AIRTABLE_BOOKINGS_TABLE` | `Bookings` | Name or table id `tblvAOcBjAim6XdTG` |
+| `AIRTABLE_LEADS_TABLE` | `Leads` | Name or table id `tblcUD1YwecLmbeWR` |
+| `AIRTABLE_VENUES_TABLE` | `Venues` | Name or table id `tbl7DkeOKcAboiqRK` |
+| `PORTAL_TOKEN_FIELD` | `Portal token` | Field name used in `filterByFormula`. If you set a field id here, also set `PORTAL_TOKEN_FIELD_NAME`. |
+| `PORTAL_TOKEN_FIELD_ID` | unset | Optional write key. The known id is `fldBr9O48s8nRuxrm`. The filter still uses the field name. |
+| `PORTAL_TOKEN_FIELD_NAME` | `Portal token` | Used only when `PORTAL_TOKEN_FIELD` is a field id. |
+| `PUBLIC_BASE_URL` | unset | When set, the API adds `portalUrl` as `{PUBLIC_BASE_URL}/p/{token}`. Example: `https://stomp-customer-portal.onrender.com`. |
+| `PORT` | `3000` | Render sets this. The server listens on `0.0.0.0`. |
+| `BOOKING_NAME_FIELD` | `Booking name` | |
+| `LEAD_LINK_FIELD` | `Lead` | |
+| `EVENT_DATE_FIELD` | `Event date` | |
+| `VENUE_LINK_FIELD` | `Venue` | |
+| `ADDRESS_FIELD` | `Address` | |
+| `PACKAGE_FIELD` | `Package` | |
+| `FLOOR_SQM_FIELD` | `Floor sqm` | |
+| `LEAD_NAME_FIELD` | `Name` | |
+| `LEAD_EMAIL_FIELD` | `Email` | |
+| `LEAD_ADDONS_FIELD` | `Add-ons` | |
+| `LEAD_VENUE_NAME_FIELD` | `Venue name` | |
+| `VENUE_NAME_FIELD` | `Venue name` | |
+| `VENUE_ADDRESS_FIELD` | `Address` | |
+
+When `AIRTABLE_TOKEN` is unset, `GET /api/portal/:token` returns 503 for a well formed token and the seed demo at `/` still works.
+
+## Portal tokens
+
+Each booking needs an unguessable token in **Portal token** (single line text). The customer link is `/p/<token>`.
+
+```bash
+npm run portal:tokens                 # dry run, writes nothing
+npm run portal:tokens -- --write      # set a token on bookings that do not have one
+```
+
+The script needs `AIRTABLE_TOKEN`. It lists only bookings whose Portal token is blank, and on `--write` it patches that field alone. It never overwrites a token that is already set, and it never writes **Portal link**. Tokens are 32 bytes (256 bits) of URL-safe base64. Do not run `--write` until you mean to fill blank tokens.
+
+**Portal link** (`fldMBLZi5ooEBu7kP`) is a formula on the booking. Airtable builds it. The server does not read or write it. If `PUBLIC_BASE_URL` is set, the API returns a link it built itself, which is useful while the formula still points at a placeholder domain.
+
+`GET /api/portal/:token` looks up exactly one Bookings record. The token is checked before the request (at least 22 URL-safe characters, 128 bits). The Airtable formula escapes quotes. Unknown tokens, and more than one match, are 404. There is no route that lists bookings. Lookups are limited to 30 a minute per IP.
+
+## Airtable field mapping
+
+The API returns only the portal's customer and booking fields. Linked records are loaded by id after that one booking is found.
+
+| Portal | Airtable |
+| --- | --- |
+| Customer name | Leads **Name**. If that is empty, Bookings **Booking name**. |
+| Email | Leads **Email** |
+| Event date | Bookings **Event date** |
+| Venue | Venues **Venue name**, otherwise Leads **Venue name** |
+| Address | Bookings **Address**, otherwise Venues **Address**. Shown when it is present. |
+| Package | Bookings **Package**. Shown when it is present. |
+| Floor | Bookings **Floor sqm**. 12 sqm is 4m x 3m. 27 sqm is 6m x 4.5m. Any other area is shown as square metres only. Width and length are not invented. |
+| Screens | Inferred from Leads **Add-ons** when an option states a count, for example `2 portrait screens`, `portrait screen`, or `no screens`. If nothing mentions screens, the portal says they are not listed yet and hides the screen steps. |
+| Extras | Leads **Add-ons**. An option whose name matches `extras.json` (Live event streaming) uses that extra id. Other options are shown under their Airtable name. Screen options are not repeated as extras. |
+| Portal URL | Built from `PUBLIC_BASE_URL` and the token. Not copied from the Portal link formula. |
+
+Not returned to the browser: **Important notes**, **Customer Xero account link**, Fillout ids, the booking form URL, quotes, deposits, balances, invoice links, contract status, Activity, Busy Dates, Wedding Planners, hire notes, content notes, and the lead's phone, guest count, and event type.
+
+Missing date, venue, floor, or screens stay blank in the UI. The floor preview says when it is using a 6m x 4.5m sample, and that sample is not saved as the customer's floor.
+
+## Deploy on Render
+
+`render.yaml` defines a free Node web service named `stomp-customer-portal`.
+
+| | |
+| --- | --- |
+| Build | `npm ci && npm test && npm run build` |
+| Start | `npm start` (`tsx server/index.ts`) |
+| Health check | `GET /healthz` |
+| Node | `NODE_VERSION` `22.14.0` |
+| Region | Singapore |
+
+The service listens on `0.0.0.0:$PORT`. Requests such as `/p/<token>` that are not files fall back to `index.html`, so a portal link loads the app. Set `AIRTABLE_TOKEN` in the Render dashboard. Because that variable is `sync: false`, a blueprint sync will not wipe it.
+
+Free web services sleep after a stretch of no traffic. The first visit after that is slow.
+
+GitHub Pages is unchanged and still has no API. It will not show real bookings.
+
 ## Open questions
 
-These are left mocked on purpose. Nothing here has been decided.
-
-1. **Hosting.** Where the portal is deployed.
-2. **Customer login method.** How customers sign in (replaces `MockAuthProvider`).
-3. **Storage and upload limits.** Where design data and uploaded files are stored, and the real size limits (replaces `LocalStorageProvider`, limits in `portal.json`).
-4. **Airtable link.** Whether and how the portal links to the Stomp Airtable Leads/Bookings base (`appwMfJFb7rLDqJ30`), and which fields map to floor size, screens booked and extras (replaces `MockBookingSource`).
-5. **Live content pricing flow.** When a customer whose booking doesn't include Live event streaming ticks Add live content, does the booking price change, or does Stomp just get notified? For now the tick is recorded as a request (`liveContentRequested` in the design) and nothing is charged.
+1. **Hosting.** The Render blueprint is in the repo. GitHub Pages remains for the seed demo and has no API. Which address customers should use is pending Jannes's decision.
+2. **Customer login.** The portal link is the login for now (`TokenAuthProvider`). `AuthProvider` stays so a real account login can replace it later.
+3. **Storage and upload limits.** Pending Jannes's decision. `LocalStorageProvider` still keeps designs and files in this browser.
+4. **Floor size and screens.** Airtable has square metres, not width and length, and no screens count. Only 12 sqm and 27 sqm map to a size. Screens are inferred from lead add-ons when the option says so.
+5. **Live content pricing.** Pending Jannes's decision. When a booking does not include Live event streaming, the tick is still only a request (`liveContentRequested`). Nothing is charged in the portal.
 
 ## Copy conventions
 

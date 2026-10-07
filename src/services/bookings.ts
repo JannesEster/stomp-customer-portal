@@ -2,8 +2,9 @@ import type { Booking, Customer } from '../types';
 import bookings from '../mock/bookings.json';
 
 /**
- * Where bookings come from. Whether this links to the Stomp Airtable base,
- * and which fields map to floor size, screens and extras, is an open question.
+ * Where bookings come from. The portal only ever talks to this interface.
+ * ApiBookingSource loads the one booking for a /p/<token> link.
+ * MockBookingSource stays for local demos and tests.
  */
 export interface BookingSource {
   getBookingsForCustomer(customer: Customer): Promise<Booking[]>;

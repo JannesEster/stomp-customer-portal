@@ -5,7 +5,7 @@ import { Accent } from '../design/common';
 import type { Booking } from '../types';
 
 export function MyBookingsTab({ booking }: { booking: Booking }) {
-  const px = floorPixels(booking.floor.widthM, booking.floor.lengthM);
+  const px = booking.floor ? floorPixels(booking.floor.widthM, booking.floor.lengthM) : null;
   const screens = screenCount(booking.screensBooked);
   const extras = booking.extras.map((id) => extrasConfig.extras.find((e) => e.id === id)?.name ?? id);
 
@@ -18,16 +18,36 @@ export function MyBookingsTab({ booking }: { booking: Booking }) {
         <dt>Couple</dt>
         <dd>{booking.coupleNames}</dd>
         <dt>Event date</dt>
-        <dd>{formatEventDate(booking.eventDate)}</dd>
+        <dd>{formatEventDate(booking.eventDate) || 'Not listed yet'}</dd>
         <dt>Venue</dt>
-        <dd>{booking.venue}</dd>
+        <dd>{booking.venue || 'Not listed yet'}</dd>
+        {booking.address ? (
+          <>
+            <dt>Address</dt>
+            <dd>{booking.address}</dd>
+          </>
+        ) : null}
+        {booking.packageName ? (
+          <>
+            <dt>Package</dt>
+            <dd>{booking.packageName}</dd>
+          </>
+        ) : null}
         <dt>Dance floor</dt>
         <dd>
-          {formatMetres(booking.floor.widthM)} x {formatMetres(booking.floor.lengthM)} ({px.tilesX} x {px.tilesY}{' '}
-          tiles)
+          {booking.floor && px ? (
+            <>
+              {formatMetres(booking.floor.widthM)} x {formatMetres(booking.floor.lengthM)} ({px.tilesX} x {px.tilesY}{' '}
+              tiles)
+            </>
+          ) : booking.floorSqm != null ? (
+            <>{booking.floorSqm} sqm. Width and length are not listed yet.</>
+          ) : (
+            <>Not listed yet.</>
+          )}
         </dd>
         <dt>Portrait screens</dt>
-        <dd>{screens === 0 ? 'None' : screens}</dd>
+        <dd>{booking.screensBooked == null ? 'Not listed yet' : screens === 0 ? 'None' : screens}</dd>
         <dt>Extras</dt>
         <dd>{extras.length ? extras.join(', ') : 'None'}</dd>
       </dl>

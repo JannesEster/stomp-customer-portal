@@ -28,6 +28,10 @@ export function LiveContentSection({
         {view.label}
       </label>
       <p className="muted">{extra?.description}</p>
+      <p className="muted small">
+        Whether adding live content changes your booking price is pending Jannes's decision. Nothing is charged in the
+        portal.
+      </p>
       {!view.included && view.checked && (
         <p className="note">
           Thanks, we've noted your request. Stomp will be in touch to confirm. Nothing is charged through the portal.

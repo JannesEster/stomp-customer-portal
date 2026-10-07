@@ -13,12 +13,23 @@ export interface Booking {
   id: string;
   customerId: string;
   coupleNames: string;
-  /** ISO date, YYYY-MM-DD */
+  /** ISO date, YYYY-MM-DD. Empty when the booking has no date. */
   eventDate: string;
   venue: string;
-  floor: { widthM: number; lengthM: number };
-  screensBooked: number;
-  /** Extra ids, matching src/config/extras.json */
+  /** Street address when the booking has one. Seeded demos omit this. */
+  address?: string | null;
+  /** Package name when the booking has one. Seeded demos omit this. */
+  packageName?: string | null;
+  /**
+   * Width and length when known. Null when Airtable has no sqm, or a sqm other than 12 or 27.
+   * Do not invent a size for the other areas.
+   */
+  floor: { widthM: number; lengthM: number } | null;
+  /** Square metres from Airtable. Seeded demos omit this. */
+  floorSqm?: number | null;
+  /** Null when portrait screens could not be inferred. Zero means none booked. */
+  screensBooked: number | null;
+  /** Extra ids, matching src/config/extras.json, or an add-on name when it is not a known extra. */
   extras: string[];
 }
 

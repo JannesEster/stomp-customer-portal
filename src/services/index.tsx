@@ -1,20 +1,13 @@
 import { createContext, useContext, type ReactNode } from 'react';
-import { MockAuthProvider, type AuthProvider } from './auth';
-import { MockBookingSource, type BookingSource } from './bookings';
-import { LocalStorageProvider, type StorageProvider } from './storage';
+import { servicesForPath, type Services } from './selectServices';
 
-export interface Services {
-  auth: AuthProvider;
-  bookings: BookingSource;
-  storage: StorageProvider;
-}
+export type { Services };
+export { servicesForPath };
 
-/** Swap any of these for a real implementation once the open questions are decided. */
-export const defaultServices: Services = {
-  auth: new MockAuthProvider(),
-  bookings: new MockBookingSource(),
-  storage: new LocalStorageProvider(),
-};
+/** Token links use the API. Every other path keeps the seeded demo. */
+export const defaultServices: Services = servicesForPath(
+  typeof window === 'undefined' ? '/' : window.location.pathname,
+);
 
 const ServicesContext = createContext<Services>(defaultServices);
 
