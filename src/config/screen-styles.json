@@ -1,0 +1,67 @@
+{
+  "styles": [
+    {
+      "id": "cherry-blossom",
+      "name": "Cherry blossom",
+      "description": "A pink blossom wreath on deep plum.",
+      "image": "/screens/cherry-blossom.jpg",
+      "kind": "welcome"
+    },
+    {
+      "id": "pink-garden",
+      "name": "Pink garden",
+      "description": "Bright florals and a gold ring on pink.",
+      "image": "/screens/pink-garden.jpg",
+      "kind": "welcome"
+    },
+    {
+      "id": "gilded-roses",
+      "name": "Gilded roses",
+      "description": "Garden roses and a fine gold frame on charcoal.",
+      "image": "/screens/gilded-roses.jpg",
+      "kind": "welcome"
+    },
+    {
+      "id": "classic-charcoal",
+      "name": "Classic charcoal",
+      "description": "Tall, fine capitals on charcoal. Simple and timeless.",
+      "image": "/screens/classic-charcoal.jpg",
+      "kind": "welcome"
+    },
+    {
+      "id": "midnight-quote",
+      "name": "Midnight quote",
+      "description": "White lettering on black, with room for a favourite quote.",
+      "image": "/screens/midnight-quote.jpg",
+      "kind": "welcome"
+    },
+    {
+      "id": "gold-leaf-linen",
+      "name": "Gold leaf linen",
+      "description": "Gold leaves and glitter on cream linen, with your ceremony running order.",
+      "image": "/screens/gold-leaf-linen.jpg",
+      "kind": "schedule"
+    },
+    {
+      "id": "rose-quartz",
+      "name": "Rose quartz",
+      "description": "Navy roses on soft pink marble, introducing your wedding party.",
+      "image": "/screens/rose-quartz.jpg",
+      "kind": "schedule"
+    },
+    {
+      "id": "blush-wildflowers",
+      "name": "Blush wildflowers",
+      "description": "Watercolour wildflowers on blush, introducing your wedding party.",
+      "image": "/screens/blush-wildflowers.jpg",
+      "kind": "schedule"
+    },
+    {
+      "id": "something-blue",
+      "name": "Something blue",
+      "description": "Blue roses and a gold frame on sky blue watercolour, with your ceremony running order.",
+      "image": "/screens/something-blue.jpg",
+      "kind": "schedule"
+    }
+  ]
+}

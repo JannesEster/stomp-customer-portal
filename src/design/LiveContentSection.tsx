@@ -2,7 +2,6 @@ import { extrasConfig } from '../config';
 import { liveContentView } from '../lib/liveContent';
 import type { UpdateDesign } from '../hooks/useDesignState';
 import type { Booking, DesignState } from '../types';
-import { Accent, Section } from './common';
 
 export function LiveContentSection({
   booking,
@@ -17,13 +16,8 @@ export function LiveContentSection({
   const extra = extrasConfig.extras.find((e) => e.id === extrasConfig.liveContentExtraId);
 
   return (
-    <Section
-      title={
-        <>
-          Add live <Accent>content</Accent>
-        </>
-      }
-    >
+    <div className="live-content">
+      <h3>Add live content</h3>
       <label className={view.locked ? 'check big locked' : 'check big'}>
         <input
           type="checkbox"
@@ -39,6 +33,6 @@ export function LiveContentSection({
           Thanks, we've noted your request. Stomp will be in touch to confirm. Nothing is charged through the portal.
         </p>
       )}
-    </Section>
+    </div>
   );
 }

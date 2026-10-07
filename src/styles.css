@@ -244,6 +244,22 @@ p {
   max-width: 46rem;
 }
 
+.eyebrow {
+  display: block;
+  margin-bottom: 0.6rem;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+h2[tabindex='-1']:focus {
+  outline: none;
+}
+
 .two-col {
   display: grid;
   gap: 1.25rem;
@@ -254,10 +270,6 @@ p {
   flex-wrap: wrap;
   gap: 0.75rem;
   align-items: center;
-}
-
-.row.wrap {
-  align-items: flex-end;
 }
 
 .row.end {
@@ -305,6 +317,7 @@ p {
   }
   .submit-bar .row button {
     flex: 1 1 auto;
+    min-width: 0;
     min-height: 40px;
     padding: 10px 12px;
     font-size: 0.875rem;
@@ -328,9 +341,6 @@ p {
   .two-col {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 2rem;
-  }
-  .screens-layout {
-    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
   }
 }
 
@@ -497,11 +507,6 @@ legend {
   margin-bottom: 1.1rem;
   font-size: 0.875rem;
   color: var(--muted);
-}
-
-.field.inline {
-  margin-bottom: 0;
-  flex: 1 1 12rem;
 }
 
 .check {
@@ -678,54 +683,181 @@ legend {
   color: var(--muted);
 }
 
-/* Part of the night tabs */
+/* Screen design gallery. The radios are hidden, so the card shows their focus. */
 
-.subtabs {
+.screen-style-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+@media (min-width: 600px) {
+  .screen-style-grid {
+    grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr));
+  }
+}
+
+.screen-style-card {
+  position: relative;
+  cursor: pointer;
+}
+
+.screen-style-card:has(input:focus-visible) {
+  outline: 2px solid var(--blue);
+  outline-offset: 3px;
+}
+
+/* Guided steps */
+
+.design {
+  scroll-margin-top: calc(var(--header-h) + 5.25rem);
+}
+
+.steps {
+  margin-bottom: 1.25rem;
+}
+
+.steps-count {
   display: flex;
-  gap: 0.25rem;
-  margin: 0.75rem 0 1.25rem;
-  border-bottom: 1px solid var(--panel-border);
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0 0 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.steps-bar {
+  flex: 1;
+  height: 4px;
+  border-radius: 4px;
+  background: var(--panel-border);
+  overflow: hidden;
+}
+
+.steps-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--gradient);
+  transition: width 0.3s;
+}
+
+.steps-list,
+.steps-group ol {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.steps-list {
+  gap: 1.25rem;
+  margin: 0 -1rem;
+  padding: 0 1rem;
   overflow-x: auto;
-  overflow-y: hidden;
   scrollbar-width: none;
 }
 
-.subtab {
-  position: relative;
+.steps-group {
   flex: none;
-  background: transparent;
-  color: var(--muted);
-  box-shadow: none;
-  border-radius: 0;
-  padding: 0.75rem 1rem;
-  font-size: 0.95rem;
+}
+
+.steps-group ol {
+  gap: 0.375rem;
+}
+
+.steps-group-name {
+  display: block;
+  font-size: 0.7rem;
   font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
-.subtab:hover:not(:disabled) {
+.step {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 0.45rem;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.5rem 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.step::before {
+  content: '';
+  height: 4px;
+  border-radius: 4px;
+  background: var(--panel-border);
+  transition: background-color 0.2s;
+}
+
+.step:hover:not(:disabled) {
   color: var(--white);
   box-shadow: none;
 }
 
-.subtab.active {
+.step.done,
+.step[aria-current='step'] {
   color: var(--white);
 }
 
-.subtab.active::after {
-  content: '';
-  position: absolute;
-  left: 0.75rem;
-  right: 0.75rem;
-  bottom: 0;
-  height: 3px;
-  border-radius: 3px;
+.step.done::before {
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.step[aria-current='step'] {
+  font-weight: 700;
+}
+
+.step[aria-current='step']::before {
   background: var(--gradient);
 }
 
-.reactions {
-  margin-top: 1.5rem;
-  padding-top: 0.25rem;
-  border-top: 1px solid var(--card-border);
+.step-num {
+  margin-right: 0.1rem;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.7;
+}
+
+@media (min-width: 960px) {
+  .steps-count {
+    display: none;
+  }
+  .steps-list {
+    gap: 1.5rem;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+  }
+  .steps-group {
+    flex: var(--steps) 1 0;
+    min-width: 0;
+  }
+  .steps-group li {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .step {
+    white-space: normal;
+  }
+}
+
+.details-step {
+  max-width: 34rem;
+}
+
+.details-step .details {
+  margin: 0.25rem 0 1rem;
 }
 
 @media (min-width: 860px) {
@@ -1122,7 +1254,6 @@ legend {
 
 .screen-frame {
   width: 100%;
-  max-height: 60vh;
   margin: 0 auto;
   background: var(--black);
   border-radius: 6px;
@@ -1158,19 +1289,22 @@ legend {
   font-weight: 400;
 }
 
+.uploader {
+  margin-top: 1.5rem;
+}
+
 .uploader h3 {
   margin-top: 0;
 }
 
-.media-group {
-  border-top: 1px solid var(--card-border);
+.uploader .note {
   margin-top: 1rem;
 }
 
 .media-list {
   list-style: none;
   padding: 0;
-  margin: 0;
+  margin: 1rem 0 0;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -1228,12 +1362,6 @@ legend {
   white-space: nowrap;
 }
 
-.media-info select {
-  min-height: 34px;
-  padding: 4px 0;
-  font-size: 0.85rem;
-}
-
 /* Booking details */
 
 .details {
@@ -1268,6 +1396,26 @@ legend {
   border: 1px solid var(--card-border);
   border-radius: var(--radius-card);
   padding: 0.8rem 1rem;
+}
+
+.next-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.next-short {
+  display: none;
+}
+
+@media (max-width: 599px) {
+  .next-name {
+    display: none;
+  }
+  .next-short {
+    display: inline;
+  }
 }
 
 .banner {
@@ -1306,13 +1454,46 @@ legend {
   overflow-y: auto;
 }
 
-.modal ul {
+.summary ul {
   margin: 0.2rem 0 0.75rem;
   padding-left: 1.25rem;
 }
 
-.modal li {
+.summary li {
   margin-bottom: 0.2rem;
+}
+
+/* Padding rather than margin above each group, because margins are dropped at the top of a column */
+.summary-group {
+  break-inside: avoid;
+  padding-top: 1.25rem;
+}
+
+.summary-group > h3 {
+  margin-top: 0;
+}
+
+@media (min-width: 860px) {
+  .card .summary {
+    columns: 2;
+    column-gap: 2.5rem;
+  }
+}
+
+.live-content {
+  margin-top: 1.25rem;
+  padding: 1rem 1.1rem;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-card);
+}
+
+.live-content h3 {
+  margin-top: 0;
+}
+
+.live-content p:last-child {
+  margin-bottom: 0;
 }
 
 .demo-switcher {

@@ -3,14 +3,16 @@ import {
   DESIGN_VERSION,
   createDefaultDesign,
   holdingFor,
+  mediaFor,
   mediaKindOf,
   reactionsFor,
   showsDancingVideos,
+  timingFor,
   usableDesign,
   validateUpload,
 } from './design';
-import { dancingVideosConfig, effectsConfig, holdingStylesConfig } from '../config';
-import type { DesignState } from '../types';
+import { dancingVideosConfig, effectsConfig, holdingStylesConfig, portalConfig, screenStylesConfig } from '../config';
+import type { DesignState, MediaItem, Phase, Timing } from '../types';
 
 const booking = { coupleNames: 'Sam & Alex' };
 
@@ -79,6 +81,45 @@ describe('usableDesign', () => {
     expect(usableDesign(old, booking)).not.toBe(old);
     expect(usableDesign(null, booking).version).toBe(DESIGN_VERSION);
   });
+
+  it('gives a design saved before the screens plan the screen design for every part of the night', () => {
+    const { screens: _dropped, ...saved } = { ...createDefaultDesign(booking), reactions: ['fantasy-bubbles'] };
+    const usable = usableDesign(saved as DesignState, booking);
+    expect(usable.screens).toEqual({ styleId: null, modes: { holding: 'design', after: 'design', dancing: 'design' } });
+    expect(usable.reactions).toEqual(['fantasy-bubbles']);
+  });
+});
+
+describe('screen photos and videos', () => {
+  const item = (id: string, timing: Timing): MediaItem => ({
+    id,
+    file: { id: `file-${id}`, name: `${id}.jpg`, type: 'image/jpeg', size: 1 },
+    kind: 'image',
+    timing,
+    addedAt: '2026-01-01T00:00:00.000Z',
+  });
+
+  it('maps each part of the night to the timing saved with its media', () => {
+    expect(timingFor('holding')).toBe('start');
+    expect(timingFor('after')).toBe('middle');
+    expect(timingFor('dancing')).toBe('end');
+  });
+
+  it('has a timing label for every part of the night', () => {
+    for (const p of ['holding', 'after', 'dancing'] as Phase[]) {
+      expect(portalConfig.timings.some((t) => t.id === timingFor(p)), p).toBe(true);
+    }
+  });
+
+  it('finds saved media for its part of the night, in the order it was added', () => {
+    const d: DesignState = {
+      ...createDefaultDesign(booking),
+      media: [item('a', 'start'), item('b', 'end'), item('c', 'start')],
+    };
+    expect(mediaFor(d, 'holding').map((m) => m.id)).toEqual(['a', 'c']);
+    expect(mediaFor(d, 'after')).toEqual([]);
+    expect(mediaFor(d, 'dancing').map((m) => m.id)).toEqual(['b']);
+  });
 });
 
 describe('media files named in config', () => {
@@ -108,6 +149,15 @@ describe('media files named in config', () => {
     for (const v of dancingVideosConfig.videos) {
       expect(exists(v.src), v.src).toBe(true);
       expect(exists(v.poster), v.poster).toBe(true);
+    }
+  });
+
+  it('has every screen design image, with unique ids and a known kind', () => {
+    const ids = screenStylesConfig.styles.map((s) => s.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const s of screenStylesConfig.styles) {
+      expect(exists(s.image), s.image).toBe(true);
+      expect(['welcome', 'schedule']).toContain(s.kind);
     }
   });
 });

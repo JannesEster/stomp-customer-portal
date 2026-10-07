@@ -67,6 +67,15 @@ export interface GeneratedStyle {
 }
 export type DancingMode = 'blank' | 'videos' | 'different';
 
+export type ScreenMode = 'design' | 'photos';
+
+/** What the portrait screens show. Their photos and videos are in `DesignState.media`, by timing. */
+export interface ScreensDesign {
+  /** Style id from src/config/screen-styles.json, null until chosen */
+  styleId: string | null;
+  modes: Record<Phase, ScreenMode>;
+}
+
 export type DesignStatus = 'draft' | 'submitted';
 
 export interface DesignState {
@@ -81,6 +90,7 @@ export interface DesignState {
   /** Chosen during the holding screen and kept after the entrance. Dancing time uses an assortment instead. */
   reactions: string[];
   media: MediaItem[];
+  screens: ScreensDesign;
   invite: StoredFile | null;
   /** First page of a PDF invite as an image, for the thumbnail */
   invitePreview: StoredFile | null;

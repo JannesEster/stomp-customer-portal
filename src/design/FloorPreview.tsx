@@ -1,5 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import { dancingVideosConfig, findEffect, findStyle, holdingStylesConfig, portalConfig, type EffectDef } from '../config';
+import {
+  dancingVideosConfig,
+  findEffect,
+  findStyle,
+  holdingStylesConfig,
+  portalConfig,
+  type EffectDef,
+  type LiveTextDef,
+} from '../config';
 import { floorPixels } from '../lib/dimensions';
 import { holdingFor, reactionsFor, showsDancingVideos } from '../lib/design';
 import { drawFloor } from '../lib/floorRender';
@@ -8,6 +16,21 @@ import { generatedFonts } from '../lib/generatedRender';
 import { INVITE_STYLE_ID } from '../lib/inviteStyle';
 import type { Booking, DesignState, Phase } from '../types';
 import { Accent, PhaseSwitch, Section, phaseLabel } from './common';
+
+/** Names on a plain floor until a style is picked. Positions are fractions of the whole floor. */
+const PLAIN_NAMES: LiveTextDef = {
+  names: {
+    layout: 'line',
+    x: 0.5,
+    y: 0.5,
+    size: 0.14,
+    font: 'playfair',
+    weight: 700,
+    italic: true,
+    colour: '#ffffff',
+    maxWidth: 0.8,
+  },
+};
 
 export function FloorPreview({
   booking,
@@ -27,29 +50,33 @@ export function FloorPreview({
   const [grid, setGrid] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const message = holding && !style && !generated ? 'Choose a style above' : null;
+  const names = holding?.names ?? '';
+  const plain = !!holding && !style && !generated;
+  const plainNames = plain && !!names.trim();
+  const liveDef = style?.live ?? (plainNames ? PLAIN_NAMES : null);
+  const message = plain && !plainNames ? 'Your names will show here' : null;
   const playlist = showsDancingVideos(design, phase) ? dancingVideosConfig.videos : null;
   const clipTurn = useRotation(!!playlist, dancingVideosConfig.rotateSeconds);
   const clip = playlist ? playlist[clipTurn % playlist.length] : null;
   const videoSrc = style?.video ?? clip?.src ?? null;
-  const names = holding?.names ?? '';
   const namesColour = design.inviteNamesColour;
   const eventDate = booking.eventDate;
   const fonts = holdingStylesConfig.fonts;
 
   useEffect(() => {
-    const list = generated ? generatedFonts(generated, fonts) : style ? fontsToLoad(style.live, fonts) : [];
+    const list = generated ? generatedFonts(generated, fonts) : liveDef ? fontsToLoad(liveDef, fonts) : [];
     for (const f of list) void document.fonts.load(f);
-  }, [style, generated, fonts]);
+  }, [liveDef, generated, fonts]);
 
   useEffect(() => {
     const ctx = canvasRef.current?.getContext('2d');
     if (!ctx) return;
     const video = videoSrc ? videoRef.current : null;
-    const live = style ? { def: style.live, names, eventDate, namesColour, fonts } : null;
+    const live = liveDef ? { def: liveDef, names, eventDate, namesColour, fonts } : null;
     const gen = generated ? { style: generated, names, eventDate, fonts } : null;
     let raf = 0;
     let drawn = false;
+    let stopped = false;
     const frame = () => {
       // Hold the last frame while the next video loads, rather than flashing black.
       if (drawn && video && video.readyState < 2) {
@@ -69,8 +96,17 @@ export function FloorPreview({
       if (video || gen) raf = requestAnimationFrame(frame);
     };
     frame();
-    return () => cancelAnimationFrame(raf);
-  }, [px.width, px.height, videoSrc, style, generated, names, eventDate, namesColour, fonts, message, grid]);
+    // A still floor is drawn once, so draw it again when its fonts arrive.
+    if (live && !video && !gen) {
+      void Promise.all(fontsToLoad(live.def, fonts).map((f) => document.fonts.load(f))).then(() => {
+        if (!stopped) frame();
+      });
+    }
+    return () => {
+      stopped = true;
+      cancelAnimationFrame(raf);
+    };
+  }, [px.width, px.height, videoSrc, liveDef, generated, names, eventDate, namesColour, fonts, message, grid]);
 
   const plan = reactionsFor(design, phase);
   const picked = plan.ids.map(findEffect).filter((e): e is EffectDef => !!e);
@@ -160,6 +196,8 @@ export function FloorPreview({
           Your names on the {style.name} style{style.live.date ? ', with the date from your booking' : ''}. Stomp will
           make the finished version{style.usesPhoto ? ' with your photo' : ''}.
         </p>
+      ) : plainNames ? (
+        <p className="muted small center">Your names on a plain floor for now. Once you pick a style, it shows here.</p>
       ) : clip ? (
         <p className="muted small center">
           Colourful videos, now showing {clip.name}. Stomp mixes visuals like these through the dancing.
@@ -176,7 +214,7 @@ export function FloorPreview({
         </p>
       )}
       {!reaction && !playlist && (
-        <p className="muted small center">No reactions picked yet. Choose some in the Holding screen tab.</p>
+        <p className="muted small center">No reactions picked yet. Choose some in the Floor reactions step.</p>
       )}
     </Section>
   );

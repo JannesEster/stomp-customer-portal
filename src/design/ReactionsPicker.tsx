@@ -30,11 +30,6 @@ export function ReactionsPicker({ design, update }: { design: DesignState; updat
 
   return (
     <div className="reactions">
-      <h3>Floor reactions</h3>
-      <p className="muted small">
-        Pick what happens when guests walk across your holding screen. They carry on after the bridal entrance, and
-        if you pick a few they take turns. These are recordings from Stomp's floor, so hover or tap one to see it move.
-      </p>
       <h4>Fantasy reactions, our most popular</h4>
       <div className="effect-grid">{POPULAR.map(card)}</div>
       <button

@@ -2,6 +2,7 @@ import portalJson from './portal.json';
 import effectsJson from './effects.json';
 import holdingStylesJson from './holding-styles.json';
 import dancingVideosJson from './dancing-videos.json';
+import screenStylesJson from './screen-styles.json';
 import extrasJson from './extras.json';
 import type { Timing } from '../types';
 
@@ -135,6 +136,23 @@ export interface DancingVideosConfig {
   videos: DancingVideoDef[];
 }
 
+/**
+ * A portrait screen design. `image` is the Canva sample at the screens' exact size,
+ * with example names baked in, so Stomp makes the finished version for each couple.
+ */
+export interface ScreenStyleDef {
+  id: string;
+  name: string;
+  description: string;
+  image: string;
+  /** A welcome sign, or an order of the day board with the wedding party or ceremony */
+  kind: 'welcome' | 'schedule';
+}
+
+export interface ScreenStylesConfig {
+  styles: ScreenStyleDef[];
+}
+
 export interface ExtraDef {
   id: string;
   name: string;
@@ -156,6 +174,7 @@ export function fromRoot(path: string): string {
 const effects = effectsJson as EffectsConfig;
 const holdingStyles = holdingStylesJson as HoldingStylesConfig;
 const dancingVideos = dancingVideosJson as DancingVideosConfig;
+const screenStyles = screenStylesJson as ScreenStylesConfig;
 
 export const portalConfig = portalJson as PortalConfig;
 export const effectsConfig: EffectsConfig = {
@@ -175,10 +194,18 @@ export const dancingVideosConfig: DancingVideosConfig = {
   ...dancingVideos,
   videos: dancingVideos.videos.map((v) => ({ ...v, src: fromRoot(v.src), poster: fromRoot(v.poster) })),
 };
+export const screenStylesConfig: ScreenStylesConfig = {
+  ...screenStyles,
+  styles: screenStyles.styles.map((s) => ({ ...s, image: fromRoot(s.image) })),
+};
 export const extrasConfig = extrasJson as ExtrasConfig;
 
 export function findStyle(id: string | null): HoldingStyleDef | undefined {
   return id ? holdingStylesConfig.styles.find((s) => s.id === id) : undefined;
+}
+
+export function findScreenStyle(id: string | null): ScreenStyleDef | undefined {
+  return id ? screenStylesConfig.styles.find((s) => s.id === id) : undefined;
 }
 
 export function findEffect(id: string): EffectDef | undefined {

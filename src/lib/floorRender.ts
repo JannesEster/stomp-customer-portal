@@ -14,7 +14,7 @@ export interface FloorFrame {
   height: number;
   /** Holding screen video, or null for a blank floor */
   video: HTMLVideoElement | null;
-  /** The couple's names and the date drawn over the video */
+  /** The couple's names and the date drawn over the video, or over the whole floor when there is no video */
   live: LiveLayer | null;
   /** A design generated from the invite, drawn instead of a video */
   generated: GeneratedLayer | null;
@@ -33,14 +33,18 @@ export function drawFloor(ctx: CanvasRenderingContext2D, f: FloorFrame): void {
   if (f.generated) {
     const g = f.generated;
     drawGeneratedFloor(ctx, W, H, g.style, g.names, g.eventDate, g.fonts, performance.now() / 1000);
-  } else if (v && v.readyState >= 2 && v.videoWidth > 0) {
-    // Cover fit: floors that aren't 4:3 crop the sample rather than stretch it.
-    const scale = Math.max(W / v.videoWidth, H / v.videoHeight);
-    const dw = v.videoWidth * scale;
-    const dh = v.videoHeight * scale;
-    const frame: FrameRect = { ox: (W - dw) / 2, oy: (H - dh) / 2, dw, dh };
-    ctx.drawImage(v, frame.ox, frame.oy, dw, dh);
-    if (f.live) drawLive(ctx, frame, f.live);
+  } else if (v) {
+    if (v.readyState >= 2 && v.videoWidth > 0) {
+      // Cover fit: floors that aren't 4:3 crop the sample rather than stretch it.
+      const scale = Math.max(W / v.videoWidth, H / v.videoHeight);
+      const dw = v.videoWidth * scale;
+      const dh = v.videoHeight * scale;
+      const frame: FrameRect = { ox: (W - dw) / 2, oy: (H - dh) / 2, dw, dh };
+      ctx.drawImage(v, frame.ox, frame.oy, dw, dh);
+      if (f.live) drawLive(ctx, frame, f.live);
+    }
+  } else if (f.live) {
+    drawLive(ctx, { ox: 0, oy: 0, dw: W, dh: H }, f.live);
   }
 
   if (f.message) {

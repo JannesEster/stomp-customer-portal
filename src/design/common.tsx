@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactNode, Ref } from 'react';
 import type { DesignState, Phase } from '../types';
 
 export const PHASES: { id: Phase; label: string; short: string }[] = [
@@ -15,10 +15,12 @@ export function PhaseSwitch({
   value,
   onChange,
   label,
+  labels,
 }: {
   value: Phase;
   onChange: (p: Phase) => void;
   label: string;
+  labels?: Record<Phase, string>;
 }) {
   return (
     <div className="segmented" role="radiogroup" aria-label={label}>
@@ -31,7 +33,7 @@ export function PhaseSwitch({
           className={value === p.id ? 'active' : ''}
           onClick={() => onChange(p.id)}
         >
-          {p.short}
+          {labels?.[p.id] ?? p.short}
         </button>
       ))}
     </div>
@@ -92,18 +94,26 @@ export function ArrowIcon() {
 
 export function Section({
   title,
+  eyebrow,
   intro,
   children,
   className,
+  headingRef,
 }: {
   title: ReactNode;
+  /** A small line above the title, like "Step 3 of 10" */
+  eyebrow?: ReactNode;
   intro?: ReactNode;
   children: ReactNode;
   className?: string;
+  headingRef?: Ref<HTMLHeadingElement>;
 }) {
   return (
     <section className={`card ${className ?? ''}`}>
-      <h2>{title}</h2>
+      <h2 ref={headingRef} tabIndex={headingRef ? -1 : undefined}>
+        {eyebrow && <span className="eyebrow">{eyebrow}</span>}
+        {title}
+      </h2>
       {intro && <p className="muted">{intro}</p>}
       {children}
     </section>

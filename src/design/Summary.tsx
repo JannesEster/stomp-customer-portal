@@ -1,11 +1,13 @@
-import { findEffect, findStyle, timingLabel, portalConfig } from '../config';
+import { findEffect, findScreenStyle, findStyle, timingLabel } from '../config';
 import { floorPixels, screenCount } from '../lib/dimensions';
+import { mediaFor, timingFor } from '../lib/design';
 import { formatAud, formatDateTime, formatEventDate } from '../lib/format';
 import { liveContentView } from '../lib/liveContent';
 import { formatStyleDate } from '../lib/liveText';
 import { INVITE_STYLE_ID, LAYOUT_LABELS, TYPOGRAPHY_LABELS } from '../lib/inviteStyle';
 import type { Booking, DesignState, GeneratedStyle, HoldingDesign } from '../types';
-import { Accent } from './common';
+import { Accent, PHASES } from './common';
+import { SCREEN_KIND_LABELS } from './ScreenSteps';
 
 export function SummaryDialog({
   booking,
@@ -16,8 +18,6 @@ export function SummaryDialog({
   design: DesignState;
   onClose: () => void;
 }) {
-  const px = floorPixels(booking.floor.widthM, booking.floor.lengthM);
-  const screens = screenCount(booking.screensBooked);
   const live = liveContentView(booking, design.liveContentRequested);
 
   return (
@@ -38,16 +38,50 @@ export function SummaryDialog({
           <p className="note">This is still a draft. Stomp hasn't received it yet.</p>
         )}
 
+        <DesignSummary booking={booking} design={design} />
+
+        <h3>Live content</h3>
+        <p>
+          {live.included
+            ? 'Live event streaming is included in your booking.'
+            : live.checked
+              ? `You've asked to add live event streaming (${formatAud(live.priceAud)} extra). Stomp will confirm with you.`
+              : 'Not added.'}
+        </p>
+
+        <div className="row end">
+          <button type="button" onClick={onClose}>
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Everything but live content, which the review step shows with its checkbox instead. */
+export function DesignSummary({ booking, design }: { booking: Booking; design: DesignState }) {
+  const px = floorPixels(booking.floor.widthM, booking.floor.lengthM);
+  const screens = screenCount(booking.screensBooked);
+  const screenStyle = findScreenStyle(design.screens.styleId);
+
+  return (
+    <div className="summary">
+      <div className="summary-group">
         <h3>Booking</h3>
         <ul>
           <li>{booking.coupleNames}</li>
-          <li>{formatEventDate(booking.eventDate)}, {booking.venue}</li>
+          <li>
+            {formatEventDate(booking.eventDate)}, {booking.venue}
+          </li>
           <li>
             Floor {booking.floor.widthM}m x {booking.floor.lengthM}m ({px.width} x {px.height} px)
           </li>
           <li>{screens === 0 ? 'No portrait screens' : `${screens} portrait screen${screens > 1 ? 's' : ''}`}</li>
         </ul>
+      </div>
 
+      <div className="summary-group">
         <h3>Holding screen</h3>
         <HoldingSummary h={design.designs.holding} eventDate={booking.eventDate} inviteStyle={design.inviteStyle} />
         <ul>
@@ -58,14 +92,18 @@ export function SummaryDialog({
               : 'None'}
           </li>
         </ul>
+      </div>
 
+      <div className="summary-group">
         <h3>After the bridal entrance</h3>
         {design.afterMode === 'same' ? (
           <p>The holding screen stays on until dancing time.</p>
         ) : (
           <HoldingSummary h={design.designs.after} eventDate={booking.eventDate} inviteStyle={design.inviteStyle} />
         )}
+      </div>
 
+      <div className="summary-group">
         <h3>Dancing time</h3>
         {design.dancingMode === 'blank' ? (
           <p>Blank floor with assorted reactions.</p>
@@ -74,7 +112,9 @@ export function SummaryDialog({
         ) : (
           <HoldingSummary h={design.designs.dancing} eventDate={booking.eventDate} inviteStyle={design.inviteStyle} />
         )}
+      </div>
 
+      <div className="summary-group">
         <h3>Invite and styling</h3>
         <ul>
           <li>{design.invite ? `Uploaded: ${design.invite.name}` : 'No invite or styling file'}</li>
@@ -98,38 +138,41 @@ export function SummaryDialog({
           )}
           <li>{design.stylingNote.trim() ? `Note: ${design.stylingNote.trim()}` : 'No styling note'}</li>
         </ul>
+      </div>
 
-        {screens > 0 && (
-          <>
+      {screens > 0 && (
+        <>
+          <div className="summary-group">
+            <h3>Screens</h3>
+            <ul>
+              <li>
+                Screen design:{' '}
+                {screenStyle ? `${screenStyle.name} (${SCREEN_KIND_LABELS[screenStyle.kind]})` : 'Not chosen yet'}
+              </li>
+              {PHASES.map((p) => (
+                <li key={p.id}>
+                  {timingLabel(timingFor(p.id))}:{' '}
+                  {design.screens.modes[p.id] === 'photos' ? 'Your photos and videos' : 'Your screen design'}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="summary-group">
             <h3>Photos and videos</h3>
             <ul>
-              {portalConfig.timings.map((t) => {
-                const group = design.media.filter((m) => m.timing === t.id);
+              {PHASES.map((p) => {
+                const group = mediaFor(design, p.id);
                 return (
-                  <li key={t.id}>
-                    {timingLabel(t.id)}: {group.length ? group.map((m) => m.file.name).join(', ') : 'None'}
+                  <li key={p.id}>
+                    {timingLabel(timingFor(p.id))}: {group.length ? group.map((m) => m.file.name).join(', ') : 'None'}
                   </li>
                 );
               })}
             </ul>
-          </>
-        )}
-
-        <h3>Live content</h3>
-        <p>
-          {live.included
-            ? 'Live event streaming is included in your booking.'
-            : live.checked
-              ? `You've asked to add live event streaming (${formatAud(live.priceAud)} extra). Stomp will confirm with you.`
-              : 'Not added.'}
-        </p>
-
-        <div className="row end">
-          <button type="button" onClick={onClose}>
-            Close
-          </button>
-        </div>
-      </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { effectsConfig, type UploadRule } from '../config';
-import type { Booking, DesignState, HoldingDesign, MediaKind, Phase } from '../types';
+import type { Booking, DesignState, HoldingDesign, MediaItem, MediaKind, Phase, Timing } from '../types';
 
 export const DESIGN_VERSION = 3;
 
@@ -19,6 +19,7 @@ export function createDefaultDesign(booking: Pick<Booking, 'coupleNames'>, now =
     dancingMode: 'blank',
     reactions: [],
     media: [],
+    screens: { styleId: null, modes: { holding: 'design', after: 'design', dancing: 'design' } },
     invite: null,
     invitePreview: null,
     invitePalette: [],
@@ -64,6 +65,18 @@ export function reactionsFor(design: DesignState, phase: Phase): { ids: string[]
   if (phase !== 'dancing') return { ids: design.reactions, assorted: false };
   if (design.dancingMode === 'videos') return { ids: [], assorted: false };
   return { ids: effectsConfig.effects.map((e) => e.id), assorted: true };
+}
+
+const TIMINGS: Record<Phase, Timing> = { holding: 'start', after: 'middle', dancing: 'end' };
+
+/** Screen photos and videos are saved with a timing, so saved designs keep working if the labels change. */
+export function timingFor(phase: Phase): Timing {
+  return TIMINGS[phase];
+}
+
+/** The photos and videos for the screens in one part of the night, in the order they were added. */
+export function mediaFor(design: DesignState, phase: Phase): MediaItem[] {
+  return design.media.filter((m) => m.timing === timingFor(phase));
 }
 
 export function mediaKindOf(mimeType: string): MediaKind | null {
