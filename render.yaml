@@ -1,0 +1,56 @@
+# Free Render web service for the Stomp Sphere customer portal.
+# AIRTABLE_TOKEN is set in the dashboard. sync: false keeps that value off the blueprint.
+services:
+  - type: web
+    name: stomp-customer-portal
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: npm ci && npm test && npm run build
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: "22.14.0"
+      - key: AIRTABLE_TOKEN
+        sync: false
+      - key: AIRTABLE_BASE_ID
+        value: appwMfJFb7rLDqJ30
+      - key: AIRTABLE_BOOKINGS_TABLE
+        value: Bookings
+      - key: AIRTABLE_LEADS_TABLE
+        value: Leads
+      - key: AIRTABLE_VENUES_TABLE
+        value: Venues
+      - key: PORTAL_TOKEN_FIELD
+        value: Portal token
+      - key: PORTAL_TOKEN_FIELD_ID
+        value: fldBr9O48s8nRuxrm
+      - key: PUBLIC_BASE_URL
+        value: https://stomp-customer-portal.onrender.com
+      - key: BOOKING_NAME_FIELD
+        value: Booking name
+      - key: LEAD_LINK_FIELD
+        value: Lead
+      - key: EVENT_DATE_FIELD
+        value: Event date
+      - key: VENUE_LINK_FIELD
+        value: Venue
+      - key: ADDRESS_FIELD
+        value: Address
+      - key: PACKAGE_FIELD
+        value: Package
+      - key: FLOOR_SQM_FIELD
+        value: Floor sqm
+      - key: LEAD_NAME_FIELD
+        value: Name
+      - key: LEAD_EMAIL_FIELD
+        value: Email
+      - key: LEAD_ADDONS_FIELD
+        value: Add-ons
+      - key: LEAD_VENUE_NAME_FIELD
+        value: Venue name
+      - key: VENUE_NAME_FIELD
+        value: Venue name
+      - key: VENUE_ADDRESS_FIELD
+        value: Address

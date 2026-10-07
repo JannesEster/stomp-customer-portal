@@ -70,6 +70,13 @@ export function DesignTab({ booking }: { booking: Booking }) {
         <div className="banner">You've made changes since you submitted. Submit again so Stomp has the latest.</div>
       ) : null}
 
+      {booking.screensBooked == null && (
+        <div className="banner">
+          Portrait screens are not listed on your booking yet, so the screen steps are hidden. If you have screens, get
+          in touch with Stomp.
+        </div>
+      )}
+
       <Section
         key={step.id}
         eyebrow={`Step ${index + 1} of ${steps.length}`}

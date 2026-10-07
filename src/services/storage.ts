@@ -1,8 +1,8 @@
 import type { StoredFile } from '../types';
 
 /**
- * Where design data and uploaded files live. The real store and upload limits
- * are open questions, so the portal only ever talks to this interface.
+ * Where design data and uploaded files live. The portal only ever talks to this interface.
+ * PENDING Jannes's decision: this browser store is temporary. The real store and upload limits are not decided yet.
  */
 export interface StorageProvider {
   loadData<T>(key: string): Promise<T | null>;
@@ -23,8 +23,8 @@ interface FileRecord {
 }
 
 /**
- * Mock: JSON data in localStorage, file blobs in IndexedDB (localStorage is
- * too small for photos and videos). Everything stays in this browser.
+ * PENDING Jannes's decision. JSON data in localStorage, file blobs in IndexedDB
+ * (localStorage is too small for photos and videos). Everything stays in this browser.
  */
 export class LocalStorageProvider implements StorageProvider {
   private dbPromise: Promise<IDBDatabase> | null = null;

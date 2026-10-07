@@ -1,5 +1,7 @@
 import { portalConfig, type FloorConfig, type ScreenConfig } from '../config';
 
+export { KNOWN_FLOORS, SAMPLE_FLOOR } from './knownFloors';
+
 export interface FloorPixels {
   width: number;
   height: number;
@@ -23,8 +25,11 @@ export function floorPixels(
   };
 }
 
-/** Screens to render for a booking, clamped to what the config allows. */
-export function screenCount(screensBooked: number, screen: ScreenConfig = portalConfig.screen): number {
-  if (!Number.isFinite(screensBooked)) return 0;
+/** Screens to render for a booking, clamped to what the config allows. Unknown (null) renders none. */
+export function screenCount(
+  screensBooked: number | null | undefined,
+  screen: ScreenConfig = portalConfig.screen,
+): number {
+  if (screensBooked == null || !Number.isFinite(screensBooked)) return 0;
   return Math.max(0, Math.min(screen.maxScreens, Math.floor(screensBooked)));
 }

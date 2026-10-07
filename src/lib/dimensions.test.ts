@@ -35,6 +35,7 @@ describe('screenCount', () => {
     expect(screenCount(5)).toBe(2);
     expect(screenCount(-1)).toBe(0);
     expect(screenCount(Number.NaN)).toBe(0);
+    expect(screenCount(null)).toBe(0);
   });
 
   it('screen size comes from config', () => {

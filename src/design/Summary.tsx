@@ -61,7 +61,7 @@ export function SummaryDialog({
 
 /** Everything but live content, which the review step shows with its checkbox instead. */
 export function DesignSummary({ booking, design }: { booking: Booking; design: DesignState }) {
-  const px = floorPixels(booking.floor.widthM, booking.floor.lengthM);
+  const px = booking.floor ? floorPixels(booking.floor.widthM, booking.floor.lengthM) : null;
   const screens = screenCount(booking.screensBooked);
   const screenStyle = findScreenStyle(design.screens.styleId);
 
@@ -72,12 +72,23 @@ export function DesignSummary({ booking, design }: { booking: Booking; design: D
         <ul>
           <li>{booking.coupleNames}</li>
           <li>
-            {formatEventDate(booking.eventDate)}, {booking.venue}
+            {formatEventDate(booking.eventDate) || 'Date not listed yet'}
+            {booking.venue ? `, ${booking.venue}` : ''}
           </li>
           <li>
-            Floor {booking.floor.widthM}m x {booking.floor.lengthM}m ({px.width} x {px.height} px)
+            {booking.floor && px
+              ? `Floor ${booking.floor.widthM}m x ${booking.floor.lengthM}m (${px.width} x ${px.height} px)`
+              : booking.floorSqm != null
+                ? `Floor ${booking.floorSqm} sqm. Width and length are not listed yet.`
+                : 'Floor size is not listed yet.'}
           </li>
-          <li>{screens === 0 ? 'No portrait screens' : `${screens} portrait screen${screens > 1 ? 's' : ''}`}</li>
+          <li>
+            {booking.screensBooked == null
+              ? 'Portrait screens are not listed yet'
+              : screens === 0
+                ? 'No portrait screens'
+                : `${screens} portrait screen${screens > 1 ? 's' : ''}`}
+          </li>
         </ul>
       </div>
 

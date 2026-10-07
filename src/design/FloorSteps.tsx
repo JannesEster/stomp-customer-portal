@@ -60,9 +60,9 @@ export function DetailsStep({
       <NamesField design={design} update={update} phase="holding" />
       <dl className="details">
         <dt>Wedding date</dt>
-        <dd>{formatEventDate(booking.eventDate)}</dd>
+        <dd>{formatEventDate(booking.eventDate) || 'Not listed yet'}</dd>
         <dt>Venue</dt>
-        <dd>{booking.venue}</dd>
+        <dd>{booking.venue || 'Not listed yet'}</dd>
       </dl>
       <p className="muted small">
         We've filled these in from your booking. If the date or venue isn't right, let Stomp know.

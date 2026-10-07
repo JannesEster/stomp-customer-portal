@@ -2,8 +2,9 @@ import type { Customer } from '../types';
 import customers from '../mock/customers.json';
 
 /**
- * Who is signed in. The real login method is an open question (see README),
- * so the portal only ever talks to this interface.
+ * Who is signed in. The portal only ever talks to this interface.
+ * TokenAuthProvider treats the /p/<token> link as the login for now.
+ * A fuller account login can replace it later. MockAuthProvider stays for local demos.
  */
 export interface AuthProvider {
   getCurrentCustomer(): Promise<Customer | null>;

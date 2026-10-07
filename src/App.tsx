@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useServices } from './services';
 import { MockAuthProvider } from './services/auth';
+import { TokenAuthProvider } from './services/portalSession';
 import { MyBookingsTab } from './tabs/MyBookingsTab';
 import { NotesTab } from './tabs/NotesTab';
 import { DesignTab } from './tabs/DesignTab';
@@ -66,12 +67,19 @@ export function App() {
       {booking && (
         <section className="hero">
           <h1>
-            Plan your night,
-            <br />
-            <Accent>{booking.coupleNames}!</Accent>
+            {booking.coupleNames ? (
+              <>
+                Plan your night,
+                <br />
+                <Accent>{booking.coupleNames}!</Accent>
+              </>
+            ) : (
+              'Plan your night'
+            )}
           </h1>
           <p>
-            {formatEventDate(booking.eventDate)} at {booking.venue}
+            {formatEventDate(booking.eventDate) || 'Date not listed yet'}
+            {booking.venue ? ` at ${booking.venue}` : ''}
           </p>
         </section>
       )}
@@ -94,7 +102,11 @@ export function App() {
         {loading ? (
           <p className="muted">Loading your booking…</p>
         ) : !booking ? (
-          <p className="muted">We couldn't find a booking for your account. Please get in touch with Stomp.</p>
+          <p className="muted">
+            {auth instanceof TokenAuthProvider
+              ? (auth.problemMessage() ?? "We couldn't find a booking for your account. Please get in touch with Stomp.")
+              : "We couldn't find a booking for your account. Please get in touch with Stomp."}
+          </p>
         ) : tab === 'bookings' ? (
           <MyBookingsTab booking={booking} />
         ) : tab === 'notes' ? (
@@ -104,6 +116,9 @@ export function App() {
         )}
       </main>
 
+      <p className="muted small portal-pending">
+        Designs and files are saved in this browser only. Where they are stored is pending Jannes's decision.
+      </p>
       {auth instanceof MockAuthProvider && <DemoSwitcher auth={auth} current={customer} />}
     </div>
   );
