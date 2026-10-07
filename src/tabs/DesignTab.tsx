@@ -27,12 +27,12 @@ function storedStep(bookingId: string, steps: StepDef[]): StepId {
 }
 
 function timeReminder(stepId: StepId, design: DesignState): string | null {
-  if (stepId === 'floor-design' && !design.entranceTime) return "You haven't specified a time for this.";
-  if (stepId === 'floor-dancing' && !design.dancingStarts) return "You haven't specified a time for this.";
-  if (stepId === 'review' && (!design.entranceTime || !design.dancingStarts)) {
+  const missing = !design.entranceTime || !design.dancingStarts;
+  if (!missing) return null;
+  if (stepId === 'review') {
     return design.submittedWithoutTimes ? 'Submitted without times.' : "You haven't selected times.";
   }
-  return null;
+  return "You haven't specified a time for this.";
 }
 
 const SAVE_LABEL = {

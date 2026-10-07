@@ -63,7 +63,9 @@ export function NotesTab({ booking }: { booking: Booking }) {
       <p className="muted small" aria-live="polite">
         {saveStatus === 'saved' ? 'Times saved' : saveStatus === 'saving' ? 'Saving times…' : '\u00a0'}
       </p>
-      <p className="muted">Song requests, venue access, who to call on the day, or anything else Stomp should know.</p>
+      <p className="muted">
+        Venue access, who to call on the day, or anything else Stomp should know about the dance floor and screens.
+      </p>
       <textarea
         className="notes"
         rows={10}
