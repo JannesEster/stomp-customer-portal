@@ -15,6 +15,8 @@ const AIRTABLE_PATCH_LIMIT = 10;
 
 export interface AirtableClient extends AirtableGateway {
   listBookingsForTokenFill(): Promise<TokenRecord[]>;
+  /** One booking, with only the portal token field. Null when the id is missing or malformed. */
+  getBookingForTokenFill(id: string): Promise<TokenRecord | null>;
   writePortalTokens(patches: TokenPatch[]): Promise<void>;
 }
 
@@ -95,6 +97,10 @@ export function createAirtableClient(
         offset = body.offset ?? '';
       } while (offset);
       return records;
+    },
+
+    async getBookingForTokenFill(id: string): Promise<TokenRecord | null> {
+      return getOne(config.bookingsTable, id, [config.tokenFieldName]);
     },
 
     async writePortalTokens(patches: TokenPatch[]): Promise<void> {
