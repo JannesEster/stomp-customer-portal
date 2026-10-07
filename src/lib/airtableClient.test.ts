@@ -47,26 +47,100 @@ describe('Airtable client', () => {
     expect(called).toBe(false);
   });
 
-  it('loads one booking and only its portal token field', async () => {
+  it('loads one booking through the list endpoint and only its portal token field', async () => {
     const calls: string[] = [];
     const client = createAirtableClient(config(), async (url) => {
       calls.push(String(url));
-      return Response.json({ id: 'recFAKEBOOK000001', fields: { 'Portal token': '' } });
+      return Response.json({ records: [{ id: 'recFAKEBOOK000001', fields: { 'Portal token': '' } }] });
     });
     const record = await client.getBookingForTokenFill('recFAKEBOOK000001');
     expect(record?.id).toBe('recFAKEBOOK000001');
     const url = new URL(calls[0]);
-    expect(url.pathname).toBe('/v0/appwMfJFb7rLDqJ30/Bookings/recFAKEBOOK000001');
+    expect(url.pathname).toBe('/v0/appwMfJFb7rLDqJ30/Bookings');
+    expect(url.searchParams.get('filterByFormula')).toBe("RECORD_ID()='recFAKEBOOK000001'");
+    expect(url.searchParams.get('maxRecords')).toBe('1');
     expect(url.searchParams.getAll('fields[]')).toEqual(['Portal token']);
     expect(url.search).not.toContain('Important');
   });
 
-  it('does not echo Airtable error bodies', async () => {
-    const client = createAirtableClient(config(), async () => {
-      return Response.json({ error: { message: 'fake.customer@example.com INTERNAL-NOTE-DO-NOT-LEAK' } }, { status: 422 });
+  it('loads a lead and a venue by record id with a field whitelist', async () => {
+    const calls: string[] = [];
+    const client = createAirtableClient(config(), async (url) => {
+      calls.push(String(url));
+      const id = new URL(String(url)).searchParams.get('filterByFormula')?.includes('LEAD')
+        ? 'recFAKELEAD000001'
+        : 'recFAKEVENUE00001';
+      return Response.json({ records: [{ id, fields: { Name: 'Fake Guest' } }] });
     });
-    await expect(client.findBookingsByFormula("{Portal token} = 'x'")).rejects.toThrow('Airtable request failed (422)');
-    await expect(client.findBookingsByFormula("{Portal token} = 'x'")).rejects.not.toThrow(/example.com/);
+
+    expect((await client.getLead('recFAKELEAD000001'))?.id).toBe('recFAKELEAD000001');
+    expect((await client.getVenue('recFAKEVENUE00001'))?.id).toBe('recFAKEVENUE00001');
+
+    const lead = new URL(calls[0]);
+    expect(lead.pathname).toBe('/v0/appwMfJFb7rLDqJ30/Leads');
+    expect(lead.pathname).not.toContain('recFAKELEAD000001');
+    expect(lead.searchParams.get('filterByFormula')).toBe("RECORD_ID()='recFAKELEAD000001'");
+    expect(lead.searchParams.get('maxRecords')).toBe('1');
+    expect(lead.searchParams.getAll('fields[]')).toEqual(['Name', 'Email', 'Add-ons', 'Venue name']);
+    expect(lead.searchParams.getAll('fields[]')).not.toContain('Phone');
+    expect(lead.search).not.toContain('Important notes');
+    expect(lead.search).not.toContain('Xero');
+
+    const venue = new URL(calls[1]);
+    expect(venue.pathname).toBe('/v0/appwMfJFb7rLDqJ30/Venues');
+    expect(venue.pathname).not.toContain('recFAKEVENUE00001');
+    expect(venue.searchParams.get('filterByFormula')).toBe("RECORD_ID()='recFAKEVENUE00001'");
+    expect(venue.searchParams.get('maxRecords')).toBe('1');
+    expect(venue.searchParams.getAll('fields[]')).toEqual(['Venue name', 'Address']);
+  });
+
+  it('returns null when the list endpoint has no matching record', async () => {
+    const client = createAirtableClient(config(), async () => Response.json({ records: [] }));
+    expect(await client.getLead('recFAKELEAD000001')).toBeNull();
+    expect(await client.getVenue('recFAKEVENUE00001')).toBeNull();
+  });
+
+  it('does not echo Airtable error bodies', async () => {
+    const logs: string[] = [];
+    const client = createAirtableClient(
+      config(),
+      async () =>
+        Response.json(
+          {
+            error: {
+              type: 'INVALID_REQUEST_UNKNOWN',
+              message: `${TOKEN} fake.customer@example.com pat_fake_not_real filterByFormula`,
+            },
+          },
+          { status: 422 },
+        ),
+      (line) => logs.push(line),
+    );
+    await expect(client.findBookingsByFormula(`{Portal token} = '${TOKEN}'`)).rejects.toThrow(
+      'Airtable request failed (422)',
+    );
+    await expect(client.getLead('recFAKELEAD000001')).rejects.not.toThrow(/example.com|pat_fake/);
+    expect(logs).toEqual([
+      'airtable findBookings failed status=422 table=Bookings type=INVALID_REQUEST_UNKNOWN',
+      'airtable getLead failed status=422 table=Leads type=INVALID_REQUEST_UNKNOWN',
+    ]);
+    const joined = logs.join('\n');
+    expect(joined).not.toContain(TOKEN);
+    expect(joined).not.toContain('pat_fake_not_real');
+    expect(joined).not.toContain('example.com');
+    expect(joined).not.toContain('filterByFormula');
+  });
+
+  it('drops an error type that is not a plain Airtable code', async () => {
+    const logs: string[] = [];
+    const client = createAirtableClient(
+      config(),
+      async () => Response.json({ error: { type: TOKEN, message: 'secret body' } }, { status: 422 }),
+      (line) => logs.push(line),
+    );
+    await expect(client.getVenue('recFAKEVENUE00001')).rejects.toThrow('Airtable request failed (422)');
+    expect(logs).toEqual(['airtable getVenue failed status=422 table=Venues type=unknown']);
+    expect(logs[0]).not.toContain(TOKEN);
   });
 
   it('lists only blank tokens and writes only the token field', async () => {
