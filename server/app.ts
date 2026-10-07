@@ -1,6 +1,7 @@
 import path from 'node:path';
 import express, { type Express, type Request } from 'express';
 import extrasJson from '../src/config/extras.json';
+import { portalLookupFailureLine } from '../src/lib/airtableClient';
 import type { PortalEnvConfig } from '../src/lib/portalConfig';
 import { lookupBookingByToken, type AirtableGateway } from '../src/lib/portalLookup';
 import { isValidPortalToken } from '../src/lib/portalToken';
@@ -59,7 +60,8 @@ export function createApp(opts: {
         booking: result.portal.booking,
         portalUrl: result.portalUrl,
       });
-    } catch {
+    } catch (err) {
+      console.error(portalLookupFailureLine(err));
       res.status(502).json({ error: 'upstream_failed' });
     }
   });

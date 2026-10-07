@@ -2,7 +2,8 @@ import { createServer, type Server } from 'node:http';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { AirtableRequestError } from '../src/lib/airtableClient';
 import type { AirtableRecord } from '../src/lib/bookingMap';
 import type { AirtableGateway } from '../src/lib/portalLookup';
 import { readPortalConfig } from '../src/lib/portalConfig';
@@ -148,21 +149,71 @@ describe('portal HTTP API', () => {
   });
 
   it('hides upstream error details', async () => {
-    const base = await start({
-      async findBookingsByFormula() {
-        throw new Error('fake.customer@example.com INTERNAL-NOTE-DO-NOT-LEAK');
-      },
-      async getLead() {
-        return null;
-      },
-      async getVenue() {
-        return null;
-      },
+    const logged: string[] = [];
+    const spy = vi.spyOn(console, 'error').mockImplementation((line?: unknown) => {
+      logged.push(String(line));
     });
-    const res = await fetch(`${base}/api/portal/${TOKEN}`);
-    expect(res.status).toBe(502);
-    const json = JSON.stringify(await res.json());
-    expect(json).not.toContain('example.com');
-    expect(json).not.toContain('INTERNAL-NOTE');
+    try {
+      const base = await start({
+        async findBookingsByFormula() {
+          throw new Error('fake.customer@example.com INTERNAL-NOTE-DO-NOT-LEAK');
+        },
+        async getLead() {
+          return null;
+        },
+        async getVenue() {
+          return null;
+        },
+      });
+      const res = await fetch(`${base}/api/portal/${TOKEN}`);
+      expect(res.status).toBe(502);
+      const json = JSON.stringify(await res.json());
+      expect(json).not.toContain('example.com');
+      expect(json).not.toContain('INTERNAL-NOTE');
+      expect(json).not.toContain(TOKEN);
+      expect(logged).toEqual(['portal lookup upstream failure']);
+      expect(logged.join('\n')).not.toContain('example.com');
+      expect(logged.join('\n')).not.toContain(TOKEN);
+      expect(logged.join('\n')).not.toContain('pat_fake');
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('logs status, table, operation, and Airtable error type on upstream failure', async () => {
+    const logged: string[] = [];
+    const spy = vi.spyOn(console, 'error').mockImplementation((line?: unknown) => {
+      logged.push(String(line));
+    });
+    try {
+      const base = await start({
+        async findBookingsByFormula() {
+          throw new AirtableRequestError({
+            status: 422,
+            table: 'Leads',
+            operation: 'getLead',
+            airtableType: 'INVALID_REQUEST_UNKNOWN',
+          });
+        },
+        async getLead() {
+          return null;
+        },
+        async getVenue() {
+          return null;
+        },
+      });
+      const res = await fetch(`${base}/api/portal/${TOKEN}`);
+      expect(res.status).toBe(502);
+      const json = JSON.stringify(await res.json());
+      expect(json).toBe('{"error":"upstream_failed"}');
+      expect(json).not.toContain(TOKEN);
+      expect(logged).toEqual([
+        'portal lookup upstream failure status=422 table=Leads operation=getLead type=INVALID_REQUEST_UNKNOWN',
+      ]);
+      expect(logged.join('\n')).not.toContain(TOKEN);
+      expect(logged.join('\n')).not.toContain('pat_fake');
+    } finally {
+      spy.mockRestore();
+    }
   });
 });
