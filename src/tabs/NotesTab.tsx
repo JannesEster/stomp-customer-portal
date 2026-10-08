@@ -6,7 +6,7 @@ import type { Booking } from '../types';
 
 export function NotesTab({ booking }: { booking: Booking }) {
   const { storage } = useServices();
-  const { design, update, saveStatus } = useDesignState(booking);
+  const { design, update, saveStatus, serverSync } = useDesignState(booking);
   const key = `notes:${booking.id}`;
   const [notes, setNotes] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -61,7 +61,15 @@ export function NotesTab({ booking }: { booking: Booking }) {
         </button>
       )}
       <p className="muted small" aria-live="polite">
-        {saveStatus === 'saved' ? 'Times saved' : saveStatus === 'saving' ? 'Saving times…' : '\u00a0'}
+        {saveStatus === 'saved'
+          ? 'Times saved'
+          : saveStatus === 'saving'
+            ? 'Saving times…'
+            : saveStatus === 'error'
+              ? serverSync
+                ? 'Offline, saved on this device'
+                : "Couldn't save. Check your connection."
+              : '\u00a0'}
       </p>
       <p className="muted">
         Venue access, who to call on the day, or anything else Stomp should know about the dance floor and screens.

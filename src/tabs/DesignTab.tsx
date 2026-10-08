@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { designSaveLabel } from '../hooks/designSync';
 import { useDesignState, type UpdateDesign } from '../hooks/useDesignState';
 import { screenCount } from '../lib/dimensions';
 import { formatDateTime } from '../lib/format';
@@ -35,15 +36,8 @@ function timeReminder(stepId: StepId, design: DesignState): string | null {
   return "You haven't specified a time for this.";
 }
 
-const SAVE_LABEL = {
-  idle: 'Draft',
-  saving: 'Saving…',
-  saved: 'Draft saved',
-  error: "Couldn't save. Check your connection.",
-} as const;
-
 export function DesignTab({ booking }: { booking: Booking }) {
-  const { design, update, submit, saveStatus } = useDesignState(booking);
+  const { design, update, submit, saveStatus, savedAt, serverSync } = useDesignState(booking);
   const showAfterReactions = !design || design.reactions.length === 0;
   const steps = useMemo(
     () => stepsFor(screenCount(booking.screensBooked), showAfterReactions),
@@ -163,7 +157,13 @@ export function DesignTab({ booking }: { booking: Booking }) {
 
       <div className="submit-bar">
         <span className="muted small" aria-live="polite">
-          {submitted ? (design.submittedWithoutTimes ? 'Submitted without times' : 'Submitted') : SAVE_LABEL[saveStatus]}
+          {designSaveLabel({
+            submitted,
+            submittedWithoutTimes: design.submittedWithoutTimes,
+            saveStatus,
+            savedAt,
+            serverSync,
+          })}
         </span>
         <div className="row">
           {prev && (

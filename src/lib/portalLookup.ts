@@ -1,5 +1,11 @@
-import type { AirtableFieldNames } from './airtableFields';
+import {
+  PORTAL_ANSWERS_FIELD,
+  PORTAL_FIRST_OPENED_FIELD,
+  PORTAL_LAST_SAVED_FIELD,
+  type AirtableFieldNames,
+} from './airtableFields';
 import { mapPortalRecords, type AirtableRecord, type ExtraCatalogItem, type MappedPortal } from './bookingMap';
+import { DESIGN_VERSION } from './design';
 import { buildPortalUrl, isValidPortalToken, portalTokenFormula } from './portalToken';
 
 const RECORD_ID = /^rec[A-Za-z0-9]{14}$/;
@@ -10,8 +16,15 @@ export interface AirtableGateway {
   getVenue(id: string): Promise<AirtableRecord | null>;
 }
 
+/** Portal fields read with the booking. firstOpenedAt is not returned by GET. */
+export interface PortalSavedState {
+  savedAnswers: unknown;
+  lastSavedAt: string | null;
+  firstOpenedAt: string | null;
+}
+
 export type PortalLookupResult =
-  | { ok: true; portal: MappedPortal; portalUrl: string | null }
+  | { ok: true; portal: MappedPortal; portalUrl: string | null; saved: PortalSavedState }
   | { ok: false; status: 400 | 404; error: 'invalid_token' | 'not_found' };
 
 /**
@@ -50,6 +63,11 @@ export async function lookupBookingByToken(
     ok: true,
     portal: mapPortalRecords(booking, lead, venue, opts.fields, opts.extras),
     portalUrl: buildPortalUrl(opts.publicBaseUrl, token),
+    saved: {
+      savedAnswers: parseSavedAnswers(booking.fields[PORTAL_ANSWERS_FIELD]),
+      lastSavedAt: readTimestamp(booking.fields[PORTAL_LAST_SAVED_FIELD]),
+      firstOpenedAt: readTimestamp(booking.fields[PORTAL_FIRST_OPENED_FIELD]),
+    },
   };
 }
 
@@ -60,6 +78,25 @@ export function firstRecordId(value: unknown): string | null {
     if (id && RECORD_ID.test(id)) return id;
   }
   return null;
+}
+
+function parseSavedAnswers(value: unknown): unknown {
+  if (typeof value !== 'string' || !value.trim()) return null;
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+    if ((parsed as { version?: unknown }).version !== DESIGN_VERSION) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function readTimestamp(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.length > 40) return null;
+  return trimmed;
 }
 
 function readId(value: unknown): string | null {

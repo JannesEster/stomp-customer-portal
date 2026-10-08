@@ -1,5 +1,8 @@
 import {
   bookingFieldsToFetch,
+  pickPortalWriteFields,
+  PORTAL_FLOOR_PREVIEW_FIELD,
+  PORTAL_READ_FIELDS,
   leadFieldsToFetch,
   venueFieldsToFetch,
 } from './airtableFields';
@@ -12,6 +15,9 @@ import { chunkItems, type TokenPatch, type TokenRecord } from './tokenBatch';
 
 const RECORD_ID = /^rec[A-Za-z0-9]{14}$/;
 const AIRTABLE_PATCH_LIMIT = 10;
+const AIRTABLE_ATTACHMENT_MAX_BYTES = 5 * 1024 * 1024;
+const PREVIEW_FILENAMES = new Set(['floor-holding.png', 'floor-after.png', 'floor-dancing.png']);
+const WRITE_OPS = new Set(['patchBooking', 'uploadFloorPreview']);
 const SAFE_LABEL = /^[A-Za-z0-9][A-Za-z0-9 _-]{0,80}$/;
 /** Airtable error.type values are short SNAKE_CASE codes, never a token or a sentence. */
 const SAFE_TYPE = /^[A-Z][A-Z0-9_]{0,63}$/;
@@ -50,7 +56,22 @@ export function portalLookupFailureLine(err: unknown): string {
   return 'portal lookup upstream failure';
 }
 
-export interface AirtableClient extends AirtableGateway {
+/** One safe line for a portal write. No token, no answers, no response body. */
+export function portalWriteFailureLine(err: unknown): string {
+  if (err instanceof AirtableRequestError) {
+    return `portal write upstream failure status=${err.status} table=${err.table} operation=${err.operation} type=${err.airtableType}`;
+  }
+  return 'portal write upstream failure';
+}
+
+export interface PortalWriter {
+  /** PATCH one booking. Only PORTAL_WRITE_FIELDS are sent, with typecast false. */
+  patchBooking(recordId: string, fields: Record<string, unknown>): Promise<void>;
+  /** Append one PNG to Portal floor preview. The caller clears that field first. */
+  uploadFloorPreview(recordId: string, file: { base64: string; filename: string }): Promise<void>;
+}
+
+export interface AirtableClient extends AirtableGateway, PortalWriter {
   listBookingsForTokenFill(): Promise<TokenRecord[]>;
   /** One booking, with only the portal token field. Null when the id is missing or malformed. */
   getBookingForTokenFill(id: string): Promise<TokenRecord | null>;
@@ -92,7 +113,11 @@ export function createAirtableClient(
         operation: call.operation,
         airtableType: await readErrorType(res),
       });
-      log(failure.clientLogLine());
+      if ((res.status === 401 || res.status === 403) && WRITE_OPS.has(call.operation)) {
+        log(`airtable update forbidden status=${res.status}`);
+      } else {
+        log(failure.clientLogLine());
+      }
       throw failure;
     }
     return res.json();
@@ -104,7 +129,9 @@ export function createAirtableClient(
       const params = new URLSearchParams();
       params.set('filterByFormula', formula);
       params.set('maxRecords', '2');
-      for (const name of bookingFieldsToFetch(config.fields)) params.append('fields[]', name);
+      for (const name of [...bookingFieldsToFetch(config.fields), ...PORTAL_READ_FIELDS]) {
+        params.append('fields[]', name);
+      }
       const res = await request(config.bookingsTable, params.toString());
       const body = (await readJson(res, { table: config.bookingsTable, operation: 'findBookings' })) as {
         records?: unknown[];
@@ -167,6 +194,40 @@ export function createAirtableClient(
         });
         await readJson(res, { table: config.bookingsTable, operation: 'writePortalTokens' });
       }
+    },
+
+    async patchBooking(recordId: string, fields: Record<string, unknown>): Promise<void> {
+      if (!RECORD_ID.test(recordId)) throw new Error('Refusing a portal write for a bad record id');
+      const picked = pickPortalWriteFields(fields);
+      if (Object.keys(picked).length === 0) return;
+      const res = await request(`${config.bookingsTable}/${recordId}`, '', {
+        method: 'PATCH',
+        body: JSON.stringify({ fields: picked, typecast: false }),
+      });
+      await readJson(res, { table: config.bookingsTable, operation: 'patchBooking' });
+    },
+
+    async uploadFloorPreview(recordId: string, file: { base64: string; filename: string }): Promise<void> {
+      if (!RECORD_ID.test(recordId)) throw new Error('Refusing a portal write for a bad record id');
+      const filename = PREVIEW_FILENAMES.has(file.filename) ? file.filename : 'floor-holding.png';
+      const base64 = file.base64.replace(/\s/g, '');
+      if (!/^[A-Za-z0-9+/]+={0,2}$/.test(base64)) throw new Error('Refusing a portal preview that is not base64');
+      const bytes = Buffer.from(base64, 'base64');
+      if (bytes.length === 0 || bytes.length > AIRTABLE_ATTACHMENT_MAX_BYTES) {
+        throw new Error('Refusing a portal preview outside the attachment size limit');
+      }
+      const url = `https://content.airtable.com/v0/${encodeURIComponent(config.baseId)}/${recordId}/${encodeURIComponent(PORTAL_FLOOR_PREVIEW_FIELD)}/uploadAttachment`;
+      const res = await fetchImpl(url, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ contentType: 'image/png', file: base64, filename }),
+        signal: AbortSignal.timeout(20_000),
+      });
+      await readJson(res, { table: config.bookingsTable, operation: 'uploadFloorPreview' });
     },
   };
 

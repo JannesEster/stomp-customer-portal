@@ -94,6 +94,9 @@ describe('portal HTTP API', () => {
     expect(body.booking.floor).toEqual({ widthM: 6, lengthM: 4.5 });
     expect(body.booking.screensBooked).toBe(2);
     expect(body.portalUrl).toBe(`https://stomp-portal.onrender.com/p/${TOKEN}`);
+    expect(body.savedAnswers).toBeNull();
+    expect(body.lastSavedAt).toBeNull();
+    expect(body).not.toHaveProperty('firstOpenedAt');
     const json = JSON.stringify(body);
     expect(json).not.toContain('INTERNAL-NOTE-DO-NOT-LEAK');
     expect(json).not.toContain('xero-admin');

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createAirtableClient } from './airtableClient';
+import { PORTAL_WRITE_FIELDS, PRIVATE_OR_UNUSED_FIELDS, pickPortalWriteFields } from './airtableFields';
 import { readPortalConfig } from './portalConfig';
 import { portalTokenFormula } from './portalToken';
 
@@ -29,6 +30,11 @@ describe('Airtable client', () => {
     expect(url.searchParams.get('maxRecords')).toBe('2');
     const fields = url.searchParams.getAll('fields[]');
     expect(fields).toContain('Booking name');
+    expect(fields).toContain('Portal answers');
+    expect(fields).toContain('Portal last saved');
+    expect(fields).toContain('Portal first opened');
+    expect(fields).not.toContain('Portal summary');
+    expect(fields).not.toContain('Portal floor preview');
     expect(fields).not.toContain('Important notes');
     expect(fields).not.toContain('Customer Xero account link');
     expect(fields).not.toContain('Portal link');
@@ -181,5 +187,102 @@ describe('Airtable client', () => {
     expect(calls[2].body).not.toContain('Portal link');
     expect(calls[2].body).not.toContain('evil.example');
     expect(calls[2].body).not.toContain('Important notes');
+  });
+
+  it('patches only portal write fields, with typecast off, and drops anything else', async () => {
+    const calls: { url: string; method: string; body: string }[] = [];
+    const client = createAirtableClient(config(), async (url, init) => {
+      calls.push({
+        url: String(url),
+        method: init?.method ?? 'GET',
+        body: typeof init?.body === 'string' ? init.body : '',
+      });
+      return Response.json({ id: 'recFAKEBOOK000001', fields: {} });
+    });
+
+    const extra = {
+      'Portal answers': '{"version":3}',
+      'Portal summary': 'Holding screen: not set yet',
+      'Portal progress': 0.5,
+      'Important notes': 'LEAK-ME',
+      'Portal token': TOKEN,
+      'Customer Xero account link': 'https://example.com/xero-admin-not-for-customers',
+      'Portal link': 'https://evil.example/p/nope',
+    };
+    await client.patchBooking('recFAKEBOOK000001', extra);
+    await client.patchBooking('recFAKEBOOK000001', { 'Important notes': 'LEAK-ME', Phone: '0400000000' });
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0].method).toBe('PATCH');
+    expect(new URL(calls[0].url).pathname).toBe('/v0/appwMfJFb7rLDqJ30/Bookings/recFAKEBOOK000001');
+    const body = JSON.parse(calls[0].body) as { typecast: boolean; fields: Record<string, unknown> };
+    expect(body.typecast).toBe(false);
+    expect(Object.keys(body.fields).every((key) => (PORTAL_WRITE_FIELDS as readonly string[]).includes(key))).toBe(true);
+    expect(body.fields).toEqual({
+      'Portal answers': '{"version":3}',
+      'Portal summary': 'Holding screen: not set yet',
+      'Portal progress': 0.5,
+    });
+    expect(calls[0].body).not.toContain('LEAK-ME');
+    expect(calls[0].body).not.toContain(TOKEN);
+    expect(calls[0].body).not.toContain('xero-admin');
+    expect(calls[0].body).not.toContain('evil.example');
+
+    const forbidden = [
+      ...PRIVATE_OR_UNUSED_FIELDS,
+      'Portal token',
+      'Phone',
+      'secretNote',
+      'fields',
+      'typecast',
+    ];
+    const attacked = Object.fromEntries(forbidden.map((name) => [name, 'nope']));
+    expect(Object.keys(pickPortalWriteFields({ ...attacked, 'Portal last saved': '2026-01-01T00:00:00.000Z' }))).toEqual([
+      'Portal last saved',
+    ]);
+    for (const name of forbidden) {
+      expect(Object.keys(pickPortalWriteFields({ [name]: 'nope' }))).toEqual([]);
+    }
+  });
+
+  it('uploads a floor preview PNG to the attachment endpoint and logs a forbidden write without the body', async () => {
+    const calls: { url: string; method: string; body: string; auth: string }[] = [];
+    const logs: string[] = [];
+    const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+    let status = 200;
+    const client = createAirtableClient(
+      config(),
+      async (url, init) => {
+        calls.push({
+          url: String(url),
+          method: init?.method ?? 'GET',
+          body: typeof init?.body === 'string' ? init.body : '',
+          auth: new Headers(init?.headers).get('Authorization') ?? '',
+        });
+        return Response.json(
+          { error: { type: 'INVALID_PERMISSIONS', message: `${TOKEN} secret answers` } },
+          { status },
+        );
+      },
+      (line) => logs.push(line),
+    );
+
+    status = 200;
+    await client.uploadFloorPreview('recFAKEBOOK000001', { base64: png, filename: 'floor-holding.png' });
+    expect(calls[0].method).toBe('POST');
+    expect(calls[0].url).toBe(
+      'https://content.airtable.com/v0/appwMfJFb7rLDqJ30/recFAKEBOOK000001/Portal%20floor%20preview/uploadAttachment',
+    );
+    expect(calls[0].auth).toBe('Bearer pat_fake_not_real');
+    expect(JSON.parse(calls[0].body)).toEqual({ contentType: 'image/png', file: png, filename: 'floor-holding.png' });
+
+    status = 403;
+    await expect(
+      client.uploadFloorPreview('recFAKEBOOK000001', { base64: png, filename: 'floor-dancing.png' }),
+    ).rejects.toThrow('Airtable request failed (403)');
+    expect(logs).toEqual(['airtable update forbidden status=403']);
+    expect(logs.join('\n')).not.toContain(TOKEN);
+    expect(logs.join('\n')).not.toContain('secret answers');
+    expect(logs.join('\n')).not.toContain(png);
   });
 });

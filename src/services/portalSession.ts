@@ -1,11 +1,14 @@
+import { DESIGN_VERSION } from '../lib/design';
 import { isValidPortalToken } from '../lib/portalToken';
-import type { Booking, Customer } from '../types';
+import type { Booking, Customer, DesignState } from '../types';
 import type { AuthProvider } from './auth';
 import type { BookingSource } from './bookings';
 
 export interface PortalPayload {
   customer: Customer;
   booking: Booking;
+  savedAnswers: DesignState | null;
+  lastSavedAt: string | null;
 }
 
 /**
@@ -49,12 +52,17 @@ export class PortalSession {
       this.problem = 'failed';
       return null;
     }
-    const body = (await response.json()) as Partial<PortalPayload>;
+    const body = (await response.json()) as Partial<PortalPayload> & { savedAnswers?: unknown; lastSavedAt?: unknown };
     if (!isPayload(body)) {
       this.problem = 'failed';
       return null;
     }
-    return body;
+    return {
+      customer: body.customer,
+      booking: body.booking,
+      savedAnswers: readSavedDesign(body.savedAnswers),
+      lastSavedAt: typeof body.lastSavedAt === 'string' ? body.lastSavedAt : null,
+    };
   }
 }
 
@@ -95,8 +103,16 @@ export class ApiBookingSource implements BookingSource {
   }
 }
 
-function isPayload(value: Partial<PortalPayload>): value is PortalPayload {
+function isPayload(
+  value: Partial<PortalPayload>,
+): value is PortalPayload & { savedAnswers?: unknown; lastSavedAt?: unknown } {
   const booking = value.booking;
   const customer = value.customer;
   return !!booking && !!customer && typeof booking.id === 'string' && typeof customer.name === 'string' && Array.isArray(booking.extras);
+}
+
+function readSavedDesign(value: unknown): DesignState | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  if ((value as DesignState).version !== DESIGN_VERSION) return null;
+  return value as DesignState;
 }

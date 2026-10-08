@@ -162,6 +162,7 @@ export function FloorPreview({
           width={px.width}
           height={px.height}
           className="floor-canvas"
+          data-phase={phase}
           aria-label={
             holding
               ? `${phaseLabel(phase)} holding screen preview`
