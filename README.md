@@ -72,7 +72,7 @@ Styling follows stompsphere.com.au: black background, Inter for text, italic Pla
 - **Invite colours**: when a couple uploads an invite (`design/InviteUpload.tsx`), `lib/invite.ts` renders it in the browser (the first page for PDFs, which also becomes the thumbnail) and `lib/palette.ts` picks out its main colours, ranking colourful accents like gold ahead of plain black text. The colours are saved with the design as `invitePalette`, and the first one is meant for the couple's names.
 - **Designs generated from the invite**: once an invite is uploaded, **Generate a design from my invite** (`lib/inviteStyle.ts`) builds a holding screen from the invite's paper and ink colours and the styling note. Colour words in the note (sage, navy, terracotta and so on) set the accent or floor colour, and mood words (modern, classic, romantic, boho, art deco) pick the lettering and layout. The floor is always dark, because big areas of white look harsh on LED, so a light invite is flipped to light lettering on black. `lib/generatedRender.ts` draws it live with the couple's names, the booking date, ornaments and drifting sparkles. It appears as **From your invite** at the start of the style gallery; **Try another version** steps through other layouts and lettering until the invite or note changes. On the after the entrance step, 10 other versions show on the right, and picking one uses that version until dancing time.
 - **Guided steps** (`tabs/DesignTab.tsx`, `design/steps.tsx`): the Design tab shows one step at a time.
-  1. **Your details**: the couple's names (prefilled from the booking, and used on the holding screen), with the wedding date and venue from the booking shown read only. Wedding planner, photographer, videographer, DJ, and a larger Other box (celebrant, florist, a separate MC, and so on) are edited here and on My bookings. They are saved with the design. Filled roles are also copied to **Portal suppliers**. Leaving them blank does not change progress.
+  1. **Your details**: the couple's names (prefilled from the booking, and used on the holding screen), with the wedding date and venue from the booking shown read only. Wedding planner, photographer, videographer, DJ, and a larger Other box (celebrant, florist, a separate MC, and so on) are edited here and on My bookings. When the couple has not saved answers for this design, those boxes start from the staff columns on the booking. A saved answer replaces that starting value, including a role they left blank. They are saved with the design. Filled roles are also copied to **Portal suppliers**. Leaving them blank does not change progress. The portal does not write the staff columns.
   2. **Your holding screen**: the style gallery, the invite or styling upload and the photo of the two of them. While either the bridal entrance time or the dancing start time is still blank, every step says so above the title and **Insert times here** opens Notes/Details. Review and submit uses "You haven't selected times." instead. Submitting in that state sets `submittedWithoutTimes` and the review line changes to "Submitted without times.", with a Times not included tag on the summary. A later submit that includes both times clears it. Coming back resumes the same step.
   3. **Reactions before the entrance**: reactions while guests arrive. Picks carry on after the entrance. Leaving them all unticked adds a reactions step after step 4, so reactions can still be chosen for that part of the night.
   4. **After the bridal entrance**: what the floor shows until dancing time.
@@ -169,11 +169,11 @@ The server reads these. Defaults match the Stomp base as of 7 October 2026. Only
 | `LEAD_VENUE_NAME_FIELD` | `Venue name` | |
 | `VENUE_NAME_FIELD` | `Venue name` | |
 | `VENUE_ADDRESS_FIELD` | `Address` | |
-| `WEDDING_PLANNER_FIELD` | `Wedding planner` | Mapped when the record includes it. Not requested until the column exists. |
+| `WEDDING_PLANNER_FIELD` | `Wedding planner` | Requested on lookup. Starting value only. Trimmed and capped at 120 characters. The portal does not write this column. |
 | `PHOTOGRAPHER_FIELD` | `Photographer` | Same as wedding planner. |
 | `VIDEOGRAPHER_FIELD` | `Videographer` | Same as wedding planner. |
 | `DJ_FIELD` | `DJ` | Same as wedding planner. |
-| `OTHER_SUPPLIERS_FIELD` | `Other suppliers` | Long text. Same as wedding planner. |
+| `OTHER_SUPPLIERS_FIELD` | `Other suppliers` | Requested on lookup. Trimmed and capped at 2,000 characters. The portal does not write this column. |
 
 When `AIRTABLE_TOKEN` is unset, `GET /api/portal/:token` returns 503 for a well formed token and the seed demo at `/` still works. The same 503 applies to the answer, opened, and preview writes.
 
@@ -194,7 +194,7 @@ The script needs `AIRTABLE_TOKEN`. It never prints that token. Without `--record
 
 `GET /api/portal/:token` looks up exactly one Bookings record. The token is checked before the request (at least 22 URL-safe characters, 128 bits). The Airtable formula escapes quotes. Unknown tokens, and more than one match, are 404. There is no route that lists bookings. Lookups are limited to 30 a minute per IP.
 
-The GET response adds `savedAnswers` (the parsed **Portal answers** JSON, or null when that field is blank or not valid JSON) and `lastSavedAt`. Portal summary, progress, steps missing, first opened, floor design, floor preview, and Portal suppliers are not returned. Supplier names travel inside the saved answers.
+The GET response adds `savedAnswers` (the parsed **Portal answers** JSON, or null when that field is blank or not valid JSON) and `lastSavedAt`. Portal summary, progress, steps missing, first opened, floor design, floor preview, and Portal suppliers are not returned. The couple's own supplier names travel inside the saved answers. The booking also returns `weddingPlanner`, `photographer`, `videographer`, `dj`, and `otherSuppliers` from the staff columns, trimmed and capped, as starting values when that design has no saved answers. A saved answer wins, including a role saved blank.
 
 `POST /api/portal/:token/answers` (also `POST /api/p/:token/answers`) saves the couple's design on that same booking. It uses the same token check and the same one booking lookup. A malformed token is 400. A missing `AIRTABLE_TOKEN` is 503. The JSON body is limited to about 64kb (413 over that). The answers are checked against the design state: unknown keys are dropped, strings and arrays are capped, and a wrong shape is 400 `invalid_answers` with nothing written. The stored JSON stays under 90,000 characters.
 
@@ -233,12 +233,12 @@ The API returns only the portal's customer and booking fields. Linked records ar
 | Floor | Bookings **Floor sqm**. 12 sqm is 4m x 3m. 27 sqm is 6m x 4.5m. Any other area is shown as square metres only. Width and length are not invented. |
 | Screens | Inferred from Leads **Add-ons** when an option states a count, for example `2 portrait screens`, `portrait screen`, or `no screens`. If nothing mentions screens, the portal says they are not listed yet and hides the screen steps. |
 | Extras | Leads **Add-ons**. An option whose name matches `extras.json` (Live event streaming) uses that extra id. Other options are shown under their Airtable name. Screen options are not repeated as extras. |
-| Wedding planner, photographer, videographer, DJ, other suppliers | Bookings **Wedding planner**, **Photographer**, **Videographer**, **DJ**, and **Other suppliers**, when the record includes them. The couple edits the same lines on Your details and My bookings. Those columns are not in the lookup request yet, because a missing field fails the whole lookup. **Wedding Planners** (the linked table) is not used. |
+| Wedding planner, photographer, videographer, DJ, other suppliers | Bookings **Wedding planner**, **Photographer**, **Videographer**, **DJ**, and **Other suppliers**. Requested on lookup and returned on `booking` as starting values. Trimmed. The four roles are capped at 120 characters and Other suppliers at 2,000. Saved answers replace them, including a role saved blank. The portal does not write these columns. The old **Wedding Planners** field is never fetched. |
 | Portal URL | Built from `PUBLIC_BASE_URL` and the token. Not copied from the Portal link formula. |
 | Saved answers | Bookings **Portal answers**, parsed. Null when blank or not valid JSON. Returned as `savedAnswers`. |
 | Last saved | Bookings **Portal last saved**. Returned as `lastSavedAt`. |
 
-Not returned to the browser: **Important notes**, **Customer Xero account link**, Fillout ids, the booking form URL, quotes, deposits, balances, invoice links, contract status, Activity, Busy Dates, Wedding Planners, hire notes, content notes, and the lead's phone, guest count, and event type.
+Not returned to the browser: **Important notes**, **Customer Xero account link**, Fillout ids, the booking form URL, quotes, deposits, balances, invoice links, contract status, Activity, Busy Dates, the old Wedding Planners field, hire notes, content notes, and the lead's phone, guest count, and event type.
 
 Missing date, venue, floor, or screens stay blank in the UI. The floor preview says when it is using a 6m x 4.5m sample, and that sample is not saved as the customer's floor.
 

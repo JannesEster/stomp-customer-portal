@@ -94,10 +94,59 @@ describe('portal HTTP API', () => {
     expect(body.booking.floor).toEqual({ widthM: 6, lengthM: 4.5 });
     expect(body.booking.screensBooked).toBe(2);
     expect(body.portalUrl).toBe(`https://stomp-portal.onrender.com/p/${TOKEN}`);
+    expect(body.booking.weddingPlanner).toBe('');
+    expect(body.booking.photographer).toBe('');
+    expect(body.booking.videographer).toBe('');
+    expect(body.booking.dj).toBe('');
+    expect(body.booking.otherSuppliers).toBe('');
     expect(body.savedAnswers).toBeNull();
     expect(body.lastSavedAt).toBeNull();
     expect(body).not.toHaveProperty('firstOpenedAt');
     const json = JSON.stringify(body);
+    expect(json).not.toContain('INTERNAL-NOTE-DO-NOT-LEAK');
+    expect(json).not.toContain('xero-admin');
+  });
+
+  it('returns staff supplier columns trimmed and capped on the booking', async () => {
+    const base = await start({
+      async findBookingsByFormula() {
+        return [
+          {
+            id: 'recFAKEBOOK000001',
+            fields: {
+              'Booking name': 'Fake celebration',
+              Lead: ['recFAKELEAD000001'],
+              'Event date': '2027-06-15',
+              'Wedding planner': '  Ada Planner  ',
+              Photographer: ` ${'P'.repeat(200)} `,
+              Videographer: '   ',
+              DJ: '',
+              'Other suppliers': `\n${'O'.repeat(2_500)}\n`,
+              'Wedding Planners': ['recFAKEPLAN00001'],
+              'Important notes': 'INTERNAL-NOTE-DO-NOT-LEAK',
+              'Customer Xero account link': 'https://example.com/xero-admin-not-for-customers',
+            },
+          },
+        ];
+      },
+      async getLead(id) {
+        return { id, fields: { Name: 'Fake Customer', Email: 'fake.customer@example.com' } };
+      },
+      async getVenue() {
+        return null;
+      },
+    });
+    const res = await fetch(`${base}/api/portal/${TOKEN}`);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.booking.weddingPlanner).toBe('Ada Planner');
+    expect(body.booking.photographer).toBe('P'.repeat(120));
+    expect(body.booking.videographer).toBe('');
+    expect(body.booking.dj).toBe('');
+    expect(body.booking.otherSuppliers).toBe('O'.repeat(2_000));
+    const json = JSON.stringify(body);
+    expect(json).not.toContain('recFAKEPLAN00001');
+    expect(json).not.toContain('Wedding Planners');
     expect(json).not.toContain('INTERNAL-NOTE-DO-NOT-LEAK');
     expect(json).not.toContain('xero-admin');
   });

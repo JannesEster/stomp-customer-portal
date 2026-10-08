@@ -118,6 +118,9 @@ describe('field whitelist', () => {
     expect(view.booking.venue).toBe('Typed venue');
     expect(view.booking.coupleNames).toBe('Name fallback');
     expect(view.booking.weddingPlanner).toBe('');
+    expect(view.booking.photographer).toBe('');
+    expect(view.booking.videographer).toBe('');
+    expect(view.booking.dj).toBe('');
     expect(view.booking.otherSuppliers).toBe('');
   });
 
@@ -144,6 +147,50 @@ describe('field whitelist', () => {
     expect(view.booking.dj).toBe('Noah Ellis');
     expect(view.booking.otherSuppliers).toBe('Celebrant: Jo\nFlorist: Lane');
     expect(view.booking.screensBooked).toBeNull();
+  });
+
+  it('trims and caps supplier prefill, and turns blank staff columns into blank boxes', () => {
+    const view = mapPortalRecords(
+      {
+        id: 'recFAKEBOOK000001',
+        fields: {
+          'Wedding planner': '  Ada Planner  ',
+          Photographer: ` ${'P'.repeat(200)} `,
+          Videographer: '   ',
+          DJ: '',
+          'Other suppliers': `\n${'O'.repeat(2_500)}\n`,
+          'Wedding Planners': ['recFAKEPLAN00001'],
+          'Important notes': 'INTERNAL-NOTE-DO-NOT-LEAK',
+          'Customer Xero account link': 'https://example.com/xero-admin-not-for-customers',
+        },
+      },
+      null,
+      null,
+      DEFAULT_FIELD_NAMES,
+      extras,
+    );
+    expect(view.booking.weddingPlanner).toBe('Ada Planner');
+    expect(view.booking.photographer).toHaveLength(120);
+    expect(view.booking.photographer).toBe('P'.repeat(120));
+    expect(view.booking.videographer).toBe('');
+    expect(view.booking.dj).toBe('');
+    expect(view.booking.otherSuppliers).toHaveLength(2_000);
+    expect(view.booking.otherSuppliers).toBe('O'.repeat(2_000));
+    const json = JSON.stringify(view);
+    expect(json).not.toContain('recFAKEPLAN00001');
+    expect(json).not.toContain('Wedding Planners');
+    expect(json).not.toContain('INTERNAL-NOTE-DO-NOT-LEAK');
+    expect(json).not.toContain('xero-admin');
+  });
+
+  it('fetches the five supplier columns and leaves the old Wedding Planners field out', () => {
+    const fetched = bookingFieldsToFetch(DEFAULT_FIELD_NAMES);
+    expect(fetched).toEqual(
+      expect.arrayContaining(['Wedding planner', 'Photographer', 'Videographer', 'DJ', 'Other suppliers']),
+    );
+    expect(fetched).not.toContain('Wedding Planners');
+    expect(fetched).not.toContain('Important notes');
+    expect(fetched).not.toContain('Customer Xero account link');
   });
 
   it('does not fetch private booking fields', () => {
