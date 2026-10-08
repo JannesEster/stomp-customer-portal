@@ -48,7 +48,8 @@ const STEPS: StepDef[] = [
         Your <Accent>details</Accent>
       </>
     ),
-    intro: "Let's start with the two of you. Your names go on your holding screen, and you can see them on the floor below.",
+    intro:
+      "Let's start with the two of you, and the people helping on the day. Your names go on your holding screen, and you can see them on the floor below.",
     preview: 'floor',
     phase: 'holding',
   },
@@ -136,7 +137,7 @@ const STEPS: StepDef[] = [
       </>
     ),
     intro:
-      'Pick a welcome sign or an order of the day for your portrait screens. The samples show example names. Stomp makes the finished version with your names and date.',
+      'Pick a welcome sign or an order of the day for your portrait screens, and write what you want on them, such as a welcome line, a food menu or a photo slideshow. The samples show example names. Stomp makes the finished version with your names and date.',
     preview: 'screens',
     phase: 'holding',
   },

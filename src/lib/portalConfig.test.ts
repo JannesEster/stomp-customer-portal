@@ -12,6 +12,8 @@ describe('portal config', () => {
     expect(config.tokenFieldName).toBe('Portal token');
     expect(config.tokenFieldId).toBeNull();
     expect(config.fields.floorSqm).toBe('Floor sqm');
+    expect(config.fields.weddingPlanner).toBe('Wedding planner');
+    expect(config.fields.otherSuppliers).toBe('Other suppliers');
     expect(config.fields.leadAddOns).toBe('Add-ons');
     expect(config.port).toBe(3000);
   });

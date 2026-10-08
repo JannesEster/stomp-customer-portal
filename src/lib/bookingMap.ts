@@ -25,6 +25,11 @@ export const PUBLIC_BOOKING_KEYS = [
   'floorSqm',
   'screensBooked',
   'extras',
+  'weddingPlanner',
+  'photographer',
+  'videographer',
+  'dj',
+  'otherSuppliers',
 ] as const;
 
 export const PUBLIC_CUSTOMER_KEYS = ['id', 'name', 'email', 'bookingIds'] as const;
@@ -74,6 +79,11 @@ export function mapPortalRecords(
     floorSqm,
     screensBooked: split.screensBooked,
     extras: split.extras,
+    weddingPlanner: asString(bookingFields[fields.weddingPlanner]),
+    photographer: asString(bookingFields[fields.photographer]),
+    videographer: asString(bookingFields[fields.videographer]),
+    dj: asString(bookingFields[fields.dj]),
+    otherSuppliers: asString(bookingFields[fields.otherSuppliers]),
   };
 
   const customer: Customer = {

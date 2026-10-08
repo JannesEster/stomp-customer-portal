@@ -3,6 +3,7 @@ import effectsJson from './effects.json';
 import holdingStylesJson from './holding-styles.json';
 import dancingVideosJson from './dancing-videos.json';
 import screenStylesJson from './screen-styles.json';
+import { screenLive } from './screenLive';
 import extrasJson from './extras.json';
 import type { Timing } from '../types';
 
@@ -81,12 +82,14 @@ export interface NamesSlotDef extends TextSlotDef {
   connector?: string;
   connectorFont?: string;
   connectorSize?: number;
+  /** Colour for the & or +, when it differs from the names */
+  connectorColour?: string;
   /** Added after the last name, for styles like "Sam & Alex's wedding" */
   suffix?: string;
 }
 
 export interface DateSlotDef extends TextSlotDef {
-  /** Tokens: D, DD, M, MM, MMMM, YYYY. For example "D MMMM YYYY" or "DD.MM.YYYY". */
+  /** Tokens: D, DD, DTH, M, MM, MMMM, YYYY, WEEKDAY. For example "D MMMM YYYY" or "DD.MM.YYYY". */
   format: string;
 }
 
@@ -98,6 +101,8 @@ export interface LiveTextDef {
   names: NamesSlotDef;
   /** Filled in from the booking's event date */
   date?: DateSlotDef;
+  /** Extra date pieces, for a template that splits the day, month and year */
+  moreDates?: DateSlotDef[];
   /** Wording that is part of the style but was removed from the video with the names */
   fixed?: FixedTextDef[];
 }
@@ -137,14 +142,20 @@ export interface DancingVideosConfig {
 }
 
 /**
- * A portrait screen design. `image` is the Canva sample at the screens' exact size,
- * with example names baked in, so Stomp makes the finished version for each couple.
+ * A portrait screen design. `image` is the Canva sample, with example names, for the
+ * gallery only. `clean` is the same artwork with no lettering, and the preview draws
+ * the couple's names and their requested wording over it in `ink`.
  */
 export interface ScreenStyleDef {
   id: string;
   name: string;
   description: string;
   image: string;
+  clean: string;
+  /** Lettering colour that stays readable on the clean artwork */
+  ink: string;
+  /** Template wording, with slots for the couple's names and the booking date */
+  live: LiveTextDef;
   /** A welcome sign, or an order of the day board with the wedding party or ceremony */
   kind: 'welcome' | 'schedule';
 }
@@ -175,7 +186,7 @@ export function fromRoot(path: string): string {
 const effects = effectsJson as EffectsConfig;
 const holdingStyles = holdingStylesJson as HoldingStylesConfig;
 const dancingVideos = dancingVideosJson as DancingVideosConfig;
-const screenStyles = screenStylesJson as ScreenStylesConfig;
+const screenStyles = screenStylesJson as { styles: Omit<ScreenStyleDef, 'live'>[] };
 
 export const portalConfig = portalJson as PortalConfig;
 export const effectsConfig: EffectsConfig = {
@@ -197,7 +208,11 @@ export const dancingVideosConfig: DancingVideosConfig = {
 };
 export const screenStylesConfig: ScreenStylesConfig = {
   ...screenStyles,
-  styles: screenStyles.styles.map((s) => ({ ...s, image: fromRoot(s.image) })),
+  styles: screenStyles.styles.map((s) => {
+    const live = screenLive[s.id];
+    if (!live) throw new Error(`No screen wording for ${s.id}`);
+    return { ...s, image: fromRoot(s.image), clean: fromRoot(s.clean), live };
+  }),
 };
 export const extrasConfig = extrasJson as ExtrasConfig;
 

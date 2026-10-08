@@ -68,6 +68,10 @@ describe('formatStyleDate', () => {
     expect(formatStyleDate('2027-03-13', 'DD - MM - YYYY')).toBe('13 - 03 - 2027');
     expect(formatStyleDate('2027-03-05', 'D - M - YYYY')).toBe('5 - 3 - 2027');
     expect(formatStyleDate('2027-11-06', 'DD.MM.YYYY')).toBe('06.11.2027');
+    expect(formatStyleDate('2027-03-13', 'MMMM DTH YYYY')).toBe('March 13TH 2027');
+    expect(formatStyleDate('2027-03-13', 'WEEKDAY')).toBe('Saturday');
+    expect(formatStyleDate('2027-03-11', 'DTH')).toBe('11TH');
+    expect(formatStyleDate('2027-03-02', 'DTH')).toBe('2ND');
   });
 });
 

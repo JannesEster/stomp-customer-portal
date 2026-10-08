@@ -64,15 +64,23 @@ const MONTHS = [
 export function formatStyleDate(isoDate: string, format: string): string {
   const [y, m, d] = isoDate.split('-').map(Number);
   const pad = (n: number) => String(n).padStart(2, '0');
+  const day = new Date(Date.UTC(y, m - 1, d));
+  const suffix = (n: number) => {
+    const teen = n % 100;
+    if (teen >= 11 && teen <= 13) return 'TH';
+    return (['TH', 'ST', 'ND', 'RD'][n % 10] ?? 'TH');
+  };
   const tokens: Record<string, string> = {
+    WEEKDAY: day.toLocaleDateString('en-AU', { weekday: 'long', timeZone: 'UTC' }),
     YYYY: String(y),
     MMMM: MONTHS[m - 1],
     MM: pad(m),
-    M: String(m),
+    DTH: `${d}${suffix(d)}`,
     DD: pad(d),
     D: String(d),
+    M: String(m),
   };
-  return format.replace(/YYYY|MMMM|MM|M|DD|D/g, (t) => tokens[t]);
+  return format.replace(/WEEKDAY|DTH|YYYY|MMMM|MM|DD|D|M/g, (t) => tokens[t]);
 }
 
 export interface LiveLayer {
@@ -136,10 +144,13 @@ function drawNames(
     lines.forEach((l, i) => {
       const ly = (i - (lines.length - 1) / 2) * lineH;
       if (l.connector) {
+        if (slot.connectorColour) ctx.fillStyle = slot.connectorColour;
         drawFitted(ctx, l.text, 0, ly, connectorFont, (slot.connectorSize ?? slot.size * 0.6) * f.dh, maxW, {
           ...coloured,
+          colour: slot.connectorColour ?? colour,
           letterSpacing: 0,
         });
+        if (slot.connectorColour) ctx.fillStyle = colour;
       } else {
         drawFitted(ctx, l.text, 0, ly, nameFont, nameSize * scale, maxW, coloured);
       }

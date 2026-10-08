@@ -5,6 +5,8 @@
       "name": "Cherry blossom",
       "description": "A pink blossom wreath on deep plum.",
       "image": "/screens/cherry-blossom.jpg",
+      "clean": "/screens/clean/cherry-blossom.png",
+      "ink": "#f6e4ea",
       "kind": "welcome"
     },
     {
@@ -12,6 +14,8 @@
       "name": "Pink garden",
       "description": "Bright florals and a gold ring on pink.",
       "image": "/screens/pink-garden.jpg",
+      "clean": "/screens/clean/pink-garden.png",
+      "ink": "#9c3040",
       "kind": "welcome"
     },
     {
@@ -19,6 +23,8 @@
       "name": "Gilded roses",
       "description": "Garden roses and a fine gold frame on charcoal.",
       "image": "/screens/gilded-roses.jpg",
+      "clean": "/screens/clean/gilded-roses.png",
+      "ink": "#f7f4ef",
       "kind": "welcome"
     },
     {
@@ -26,6 +32,8 @@
       "name": "Classic charcoal",
       "description": "Tall, fine capitals on charcoal. Simple and timeless.",
       "image": "/screens/classic-charcoal.jpg",
+      "clean": "/screens/clean/classic-charcoal.png",
+      "ink": "#f3f0ea",
       "kind": "welcome"
     },
     {
@@ -33,6 +41,8 @@
       "name": "Midnight quote",
       "description": "White lettering on black, with room for a favourite quote.",
       "image": "/screens/midnight-quote.jpg",
+      "clean": "/screens/clean/midnight-quote.png",
+      "ink": "#f7f7f7",
       "kind": "welcome"
     },
     {
@@ -40,6 +50,8 @@
       "name": "Gold leaf linen",
       "description": "Gold leaves and glitter on cream linen, with your ceremony running order.",
       "image": "/screens/gold-leaf-linen.jpg",
+      "clean": "/screens/clean/gold-leaf-linen.png",
+      "ink": "#1c1c1c",
       "kind": "schedule"
     },
     {
@@ -47,6 +59,8 @@
       "name": "Rose quartz",
       "description": "Navy roses on soft pink marble, introducing your wedding party.",
       "image": "/screens/rose-quartz.jpg",
+      "clean": "/screens/clean/rose-quartz.png",
+      "ink": "#1c1c1c",
       "kind": "schedule"
     },
     {
@@ -54,6 +68,8 @@
       "name": "Blush wildflowers",
       "description": "Watercolour wildflowers on blush, introducing your wedding party.",
       "image": "/screens/blush-wildflowers.jpg",
+      "clean": "/screens/clean/blush-wildflowers.png",
+      "ink": "#2a2422",
       "kind": "schedule"
     },
     {
@@ -61,6 +77,8 @@
       "name": "Something blue",
       "description": "Blue roses and a gold frame on sky blue watercolour, with your ceremony running order.",
       "image": "/screens/something-blue.jpg",
+      "clean": "/screens/clean/something-blue.png",
+      "ink": "#1a3144",
       "kind": "schedule"
     }
   ]

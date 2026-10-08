@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   DESIGN_VERSION,
   createDefaultDesign,
+  supplierDetails,
   holdingFor,
   mediaFor,
   mediaKindOf,
@@ -12,6 +13,7 @@ import {
   validateUpload,
 } from './design';
 import { dancingVideosConfig, effectsConfig, holdingStylesConfig, portalConfig, screenStylesConfig } from '../config';
+import { screenCopy } from './screenRender';
 import { stepsFor } from '../design/steps';
 import type { DesignState, MediaItem, Phase, Timing } from '../types';
 
@@ -103,6 +105,14 @@ describe('usableDesign', () => {
     expect(usableDesign(saved as DesignState, booking).afterReactions).toEqual([]);
   });
 
+  it('fills in the screen wording note for a design saved before that field existed', () => {
+    const saved = createDefaultDesign(booking);
+    const { note: _dropped, ...screens } = saved.screens;
+    const usable = usableDesign({ ...saved, screens } as DesignState, booking);
+    expect(usable.screens.note).toBe('');
+    expect(usable.screens.modes).toEqual(saved.screens.modes);
+  });
+
   it('fills in the dancing note for a design saved before that field existed', () => {
     const { dancingNote: _dropped, ...saved } = createDefaultDesign(booking);
     expect(usableDesign(saved as DesignState, booking).dancingNote).toBe('');
@@ -117,6 +127,19 @@ describe('usableDesign', () => {
       booking,
     );
     expect(noisy.confirmedSteps).toEqual(['details', 'review']);
+  });
+
+  it('fills supplier names from the booking until the couple types their own', () => {
+    const named = { ...booking, weddingPlanner: 'Ada Planner', otherSuppliers: 'Celebrant: Jo' };
+    expect(supplierDetails(named).weddingPlanner).toBe('Ada Planner');
+    expect(createDefaultDesign(named).photographer).toBe('');
+    expect(createDefaultDesign(named).otherSuppliers).toBe('Celebrant: Jo');
+
+    const typed = { ...createDefaultDesign(named), weddingPlanner: '' };
+    expect(usableDesign(typed, named).weddingPlanner).toBe('');
+
+    const { weddingPlanner: _dropped, ...saved } = createDefaultDesign(booking);
+    expect(usableDesign(saved as DesignState, named).weddingPlanner).toBe('Ada Planner');
   });
 
   it('fills in the night times for a design saved before those fields existed', () => {
@@ -137,7 +160,11 @@ describe('usableDesign', () => {
   it('gives a design saved before the screens plan the screen design for every part of the night', () => {
     const { screens: _dropped, ...saved } = { ...createDefaultDesign(booking), reactions: ['fantasy-bubbles'] };
     const usable = usableDesign(saved as DesignState, booking);
-    expect(usable.screens).toEqual({ styleId: null, modes: { holding: 'design', after: 'design', dancing: 'design' } });
+    expect(usable.screens).toEqual({
+      styleId: null,
+      note: '',
+      modes: { holding: 'design', after: 'design', dancing: 'design' },
+    });
     expect(usable.reactions).toEqual(['fantasy-bubbles']);
   });
 });
@@ -175,7 +202,7 @@ describe('screen photos and videos', () => {
 });
 
 describe('media files named in config', () => {
-  const files = new Set(Object.keys(import.meta.glob('/public/**/*.{mp4,jpg,svg}')));
+  const files = new Set(Object.keys(import.meta.glob('/public/**/*.{mp4,jpg,png,svg}')));
   const exists = (src: string) => files.has(`/public${src}`);
 
   it('has every holding style video and poster', () => {
@@ -209,8 +236,22 @@ describe('media files named in config', () => {
     expect(new Set(ids).size).toBe(ids.length);
     for (const s of screenStylesConfig.styles) {
       expect(exists(s.image), s.image).toBe(true);
+      expect(exists(s.clean), s.clean).toBe(true);
+      expect(s.ink).toMatch(/^#/);
+      expect(s.live.names.font, s.id).toBeTruthy();
+      expect(s.live.date?.format, s.id).toBeTruthy();
+      const fonts = holdingStylesConfig.fonts;
+      const slots = [s.live.names, ...(s.live.date ? [s.live.date] : []), ...(s.live.fixed ?? [])];
+      for (const slot of slots) expect(fonts[slot.font], `${s.id} ${slot.font}`).toBeDefined();
+      if (s.live.names.connectorFont) expect(fonts[s.live.names.connectorFont], s.id).toBeDefined();
       expect(['welcome', 'schedule']).toContain(s.kind);
     }
+  });
+
+  it('keeps the couple names and date when they replace the template wording', () => {
+    const live = screenStylesConfig.styles[0].live;
+    expect(screenCopy(live, '')).toBe(live);
+    expect(screenCopy(live, 'A food menu')).toEqual({ names: live.names, date: live.date });
   });
 });
 

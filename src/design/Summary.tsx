@@ -104,6 +104,17 @@ export function DesignSummary({ booking, design }: { booking: Booking; design: D
       </div>
 
       <div className="summary-group">
+        <h3>People on the day</h3>
+        <ul>
+          <li>Wedding planner: {(design.weddingPlanner ?? '').trim() || 'Not added yet'}</li>
+          <li>Photographer: {(design.photographer ?? '').trim() || 'Not added yet'}</li>
+          <li>Videographer: {(design.videographer ?? '').trim() || 'Not added yet'}</li>
+          <li>DJ: {(design.dj ?? '').trim() || 'Not added yet'}</li>
+          <li>Other: {(design.otherSuppliers ?? '').trim() || 'Not added yet'}</li>
+        </ul>
+      </div>
+
+      <div className="summary-group">
         <h3>Holding screen</h3>
         <HoldingSummary h={design.designs.holding} eventDate={booking.eventDate} design={design} />
         <ul>
@@ -186,6 +197,7 @@ export function DesignSummary({ booking, design }: { booking: Booking; design: D
                 Screen design:{' '}
                 {screenStyle ? `${screenStyle.name} (${SCREEN_KIND_LABELS[screenStyle.kind]})` : 'Not chosen yet'}
               </li>
+              <li>Screen wording: {(design.screens.note ?? '').trim() || 'No note yet.'}</li>
               {PHASES.map((p) => (
                 <li key={p.id}>
                   {timingLabel(timingFor(p.id))}:{' '}

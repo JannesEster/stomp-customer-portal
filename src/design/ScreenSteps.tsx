@@ -59,11 +59,15 @@ export function ScreenDesignStep({ design, update }: { design: DesignState; upda
           })}
         </div>
       </fieldset>
-      {chosen?.kind === 'schedule' && (
-        <p className="note">
-          Stomp will need your wedding party or running order for this one. Add it in the Notes/Details tab.
-        </p>
-      )}
+      <label className="field">
+        <span>What should be written on the screens?</span>
+        <textarea
+          rows={4}
+          value={design.screens.note ?? ''}
+          placeholder="Welcome to the wedding of Sam and Alex, a food menu, a photo slideshow, or anything else you have in mind"
+          onChange={(e) => update((d) => ({ ...d, screens: { ...d.screens, note: e.target.value } }))}
+        />
+      </label>
     </>
   );
 }

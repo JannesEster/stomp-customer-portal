@@ -132,7 +132,7 @@ describe('portal step progress', () => {
         holding: { styleId: 'gold-rings', names: 'Sam & Alex', media: null },
       },
       reactions: ['koi-pond'],
-      screens: { styleId: 'cherry-blossom', modes: { holding: 'design', after: 'design', dancing: 'design' } },
+      screens: { styleId: 'cherry-blossom', note: '', modes: { holding: 'design', after: 'design', dancing: 'design' } },
       status: 'submitted',
     });
     const screens = portalStepReport(done, 2);

@@ -37,6 +37,30 @@ describe('sanitizePortalAnswers', () => {
     expect(result.design.confirmedSteps).toEqual(['details', 'review']);
   });
 
+  it('keeps supplier names and screen wording, and fills them when an older save has none', () => {
+    const result = sanitizePortalAnswers(
+      {
+        ...posted(),
+        weddingPlanner: 'Ada Planner',
+        otherSuppliers: 'Celebrant: Jo',
+        screens: { ...posted().screens, note: 'A food menu' },
+      },
+      names,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.design.weddingPlanner).toBe('Ada Planner');
+    expect(result.design.otherSuppliers).toBe('Celebrant: Jo');
+    expect(result.design.screens.note).toBe('A food menu');
+
+    const { weddingPlanner: _w, photographer: _p, videographer: _v, dj: _d, otherSuppliers: _o, ...saved } = posted();
+    const older = sanitizePortalAnswers(saved, names);
+    expect(older.ok).toBe(true);
+    if (!older.ok) return;
+    expect(older.design.weddingPlanner).toBe('');
+    expect(older.design.screens.note).toBe('');
+  });
+
   it('parses older answers without confirmed steps as an empty list', () => {
     const { confirmedSteps: _dropped, ...saved } = posted();
     const result = sanitizePortalAnswers(saved, names);

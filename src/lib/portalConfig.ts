@@ -94,6 +94,11 @@ function fieldNamesFromEnv(env: Record<string, string | undefined>): AirtableFie
     leadVenueName: 'LEAD_VENUE_NAME_FIELD',
     venueName: 'VENUE_NAME_FIELD',
     venueAddress: 'VENUE_ADDRESS_FIELD',
+    weddingPlanner: 'WEDDING_PLANNER_FIELD',
+    photographer: 'PHOTOGRAPHER_FIELD',
+    videographer: 'VIDEOGRAPHER_FIELD',
+    dj: 'DJ_FIELD',
+    otherSuppliers: 'OTHER_SUPPLIERS_FIELD',
   };
   const fields = {} as AirtableFieldNames;
   for (const [key, fallback] of entries) {

@@ -11,7 +11,12 @@
     "roxborough": "RoxboroughCF, Gloock, Georgia, serif",
     "the-seasons": "'The Seasons', Prata, Georgia, serif",
     "cormorant": "'Cormorant Garamond', Georgia, serif",
-    "josefin": "'Josefin Sans', system-ui, sans-serif"
+    "josefin": "'Josefin Sans', system-ui, sans-serif",
+    "callem": "'Callem Script', Parisienne, cursive",
+    "signature": "'Revive 80 Signature', 'Monsieur La Doulaise', cursive",
+    "glacial": "'Glacial Indifference', 'Josefin Sans', sans-serif",
+    "gotham": "Gotham, Inter, sans-serif",
+    "cinzel": "'Cinzel', 'Cormorant Garamond', serif"
   },
   "styles": [
     {

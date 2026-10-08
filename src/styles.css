@@ -903,6 +903,23 @@ legend {
   margin: 0.25rem 0 1rem;
 }
 
+.supplier-fields {
+  margin-top: 1.75rem;
+  max-width: 34rem;
+}
+
+.supplier-fields h3 {
+  margin-bottom: 0.35rem;
+}
+
+.supplier-fields .field:last-child {
+  margin-bottom: 0;
+}
+
+textarea.supplier-other {
+  min-height: 7.5rem;
+}
+
 @media (min-width: 860px) {
   .reactions .effect-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1322,21 +1339,32 @@ legend {
   border-radius: 6px;
   overflow: hidden;
   display: grid;
-  place-items: center;
   box-shadow:
     0 0 0 6px #0a0a0a,
     0 0 0 7px var(--panel-border),
     0 0 40px rgba(0, 163, 255, 0.15);
 }
 
+.screen-frame > * {
+  grid-area: 1 / 1;
+}
+
 .screen-frame img,
-.screen-frame video {
+.screen-frame video,
+.screen-frame canvas {
   width: 100%;
   height: 100%;
+  display: block;
+}
+
+.screen-frame img,
+.screen-frame video {
   object-fit: cover;
 }
 
 .screen-empty {
+  display: grid;
+  place-items: center;
   color: var(--muted);
   font-size: 0.8rem;
   padding: 1rem;

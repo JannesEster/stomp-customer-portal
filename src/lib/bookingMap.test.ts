@@ -117,6 +117,32 @@ describe('field whitelist', () => {
     expect(view.booking.floorSqm).toBe(15);
     expect(view.booking.venue).toBe('Typed venue');
     expect(view.booking.coupleNames).toBe('Name fallback');
+    expect(view.booking.weddingPlanner).toBe('');
+    expect(view.booking.otherSuppliers).toBe('');
+  });
+
+  it('maps supplier names when the booking record includes them', () => {
+    const view = mapPortalRecords(
+      {
+        id: 'recFAKEBOOK000001',
+        fields: {
+          'Wedding planner': 'Ada Planner',
+          Photographer: 'Cam Nguyen',
+          Videographer: 'Priya Shah',
+          DJ: 'Noah Ellis',
+          'Other suppliers': 'Celebrant: Jo\nFlorist: Lane',
+        },
+      },
+      null,
+      null,
+      DEFAULT_FIELD_NAMES,
+      extras,
+    );
+    expect(view.booking.weddingPlanner).toBe('Ada Planner');
+    expect(view.booking.photographer).toBe('Cam Nguyen');
+    expect(view.booking.videographer).toBe('Priya Shah');
+    expect(view.booking.dj).toBe('Noah Ellis');
+    expect(view.booking.otherSuppliers).toBe('Celebrant: Jo\nFlorist: Lane');
     expect(view.booking.screensBooked).toBeNull();
   });
 

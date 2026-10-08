@@ -11,6 +11,7 @@ import {
 import type { AfterEntranceMode, Booking, DancingMode, DesignState, GeneratedStyle } from '../types';
 import { OptionList, type OptionDef } from './common';
 import { CouplePhoto, HoldingFields, NamesField, StylePicker } from './HoldingFields';
+import { SupplierFields } from './SupplierFields';
 import { InviteUpload } from './InviteUpload';
 import { DancingVideosStrip } from './DancingVideosStrip';
 import { GeneratedThumb } from './GeneratedThumb';
@@ -80,6 +81,7 @@ export function DetailsStep({
       <p className="muted small">
         We've filled these in from your booking. If the date or venue isn't right, let Stomp know.
       </p>
+      <SupplierFields design={design} update={update} />
     </div>
   );
 }

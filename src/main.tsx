@@ -25,6 +25,8 @@ import '@fontsource/gilda-display/400.css';
 import '@fontsource/fraunces/600.css';
 import '@fontsource/gloock/400.css';
 import '@fontsource/prata/400.css';
+import '@fontsource/cinzel/400.css';
+import '@fontsource/cinzel/700.css';
 import './styles.css';
 
 createRoot(document.getElementById('root')!).render(

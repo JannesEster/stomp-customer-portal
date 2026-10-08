@@ -91,6 +91,11 @@ function readDesign(input: unknown, coupleNames: string): DesignState {
     stylingNote: optionalString(root.stylingNote, LIMITS.note),
     liveContentRequested: optionalBoolean(root.liveContentRequested),
     confirmedSteps: root.confirmedSteps == null ? [] : readConfirmedSteps(root.confirmedSteps),
+    weddingPlanner: optionalString(root.weddingPlanner, LIMITS.names),
+    photographer: optionalString(root.photographer, LIMITS.names),
+    videographer: optionalString(root.videographer, LIMITS.names),
+    dj: optionalString(root.dj, LIMITS.names),
+    otherSuppliers: optionalString(root.otherSuppliers, LIMITS.note),
   };
   return design;
 }
@@ -121,6 +126,7 @@ function readScreens(value: unknown): ScreensDesign {
   const modes = objectOf(source.modes);
   return {
     styleId: source.styleId == null ? null : requiredString(source.styleId, LIMITS.id),
+    note: optionalString(source.note, LIMITS.note),
     modes: {
       holding: readMode(modes.holding),
       after: readMode(modes.after),

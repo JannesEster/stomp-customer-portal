@@ -1,10 +1,13 @@
 import { extrasConfig } from '../config';
+import { SupplierFields } from '../design/SupplierFields';
+import { Accent } from '../design/common';
+import { useDesignState } from '../hooks/useDesignState';
 import { floorPixels, screenCount } from '../lib/dimensions';
 import { formatEventDate, formatMetres } from '../lib/format';
-import { Accent } from '../design/common';
 import type { Booking } from '../types';
 
 export function MyBookingsTab({ booking }: { booking: Booking }) {
+  const { design, update } = useDesignState(booking);
   const px = booking.floor ? floorPixels(booking.floor.widthM, booking.floor.lengthM) : null;
   const screens = screenCount(booking.screensBooked);
   const extras = booking.extras.map((id) => extrasConfig.extras.find((e) => e.id === id)?.name ?? id);
@@ -54,6 +57,7 @@ export function MyBookingsTab({ booking }: { booking: Booking }) {
       <p className="muted small">
         Need to change your floor size or screens? Get in touch with Stomp and we'll update your booking.
       </p>
+      {design ? <SupplierFields design={design} update={update} /> : <p className="muted small">Loading the people on the day…</p>}
     </section>
   );
 }

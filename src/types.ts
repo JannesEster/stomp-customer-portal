@@ -31,6 +31,24 @@ export interface Booking {
   screensBooked: number | null;
   /** Extra ids, matching src/config/extras.json, or an add-on name when it is not a known extra. */
   extras: string[];
+  /**
+   * Supplier names from the booking, when those columns are present.
+   * The couple edits the same names on the design. Empty when the booking has none.
+   */
+  weddingPlanner?: string;
+  photographer?: string;
+  videographer?: string;
+  dj?: string;
+  otherSuppliers?: string;
+}
+
+/** People helping on the day. The couple types these, and they map to the booking fields of the same names. */
+export interface SupplierDetails {
+  weddingPlanner: string;
+  photographer: string;
+  videographer: string;
+  dj: string;
+  otherSuppliers: string;
 }
 
 export interface StoredFile {
@@ -85,11 +103,13 @@ export interface ScreensDesign {
   /** Style id from src/config/screen-styles.json, null until chosen */
   styleId: string | null;
   modes: Record<Phase, ScreenMode>;
+  /** What the couple wants written on the screens: welcome wording, a menu, a photo slideshow, and so on */
+  note: string;
 }
 
 export type DesignStatus = 'draft' | 'submitted';
 
-export interface DesignState {
+export interface DesignState extends SupplierDetails {
   version: 3;
   status: DesignStatus;
   updatedAt: string;

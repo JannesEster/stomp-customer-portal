@@ -1,7 +1,7 @@
 import { effectsConfig, findScreenStyle, findStyle, type UploadRule } from '../config';
 import { isKnownStepId, type StepId } from '../design/steps';
 import { generatedFor } from './inviteStyle';
-import type { Booking, DesignState, HoldingDesign, MediaItem, MediaKind, Phase, Timing } from '../types';
+import type { Booking, DesignState, HoldingDesign, MediaItem, MediaKind, Phase, SupplierDetails, Timing } from '../types';
 
 export const DESIGN_VERSION = 3;
 
@@ -9,9 +9,31 @@ export function defaultHoldingDesign(booking: Pick<Booking, 'coupleNames'>): Hol
   return { styleId: null, names: booking.coupleNames, media: null };
 }
 
-export function createDefaultDesign(booking: Pick<Booking, 'coupleNames'>, now = new Date()): DesignState {
+const SUPPLIER_KEYS = [
+  'weddingPlanner',
+  'photographer',
+  'videographer',
+  'dj',
+  'otherSuppliers',
+] as const satisfies readonly (keyof SupplierDetails)[];
+
+export function supplierDetails(booking: Partial<SupplierDetails>): SupplierDetails {
+  return {
+    weddingPlanner: booking.weddingPlanner ?? '',
+    photographer: booking.photographer ?? '',
+    videographer: booking.videographer ?? '',
+    dj: booking.dj ?? '',
+    otherSuppliers: booking.otherSuppliers ?? '',
+  };
+}
+
+export function createDefaultDesign(
+  booking: Pick<Booking, 'coupleNames'> & Partial<SupplierDetails>,
+  now = new Date(),
+): DesignState {
   const blank = defaultHoldingDesign(booking);
   return {
+    ...supplierDetails(booking),
     version: DESIGN_VERSION,
     status: 'draft',
     updatedAt: now.toISOString(),
@@ -26,7 +48,7 @@ export function createDefaultDesign(booking: Pick<Booking, 'coupleNames'>, now =
     reactions: [],
     afterReactions: [],
     media: [],
-    screens: { styleId: null, modes: { holding: 'design', after: 'design', dancing: 'design' } },
+    screens: { styleId: null, note: '', modes: { holding: 'design', after: 'design', dancing: 'design' } },
     invite: null,
     invitePreview: null,
     invitePalette: [],
@@ -44,15 +66,32 @@ export function createDefaultDesign(booking: Pick<Booking, 'coupleNames'>, now =
  * Fields added within a version are filled from the defaults. Saved designs from
  * an older version are seed data only, so they are replaced rather than migrated.
  */
-export function usableDesign(saved: DesignState | null, booking: Pick<Booking, 'coupleNames'>): DesignState {
+export function usableDesign(
+  saved: DesignState | null,
+  booking: Pick<Booking, 'coupleNames'> & Partial<SupplierDetails>,
+): DesignState {
   const fresh = createDefaultDesign(booking);
   if (saved?.version !== DESIGN_VERSION) return fresh;
   const merged = { ...fresh, ...saved };
+  // A design saved before these lines existed keeps a name already on the booking.
+  // A blank the couple typed stays blank.
+  for (const key of SUPPLIER_KEYS) {
+    merged[key] = key in saved ? (merged[key] ?? '') : (booking[key] ?? '');
+  }
   // Reactions retired from effects.json are dropped.
   const offered = (id: string) => effectsConfig.effects.some((e) => e.id === id);
   merged.reactions = merged.reactions.filter(offered);
   merged.afterReactions = merged.afterReactions.filter(offered);
   merged.dancingNote = merged.dancingNote ?? '';
+  merged.screens = {
+    styleId: merged.screens?.styleId ?? null,
+    note: merged.screens?.note ?? '',
+    modes: {
+      holding: merged.screens?.modes?.holding ?? 'design',
+      after: merged.screens?.modes?.after ?? 'design',
+      dancing: merged.screens?.modes?.dancing ?? 'design',
+    },
+  };
   merged.entranceTime = merged.entranceTime ?? '';
   merged.dancingStarts = merged.dancingStarts ?? '';
   merged.submittedWithoutTimes = merged.submittedWithoutTimes ?? false;
