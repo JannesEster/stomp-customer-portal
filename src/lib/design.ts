@@ -1,5 +1,5 @@
 import { effectsConfig, findScreenStyle, findStyle, type UploadRule } from '../config';
-import type { StepId } from '../design/steps';
+import { isKnownStepId, type StepId } from '../design/steps';
 import { generatedFor } from './inviteStyle';
 import type { Booking, DesignState, HoldingDesign, MediaItem, MediaKind, Phase, Timing } from '../types';
 
@@ -36,6 +36,7 @@ export function createDefaultDesign(booking: Pick<Booking, 'coupleNames'>, now =
     afterInviteStyle: null,
     stylingNote: '',
     liveContentRequested: false,
+    confirmedSteps: [],
   };
 }
 
@@ -55,8 +56,59 @@ export function usableDesign(saved: DesignState | null, booking: Pick<Booking, '
   merged.entranceTime = merged.entranceTime ?? '';
   merged.dancingStarts = merged.dancingStarts ?? '';
   merged.submittedWithoutTimes = merged.submittedWithoutTimes ?? false;
+  merged.confirmedSteps = normaliseConfirmedSteps(merged.confirmedSteps);
   // A blank floor after the entrance is no longer offered.
   return (merged.afterMode as string) === 'blank' ? { ...merged, afterMode: 'same' } : merged;
+}
+
+/** Known step ids only, in first-seen order, with duplicates removed. Anything else becomes []. */
+export function normaliseConfirmedSteps(value: unknown): StepId[] {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set<StepId>();
+  for (const item of value) {
+    if (typeof item !== 'string' || !isKnownStepId(item) || seen.has(item)) continue;
+    seen.add(item);
+  }
+  return [...seen];
+}
+
+/** Adds a step id once. Already confirmed designs are returned unchanged. */
+export function withConfirmed(design: DesignState, stepId: StepId): DesignState {
+  if (!isKnownStepId(stepId) || design.confirmedSteps.includes(stepId)) return design;
+  return { ...design, confirmedSteps: [...design.confirmedSteps, stepId] };
+}
+
+/**
+ * Confirms the step that was on screen when the couple leaves it forwards.
+ * Back, staying put, and landing on a step do not confirm anything.
+ * A jump confirms only the step they left, not the steps in between.
+ */
+export function confirmOnLeave(
+  design: DesignState,
+  fromId: StepId,
+  toId: StepId,
+  steps: readonly { id: StepId }[],
+): DesignState {
+  const from = steps.findIndex((step) => step.id === fromId);
+  const to = steps.findIndex((step) => step.id === toId);
+  if (from < 0 || to <= from) return design;
+  return withConfirmed(design, fromId);
+}
+
+/** A choice on the step that is on screen confirms that step and keeps the edit. */
+export function recordStepChoice(
+  design: DesignState,
+  stepId: StepId,
+  change: (design: DesignState) => DesignState,
+): DesignState {
+  return withConfirmed(change(design), stepId);
+}
+
+/** Same as `withConfirmed`, and stamps `updatedAt` only when the list actually grows. Status is left as it is. */
+export function confirmStep(design: DesignState, stepId: StepId, now: string): DesignState {
+  const next = withConfirmed(design, stepId);
+  if (next === design) return design;
+  return { ...next, updatedAt: now };
 }
 
 /** The design shown in a phase, or null for a blank floor. */

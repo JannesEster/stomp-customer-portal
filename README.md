@@ -198,9 +198,9 @@ The write sets only these Bookings fields, by name:
 | Field | What is stored |
 | --- | --- |
 | Portal answers | The validated design as JSON. |
-| Portal summary | A plain English line for each step that applies to this booking, plus the floor design name. |
-| Portal progress | Steps complete divided by the steps that apply, from 0 to 1. Computed on the server. Screen steps are left out when no screens are booked. |
-| Portal steps missing | The human names of the unfinished steps, separated by commas. Empty when they are all done. |
+| Portal summary | A plain English line for each step that applies, plus the floor design name. A step they have not opened says Not looked at yet. A step they kept as the default says Default kept. |
+| Portal progress | Steps the couple has looked at and finished, divided by the steps that apply, from 0 to 1. A step counts only after they change a choice on it or leave it with Next. An untouched default does not count. Computed on the server. Screen steps are left out when no screens are booked. |
+| Portal steps missing | The human names of the unfinished steps, separated by commas. Untouched defaults are listed until the couple confirms them. Empty when they are all done. |
 | Portal last saved | The server time, on every save. |
 | Portal first opened | The server time the first time the page is opened or saved. Left as it is once set. |
 | Portal floor design | A single line naming the floor design and the main options. |

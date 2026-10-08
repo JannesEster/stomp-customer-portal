@@ -1,3 +1,4 @@
+import { isKnownStepId, STEP_IDS, type StepId } from '../design/steps';
 import { DESIGN_VERSION, usableDesign } from './design';
 import type { DesignState, GeneratedStyle, HoldingDesign, MediaItem, ScreenMode, ScreensDesign, StoredFile } from '../types';
 
@@ -89,6 +90,7 @@ function readDesign(input: unknown, coupleNames: string): DesignState {
     afterInviteStyle: root.afterInviteStyle == null ? null : readGenerated(root.afterInviteStyle),
     stylingNote: optionalString(root.stylingNote, LIMITS.note),
     liveContentRequested: optionalBoolean(root.liveContentRequested),
+    confirmedSteps: root.confirmedSteps == null ? [] : readConfirmedSteps(root.confirmedSteps),
   };
   return design;
 }
@@ -174,6 +176,19 @@ function readGenerated(value: unknown): GeneratedStyle {
 
 function readIdList(value: unknown): string[] {
   return arrayOf(value, LIMITS.reactions).map((item) => requiredString(item, LIMITS.id));
+}
+
+/** Missing lists are handled by the caller. Unknown ids are dropped. Duplicates are dropped. */
+function readConfirmedSteps(value: unknown): StepId[] {
+  if (!Array.isArray(value)) throw new BadAnswers();
+  const seen = new Set<StepId>();
+  for (const item of value) {
+    if (typeof item !== 'string') throw new BadAnswers();
+    if (!isKnownStepId(item) || seen.has(item)) continue;
+    seen.add(item);
+    if (seen.size >= STEP_IDS.length) break;
+  }
+  return [...seen];
 }
 
 function readShortStrings(value: unknown, maxItems: number, maxLen: number): string[] {

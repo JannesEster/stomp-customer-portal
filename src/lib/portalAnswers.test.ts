@@ -27,6 +27,25 @@ describe('sanitizePortalAnswers', () => {
     expect(json).not.toContain('Important notes');
   });
 
+  it('drops unknown step ids and keeps each known id once', () => {
+    const result = sanitizePortalAnswers(
+      { ...posted(), confirmedSteps: ['details', 'not-a-step', 'details', 'review', 'secret'] },
+      names,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.design.confirmedSteps).toEqual(['details', 'review']);
+  });
+
+  it('parses older answers without confirmed steps as an empty list', () => {
+    const { confirmedSteps: _dropped, ...saved } = posted();
+    const result = sanitizePortalAnswers(saved, names);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.design.confirmedSteps).toEqual([]);
+    expect(sanitizePortalAnswers({ ...posted(), confirmedSteps: 'details' }, names).ok).toBe(false);
+  });
+
   it('rejects a design that is the wrong shape', () => {
     expect(sanitizePortalAnswers(null, names).ok).toBe(false);
     expect(sanitizePortalAnswers({ version: 2 }, names).ok).toBe(false);

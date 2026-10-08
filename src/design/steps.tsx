@@ -208,3 +208,10 @@ export function stepsFor(screens: number, showAfterReactions = false): StepDef[]
     (s) => (screens > 0 || s.group !== 'screens') && (showAfterReactions || s.id !== 'floor-after-reactions'),
   );
 }
+
+/** Every step id the portal knows, in step order. Saved ids outside this list are dropped. */
+export const STEP_IDS: readonly StepId[] = STEPS.map((step) => step.id);
+
+export function isKnownStepId(id: string): id is StepId {
+  return STEP_IDS.includes(id as StepId);
+}

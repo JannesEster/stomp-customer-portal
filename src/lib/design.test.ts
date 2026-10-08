@@ -108,6 +108,17 @@ describe('usableDesign', () => {
     expect(usableDesign(saved as DesignState, booking).dancingNote).toBe('');
   });
 
+  it('fills in confirmed steps for a design saved before that field existed', () => {
+    const { confirmedSteps: _dropped, ...saved } = createDefaultDesign(booking);
+    const usable = usableDesign(saved as DesignState, booking);
+    expect(usable.confirmedSteps).toEqual([]);
+    const noisy = usableDesign(
+      { ...createDefaultDesign(booking), confirmedSteps: ['details', 'nope', 'details', 'review'] } as DesignState,
+      booking,
+    );
+    expect(noisy.confirmedSteps).toEqual(['details', 'review']);
+  });
+
   it('fills in the night times for a design saved before those fields existed', () => {
     const { entranceTime: _e, dancingStarts: _d, submittedWithoutTimes: _s, ...saved } = createDefaultDesign(booking);
     const usable = usableDesign(saved as DesignState, booking);
