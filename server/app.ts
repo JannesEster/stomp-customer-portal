@@ -16,11 +16,12 @@ import {
   PORTAL_PROGRESS_FIELD,
   PORTAL_STEPS_MISSING_FIELD,
   PORTAL_SUMMARY_FIELD,
+  PORTAL_SUPPLIERS_FIELD,
 } from '../src/lib/airtableFields';
 import { sanitizePortalAnswers } from '../src/lib/portalAnswers';
 import type { PortalEnvConfig } from '../src/lib/portalConfig';
 import { lookupBookingByToken, type AirtableGateway, type PortalLookupResult } from '../src/lib/portalLookup';
-import { floorDesignLabel, portalStepReport, portalSummary } from '../src/lib/portalProgress';
+import { floorDesignLabel, portalStepReport, portalSummary, supplierLines } from '../src/lib/portalProgress';
 import { isValidPortalToken } from '../src/lib/portalToken';
 import { decodePreviewPng } from '../src/lib/pngImage';
 import { createRateLimiter } from '../src/lib/rateLimit';
@@ -195,6 +196,7 @@ export function createApp(opts: {
       [PORTAL_STEPS_MISSING_FIELD]: report.missing.join(', '),
       [PORTAL_LAST_SAVED_FIELD]: savedAt,
       [PORTAL_FLOOR_DESIGN_FIELD]: floorDesignLabel(design),
+      [PORTAL_SUPPLIERS_FIELD]: supplierLines(design),
     };
     if (!result.saved.firstOpenedAt) fields[PORTAL_FIRST_OPENED_FIELD] = savedAt;
 

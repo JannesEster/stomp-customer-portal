@@ -8,7 +8,7 @@ import { PORTAL_WRITE_FIELDS } from '../src/lib/airtableFields';
 import { createDefaultDesign } from '../src/lib/design';
 import { sanitizePortalAnswers } from '../src/lib/portalAnswers';
 import { readPortalConfig } from '../src/lib/portalConfig';
-import { floorDesignLabel, portalStepReport, portalSummary } from '../src/lib/portalProgress';
+import { floorDesignLabel, portalStepReport, portalSummary, supplierLines } from '../src/lib/portalProgress';
 import { createApp } from './app';
 import type { DesignState } from '../src/types';
 
@@ -164,6 +164,7 @@ describe('portal answer writes', () => {
     expect(body.fields['Portal steps missing']).toBe(report.missing.join(', '));
     expect(body.fields['Portal steps missing']).toContain('Your screen design');
     expect(body.fields['Portal floor design']).toBe(floorDesignLabel(saved.design));
+    expect(body.fields['Portal suppliers']).toBe('');
     expect(body.fields['Portal last saved']).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
     expect(body.fields['Portal first opened']).toBe(body.fields['Portal last saved']);
     expect(body.fields).not.toHaveProperty('Important notes');
@@ -180,6 +181,45 @@ describe('portal answer writes', () => {
     });
     expect(alias.status).toBe(200);
     expect(patches(calls)).toHaveLength(2);
+  });
+
+  it('writes Portal suppliers for filled roles and leaves progress unchanged', async () => {
+    const { base, calls } = await start({ addOns: ['2 portrait screens'] });
+    const design = postedDesign();
+    design.weddingPlanner = '  Ada Planner  ';
+    design.photographer = '   ';
+    design.videographer = 'Priya Shah';
+    design.dj = '';
+    design.otherSuppliers = ' Celebrant: Jo\nFlorist: Lane ';
+    const res = await fetch(`${base}/api/portal/${TOKEN}/answers`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        answers: design,
+        'Important notes': 'LEAK-ME',
+        'Customer Xero account link': 'https://example.com/xero-admin-not-for-customers',
+      }),
+    });
+    expect(res.status).toBe(200);
+    const saved = sanitizePortalAnswers(design, 'Fake Customer');
+    expect(saved.ok).toBe(true);
+    if (!saved.ok) return;
+    const withoutSuppliers = postedDesign();
+    const body = patches(calls)[0];
+    expect(body.fields['Portal suppliers']).toBe(supplierLines(saved.design));
+    expect(body.fields['Portal suppliers']).toBe(
+      'Wedding planner: Ada Planner\nVideographer: Priya Shah\nOther: Celebrant: Jo\nFlorist: Lane',
+    );
+    expect(body.fields['Portal summary']).toContain('People on the day');
+    expect(body.fields['Portal summary']).toContain('Wedding planner: Ada Planner');
+    expect(String(body.fields['Portal summary'])).not.toContain('Photographer');
+    expect(body.fields['Portal progress']).toBe(portalStepReport(withoutSuppliers, 2).progress);
+    expect(body.fields['Portal steps missing']).toBe(portalStepReport(withoutSuppliers, 2).missing.join(', '));
+    expect(body.fields).not.toHaveProperty('Important notes');
+    expect(body.fields).not.toHaveProperty('Customer Xero account link');
+    expect(body.fields).not.toHaveProperty('Wedding planner');
+    expect(JSON.stringify(body)).not.toContain('LEAK-ME');
+    expect(JSON.stringify(body)).not.toContain('xero-admin');
   });
 
   it('leaves Portal first opened alone when it is already set, and stamps only that field on open', async () => {
@@ -276,6 +316,9 @@ describe('portal answer writes', () => {
 
   it('returns saved answers on GET and hides the staff-only fields', async () => {
     const design = postedDesign();
+    design.weddingPlanner = 'Ada Planner';
+    design.dj = 'Noah Ellis';
+    design.otherSuppliers = 'Celebrant: Jo\nFlorist: Lane';
     const { base } = await start({
       answers: JSON.stringify({ ...design, secretNote: 'drop-on-read' }),
       lastSaved: '2026-05-01T00:00:00.000Z',
@@ -286,7 +329,11 @@ describe('portal answer writes', () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.savedAnswers.designs.holding.styleId).toBe('gold-rings');
+    expect(body.savedAnswers.weddingPlanner).toBe('Ada Planner');
+    expect(body.savedAnswers.dj).toBe('Noah Ellis');
+    expect(body.savedAnswers.otherSuppliers).toBe('Celebrant: Jo\nFlorist: Lane');
     expect(body.savedAnswers.secretNote).toBe('drop-on-read');
+    expect(body).not.toHaveProperty('Portal suppliers');
     expect(body.lastSavedAt).toBe('2026-05-01T00:00:00.000Z');
     expect(body).not.toHaveProperty('firstOpenedAt');
     const json = JSON.stringify(body);

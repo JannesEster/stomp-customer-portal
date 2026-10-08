@@ -36,6 +36,24 @@ describe('pickHydratedDesign', () => {
     expect(localWins.design.dancingMode).toBe('videos');
   });
 
+  it('keeps supplier names from saved answers', () => {
+    const remote = at('2026-03-01T00:00:00.000Z');
+    remote.weddingPlanner = 'Ada Planner';
+    remote.photographer = 'Cam Nguyen';
+    remote.videographer = 'Priya Shah';
+    remote.dj = 'Noah Ellis';
+    remote.otherSuppliers = 'Celebrant: Jo\nFlorist: Lane';
+    const prefilled = { coupleNames: 'Sam & Alex', weddingPlanner: 'Riley Quinn', dj: 'Pat Ellis' };
+    const hydrated = pickHydratedDesign(null, remote, '2026-03-02T00:00:00.000Z', prefilled);
+    expect(hydrated.source).toBe('remote');
+    expect(hydrated.pushLocal).toBe(false);
+    expect(hydrated.design.weddingPlanner).toBe('Ada Planner');
+    expect(hydrated.design.photographer).toBe('Cam Nguyen');
+    expect(hydrated.design.videographer).toBe('Priya Shah');
+    expect(hydrated.design.dj).toBe('Noah Ellis');
+    expect(hydrated.design.otherSuppliers).toBe('Celebrant: Jo\nFlorist: Lane');
+  });
+
   it('keeps a local draft when the server copy is blank or unusable, and does not push a fresh default', () => {
     const local = at('2026-05-01T00:00:00.000Z');
     local.stylingNote = 'kept';

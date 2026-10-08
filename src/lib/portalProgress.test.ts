@@ -3,7 +3,7 @@ import { stepsFor } from '../design/steps';
 import type { DesignState } from '../types';
 import { confirmOnLeave, confirmStep, createDefaultDesign, recordStepChoice } from './design';
 import { screenCount } from './dimensions';
-import { floorDesignLabel, portalStepReport, portalSummary } from './portalProgress';
+import { floorDesignLabel, portalStepReport, portalSummary, supplierLines } from './portalProgress';
 
 const booking = { coupleNames: 'Sam & Alex' };
 
@@ -190,5 +190,62 @@ describe('portal step progress', () => {
     const unset = portalSummary(design({ confirmedSteps: ['floor-dancing'], dancingMode: 'different', dancingNote: '' }), 0);
     expect(unset).toContain('Dancing time: not set yet');
     expect(unset).toContain('Holding screen: Not looked at yet');
+  });
+
+  it('lists people on the day only when a role is filled, and does not change progress', () => {
+    const plain = design();
+    const emptySummary = portalSummary(plain, 0);
+    expect(emptySummary).not.toContain('People on the day');
+    expect(emptySummary).not.toContain('Wedding planner');
+    expect(emptySummary).not.toContain('Photographer');
+    expect(emptySummary).not.toContain('Videographer');
+    expect(emptySummary).not.toContain('DJ:');
+    expect(emptySummary).not.toContain('Other:');
+    expect(supplierLines(plain)).toBe('');
+
+    const filled = design({
+      weddingPlanner: '  Ada Planner ',
+      photographer: '   ',
+      videographer: '',
+      dj: 'Noah Ellis',
+      otherSuppliers: ' Celebrant: Jo\nFlorist: Lane ',
+    });
+    const summary = portalSummary(filled, 2);
+    expect(summary).toContain(
+      'People on the day\nWedding planner: Ada Planner\nDJ: Noah Ellis\nOther: Celebrant: Jo\nFlorist: Lane',
+    );
+    expect(summary).not.toContain('Photographer');
+    expect(summary).not.toContain('Videographer');
+    expect(portalStepReport(filled, 2)).toEqual(portalStepReport(plain, 2));
+    expect(portalStepReport(filled, 0)).toEqual(portalStepReport(plain, 0));
+    expect(portalStepReport(filled, null)).toEqual(portalStepReport(plain, null));
+    expect(portalStepReport(filled, 2).missing).not.toContain('People on the day');
+  });
+});
+
+describe('supplierLines', () => {
+  it('skips empty roles and trims the names that were filled', () => {
+    const lines = supplierLines(
+      design({
+        weddingPlanner: '  Ada Planner  ',
+        photographer: ' \n ',
+        videographer: 'Priya Shah',
+        dj: '',
+        otherSuppliers: '  Celebrant: Jo\n\nFlorist: Lane  ',
+      }),
+    );
+    expect(lines).toBe('Wedding planner: Ada Planner\nVideographer: Priya Shah\nOther: Celebrant: Jo\n\nFlorist: Lane');
+    expect(lines).not.toContain('Photographer');
+    expect(lines).not.toContain('DJ');
+  });
+
+  it('caps the lines at 2500 characters and keeps earlier roles', () => {
+    const other = 'x'.repeat(4000);
+    const lines = supplierLines(design({ weddingPlanner: 'Ada Planner', otherSuppliers: other }));
+    const uncapped = `Wedding planner: Ada Planner\nOther: ${other}`;
+    expect(uncapped.length).toBeGreaterThan(2500);
+    expect(lines).toHaveLength(2500);
+    expect(lines).toBe(`${uncapped.slice(0, 2499)}…`);
+    expect(lines.startsWith('Wedding planner: Ada Planner\nOther: ')).toBe(true);
   });
 });
