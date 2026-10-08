@@ -127,4 +127,9 @@ export interface DesignState {
   stylingNote: string;
   /** Only meaningful when the booking does not already include live content */
   liveContentRequested: boolean;
+  /**
+   * Steps the couple has engaged with. A step is added when they change a choice on it,
+   * or leave it forwards. Untouched defaults stay out of this list.
+   */
+  confirmedSteps: string[];
 }

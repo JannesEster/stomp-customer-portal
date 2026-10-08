@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { designSaveLabel } from '../hooks/designSync';
 import { useDesignState, type UpdateDesign } from '../hooks/useDesignState';
+import { confirmOnLeave, recordStepChoice } from '../lib/design';
 import { screenCount } from '../lib/dimensions';
 import { formatDateTime } from '../lib/format';
 import { FloorPreview } from '../design/FloorPreview';
@@ -37,7 +38,7 @@ function timeReminder(stepId: StepId, design: DesignState): string | null {
 }
 
 export function DesignTab({ booking }: { booking: Booking }) {
-  const { design, update, submit, saveStatus, savedAt, serverSync } = useDesignState(booking);
+  const { design, update, submit, noteStep, saveStatus, savedAt, serverSync } = useDesignState(booking);
   const showAfterReactions = !design || design.reactions.length === 0;
   const steps = useMemo(
     () => stepsFor(screenCount(booking.screensBooked), showAfterReactions),
@@ -89,9 +90,15 @@ export function DesignTab({ booking }: { booking: Booking }) {
   const goTo = (id: StepId) => {
     const target = steps.find((s) => s.id === id);
     if (!target) return;
+    const left = confirmOnLeave(design, step.id, target.id, steps);
+    if (left !== design) noteStep(step.id);
     moved.current = true;
     setStepId(target.id);
     setPreviewPhase(target.phase);
+  };
+
+  const choose: UpdateDesign = (change) => {
+    update((current) => recordStepChoice(current, step.id, change));
   };
 
   return (
@@ -138,7 +145,7 @@ export function DesignTab({ booking }: { booking: Booking }) {
           step={step}
           booking={booking}
           design={design}
-          update={update}
+          update={choose}
           onPickScreenDesign={() => goTo('screens-design')}
         />
       </Section>

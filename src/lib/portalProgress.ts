@@ -16,14 +16,20 @@ export interface PortalStepReport {
 
 /**
  * Progress over the steps this booking actually shows.
- * Hidden steps, such as the screen steps when no screens are booked, are left out of the total.
+ * A step counts only after the couple has confirmed it and it meets its completion rule.
+ * Untouched defaults do not count. Hidden steps, such as the screen steps when no screens
+ * are booked, are left out of the total.
  */
 export function portalStepReport(design: DesignState, screensBooked: number | null): PortalStepReport {
   const steps = applicableSteps(design, screensBooked);
-  const missing = steps.filter((step) => !isStepComplete(step.id, design)).map((step) => step.name);
+  const missing = steps.filter((step) => !stepDone(step.id, design)).map((step) => step.name);
   const complete = steps.length - missing.length;
   const progress = steps.length === 0 ? 0 : Math.round((complete / steps.length) * 10000) / 10000;
   return { total: steps.length, complete, progress, missing };
+}
+
+function stepDone(stepId: StepDef['id'], design: DesignState): boolean {
+  return design.confirmedSteps.includes(stepId) && isStepComplete(stepId, design);
 }
 
 /** One plain-English line per applicable step, plus the floor design name. No JSON. */
@@ -54,6 +60,8 @@ function summaryLabel(step: StepDef): string {
 }
 
 function stepLine(step: StepDef, design: DesignState): string {
+  if (!design.confirmedSteps.includes(step.id)) return 'Not looked at yet';
+  if (keptDefault(step.id, design)) return 'Default kept';
   switch (step.id) {
     case 'details': {
       const names = design.designs.holding.names.trim();
@@ -84,6 +92,47 @@ function stepLine(step: StepDef, design: DesignState): string {
       return design.status === 'submitted' ? 'Submitted' : 'Still a draft';
     default:
       return 'not set yet';
+  }
+}
+
+/** True when the couple confirmed a step without changing its starting choice. */
+function keptDefault(stepId: StepDef['id'], design: DesignState): boolean {
+  const holding = design.designs.holding;
+  switch (stepId) {
+    case 'details':
+      return (
+        holding.names.trim().length > 0 &&
+        holding.names === design.designs.after.names &&
+        holding.names === design.designs.dancing.names
+      );
+    case 'floor-design':
+      return (
+        holding.styleId == null &&
+        holding.media == null &&
+        !design.invite &&
+        !design.inviteStyle &&
+        !design.stylingNote
+      );
+    case 'floor-reactions':
+      return design.reactions.length === 0;
+    case 'floor-after':
+      return design.afterMode === 'same';
+    case 'floor-after-reactions':
+      return design.afterReactions.length === 0;
+    case 'floor-dancing':
+      return design.dancingMode === 'blank' && design.dancingNote.trim() === '';
+    case 'screens-design':
+      return design.screens.styleId == null;
+    case 'screens-holding':
+      return design.screens.modes.holding === 'design' && mediaFor(design, 'holding').length === 0;
+    case 'screens-after':
+      return design.screens.modes.after === 'design' && mediaFor(design, 'after').length === 0;
+    case 'screens-dancing':
+      return design.screens.modes.dancing === 'design' && mediaFor(design, 'dancing').length === 0;
+    case 'review':
+      return design.status === 'draft' && !design.liveContentRequested;
+    default:
+      return false;
   }
 }
 

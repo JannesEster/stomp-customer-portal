@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useServices } from '../services';
 import type { Booking, DesignState } from '../types';
+import type { StepId } from '../design/steps';
+import { confirmStep, withConfirmed } from '../lib/design';
 import { createCoalescedSaver, pickHydratedDesign, type SaveStatus } from './designSync';
 import {
   beaconPortalAnswers,
@@ -193,6 +195,17 @@ export function useDesignState(booking: Booking) {
     setDesign((d) => (d ? { ...change(d), status: 'draft', updatedAt: new Date().toISOString() } : d));
   }, []);
 
+  /** Moving on confirms the step that was on screen. A submitted design stays submitted. */
+  const noteStep = useCallback((stepId: StepId) => {
+    setDesign((d) => {
+      if (!d) return d;
+      const next = confirmStep(d, stepId, new Date().toISOString());
+      if (next === d) return d;
+      dirty.current = true;
+      return next;
+    });
+  }, []);
+
   const submit = useCallback(() => {
     dirty.current = true;
     flushNow.current = true;
@@ -201,7 +214,7 @@ export function useDesignState(booking: Booking) {
     setDesign((d) =>
       d
         ? {
-            ...d,
+            ...withConfirmed(d, 'review'),
             status: 'submitted',
             submittedAt: now,
             updatedAt: now,
@@ -211,7 +224,7 @@ export function useDesignState(booking: Booking) {
     );
   }, []);
 
-  return { design, update, submit, saveStatus, savedAt, serverSync };
+  return { design, update, submit, noteStep, saveStatus, savedAt, serverSync };
 }
 
 export type UpdateDesign = (change: (d: DesignState) => DesignState) => void;
