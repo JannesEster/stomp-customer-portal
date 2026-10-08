@@ -1,4 +1,6 @@
-import { effectsConfig, type UploadRule } from '../config';
+import { effectsConfig, findScreenStyle, findStyle, type UploadRule } from '../config';
+import type { StepId } from '../design/steps';
+import { generatedFor } from './inviteStyle';
 import type { Booking, DesignState, HoldingDesign, MediaItem, MediaKind, Phase, Timing } from '../types';
 
 export const DESIGN_VERSION = 3;
@@ -118,4 +120,49 @@ export function validateUpload(file: Pick<File, 'name' | 'type' | 'size'>, rule:
 /** File input accept attribute for an upload rule. */
 export function acceptAttr(rule: UploadRule): string {
   return rule.accept.join(',');
+}
+
+/** A holding screen counts as chosen when it points at a real style or a generated invite design. */
+export function holdingStyleChosen(design: DesignState, holding: HoldingDesign): boolean {
+  return !!findStyle(holding.styleId) || !!generatedFor(design, holding.styleId);
+}
+
+/**
+ * Whether the couple has finished a design step.
+ * Optional picks (no reactions, the recommended floor after the entrance, a blank dancing floor)
+ * count as finished choices. A step that still needs a style, a note, photos, or a submit does not.
+ * Screen steps are omitted by `stepsFor` when the booking has no screens, so they are not passed here.
+ */
+export function isStepComplete(stepId: StepId, design: DesignState): boolean {
+  switch (stepId) {
+    case 'details':
+      return design.designs.holding.names.trim().length > 0;
+    case 'floor-design':
+      return holdingStyleChosen(design, design.designs.holding);
+    case 'floor-reactions':
+      return true;
+    case 'floor-after':
+      return design.afterMode === 'same' || holdingStyleChosen(design, design.designs.after);
+    case 'floor-after-reactions':
+      return true;
+    case 'floor-dancing':
+      return design.dancingMode !== 'different' || design.dancingNote.trim().length > 0;
+    case 'screens-design':
+      return !!findScreenStyle(design.screens.styleId);
+    case 'screens-holding':
+      return screenPartComplete(design, 'holding');
+    case 'screens-after':
+      return screenPartComplete(design, 'after');
+    case 'screens-dancing':
+      return screenPartComplete(design, 'dancing');
+    case 'review':
+      return design.status === 'submitted';
+    default:
+      return false;
+  }
+}
+
+function screenPartComplete(design: DesignState, phase: Phase): boolean {
+  if (design.screens.modes[phase] === 'photos') return mediaFor(design, phase).length > 0;
+  return !!findScreenStyle(design.screens.styleId);
 }

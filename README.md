@@ -46,7 +46,7 @@ Editing `src/mock/bookings.json` (floor size, `screensBooked`, `extras`) changes
 ## Architecture
 
 ```
-server/            Express app: /healthz, /api/portal/:token, and the built SPA
+server/            Express app: /healthz, /api/portal/:token, answer and preview writes, and the built SPA
 scripts/           portal:tokens, the Airtable token filler
 src/
   config/          Editable JSON config plus typed loaders (index.ts)
@@ -86,7 +86,7 @@ Styling follows stompsphere.com.au: black background, Inter for text, italic Pla
   Bookings with no screens skip steps 6 to 9. The step list at the top groups the steps under Floor, Screens and Finish and jumps to any of them. On phones and tablets it shows "Step 3 of 10" with a progress bar, and the list scrolls sideways. The bar at the bottom shows the save status with **Back** and **Next** (named after the next step), which becomes **Submit design to Stomp** on the last step. Steps 1 to 5 show the floor preview and steps 6 to 9 the screens preview, each starting on that step's part of the night. The previews keep their own part of the night switch, which never changes the step.
 - **Parts of the night**: **After the bridal entrance** keeps the holding screen and its reactions (recommended), or can use a second style. Reactions picked before the entrance carry on after it. When none were picked before, `afterReactions` is chosen on its own step and only plays after the entrance. **Dancing time** defaults to a blank floor that rotates through every reaction (recommended), or can play the assorted colourful videos in `dancing-videos.json`, which change from one to the next and play without reactions, or describe a different design in `dancingNote`. `holdingFor` and `reactionsFor` in `lib/design.ts` resolve what each part shows.
 - **Screens** (`design/ScreenSteps.tsx`, `design/ScreensPreview.tsx`): the couple picks one of the designs in `screen-styles.json`, welcome signs first, then the order of the day boards. They're Canva samples with example names baked in, so the portal shows them as a style gallery and Stomp makes the finished version with the couple's names and date. For each part of the night, `screens.modes` says whether the screens show that design (recommended before the entrance) or the couple's photos and videos. Photos and videos are uploaded in the step for their part of the night and kept in `media` with a `timing`: `start` before the bridal entrance, `middle` after it and `end` for dancing time (`timingFor` in `lib/design.ts`). The timings used to be labelled Start, Middle and End of night. Their ids haven't changed, so uploads saved before keep working. The preview shows one portrait frame per booked screen at the size in `portal.json`, with the chosen design or a slideshow of that part's photos and videos.
-- **Saving** (`hooks/useDesignState.ts`): the whole design is one `DesignState` object (`src/types.ts`), autosaved through `StorageProvider` 400 ms after each change and flushed on page hide. A design saved before a field existed, such as `screens`, gets it from the defaults (`usableDesign`). **Submit design to Stomp** sets `status: 'submitted'` and shows the summary. Any later edit returns it to draft until it's submitted again.
+- **Saving** (`hooks/useDesignState.ts`): the whole design is one `DesignState` object (`src/types.ts`). On a portal link it is saved to the booking in Airtable about 2 seconds after the last change, and again on submit, when the tab is hidden, and when the page closes. localStorage is still written, and it is used if the server has nothing yet or the copy on this device is newer. The footer shows Saving…, Saved with the time, or Offline, saved on this device. A design saved before a field existed, such as `screens`, gets it from the defaults (`usableDesign`). **Submit design to Stomp** sets `status: 'submitted'` and shows the summary. Any later edit returns it to draft until it's submitted again. The seeded demo at `/` still saves only in the browser.
 
 ## The three interfaces
 
@@ -119,7 +119,7 @@ getFileUrl(fileId): Promise<string | null>
 deleteFile(fileId): Promise<void>
 ```
 
-PENDING Jannes's decision. `LocalStorageProvider` keeps JSON in `localStorage` (keys `stomp-portal:design:<bookingId>` and `stomp-portal:notes:<bookingId>`) and file blobs in IndexedDB (`stomp-portal-files`), because `localStorage` is too small for photos and video. Designs only store file references (`StoredFile`), never file contents. The portal says this on the page.
+`LocalStorageProvider` keeps JSON in `localStorage` (keys `stomp-portal:design:<bookingId>` and `stomp-portal:notes:<bookingId>`) and file blobs in IndexedDB (`stomp-portal-files`), because `localStorage` is too small for photos and video. Designs only store file references (`StoredFile`), never file contents. On a `/p/<token>` link the design answers are also written to the booking. Photos and videos stay in this browser. The seeded demo still uses the browser only.
 
 ## Config files (`src/config/`)
 
@@ -170,7 +170,7 @@ The server reads these. Defaults match the Stomp base as of 7 October 2026. Only
 | `VENUE_NAME_FIELD` | `Venue name` | |
 | `VENUE_ADDRESS_FIELD` | `Address` | |
 
-When `AIRTABLE_TOKEN` is unset, `GET /api/portal/:token` returns 503 for a well formed token and the seed demo at `/` still works.
+When `AIRTABLE_TOKEN` is unset, `GET /api/portal/:token` returns 503 for a well formed token and the seed demo at `/` still works. The same 503 applies to the answer, opened, and preview writes.
 
 ## Portal tokens
 
@@ -189,6 +189,29 @@ The script needs `AIRTABLE_TOKEN`. It never prints that token. Without `--record
 
 `GET /api/portal/:token` looks up exactly one Bookings record. The token is checked before the request (at least 22 URL-safe characters, 128 bits). The Airtable formula escapes quotes. Unknown tokens, and more than one match, are 404. There is no route that lists bookings. Lookups are limited to 30 a minute per IP.
 
+The GET response adds `savedAnswers` (the parsed **Portal answers** JSON, or null when that field is blank or not valid JSON) and `lastSavedAt`. Portal summary, progress, steps missing, first opened, floor design, and the floor preview attachment are not returned.
+
+`POST /api/portal/:token/answers` (also `POST /api/p/:token/answers`) saves the couple's design on that same booking. It uses the same token check and the same one booking lookup. A malformed token is 400. A missing `AIRTABLE_TOKEN` is 503. The JSON body is limited to about 64kb (413 over that). The answers are checked against the design state: unknown keys are dropped, strings and arrays are capped, and a wrong shape is 400 `invalid_answers` with nothing written. The stored JSON stays under 90,000 characters.
+
+The write sets only these Bookings fields, by name:
+
+| Field | What is stored |
+| --- | --- |
+| Portal answers | The validated design as JSON. |
+| Portal summary | A plain English line for each step that applies to this booking, plus the floor design name. |
+| Portal progress | Steps complete divided by the steps that apply, from 0 to 1. Computed on the server. Screen steps are left out when no screens are booked. |
+| Portal steps missing | The human names of the unfinished steps, separated by commas. Empty when they are all done. |
+| Portal last saved | The server time, on every save. |
+| Portal first opened | The server time the first time the page is opened or saved. Left as it is once set. |
+| Portal floor design | A single line naming the floor design and the main options. |
+| Portal floor preview | PNG snapshots of the floor. Replaced with the latest set on each preview upload. |
+
+`POST /api/portal/:token/opened` (and the `/api/p/` alias) stamps **Portal first opened** the first time the page loads, before any answer is saved. If it is already set, the request writes nothing.
+
+`POST /api/portal/:token/preview` (and the `/api/p/` alias) accepts one to three PNG data URLs or base64 images, about 1.5MB decoded each (413 over that). Anything that is not a PNG is 400. The server clears **Portal floor preview** on that one record, then uploads the PNGs to Airtable's attachment endpoint. The browser sends a snapshot when the floor design changes, and again on submit.
+
+Writes are limited to about 20 a minute per IP and per token. Preview uploads are also limited to about 6 a token every 10 minutes. Over the limit is 429. If Airtable refuses a write with 401 or 403, the portal returns 502 `write_forbidden`. Logs stay limited to status, table, operation, and error type. Tokens, answer bodies, and Airtable response bodies are not logged.
+
 ## Airtable field mapping
 
 The API returns only the portal's customer and booking fields. Linked records are loaded by id after that one booking is found.
@@ -205,6 +228,8 @@ The API returns only the portal's customer and booking fields. Linked records ar
 | Screens | Inferred from Leads **Add-ons** when an option states a count, for example `2 portrait screens`, `portrait screen`, or `no screens`. If nothing mentions screens, the portal says they are not listed yet and hides the screen steps. |
 | Extras | Leads **Add-ons**. An option whose name matches `extras.json` (Live event streaming) uses that extra id. Other options are shown under their Airtable name. Screen options are not repeated as extras. |
 | Portal URL | Built from `PUBLIC_BASE_URL` and the token. Not copied from the Portal link formula. |
+| Saved answers | Bookings **Portal answers**, parsed. Null when blank or not valid JSON. Returned as `savedAnswers`. |
+| Last saved | Bookings **Portal last saved**. Returned as `lastSavedAt`. |
 
 Not returned to the browser: **Important notes**, **Customer Xero account link**, Fillout ids, the booking form URL, quotes, deposits, balances, invoice links, contract status, Activity, Busy Dates, Wedding Planners, hire notes, content notes, and the lead's phone, guest count, and event type.
 
@@ -232,7 +257,7 @@ The static site `stomp-customer-portal` stays up separately for now. It still ha
 
 1. **Hosting.** The Render service in the blueprint is `stomp-portal`. The static site `stomp-customer-portal` stays up separately for now and has no API. Which address customers should use is pending Jannes's decision.
 2. **Customer login.** The portal link is the login for now (`TokenAuthProvider`). `AuthProvider` stays so a real account login can replace it later.
-3. **Storage and upload limits.** Pending Jannes's decision. `LocalStorageProvider` still keeps designs and files in this browser.
+3. **Storage and upload limits.** Design answers on a portal link are written to the booking. Photos and videos still stay in this browser. Upload limits for those files are pending Jannes's decision.
 4. **Floor size and screens.** Airtable has square metres, not width and length, and no screens count. Only 12 sqm and 27 sqm map to a size. Screens are inferred from lead add-ons when the option says so.
 5. **Live content pricing.** Pending Jannes's decision. When a booking does not include Live event streaming, the tick is still only a request (`liveContentRequested`). Nothing is charged in the portal.
 
