@@ -77,6 +77,7 @@ export const PORTAL_WRITE_FIELDS = [
   'Portal first opened',
   'Portal floor design',
   'Portal floor preview',
+  'Portal suppliers',
 ] as const;
 
 export type PortalWriteField = (typeof PORTAL_WRITE_FIELDS)[number];
@@ -89,6 +90,8 @@ export const PORTAL_LAST_SAVED_FIELD: PortalWriteField = 'Portal last saved';
 export const PORTAL_FIRST_OPENED_FIELD: PortalWriteField = 'Portal first opened';
 export const PORTAL_FLOOR_DESIGN_FIELD: PortalWriteField = 'Portal floor design';
 export const PORTAL_FLOOR_PREVIEW_FIELD: PortalWriteField = 'Portal floor preview';
+/** Filled supplier roles, one line each. An empty string when the couple has named nobody. */
+export const PORTAL_SUPPLIERS_FIELD: PortalWriteField = 'Portal suppliers';
 
 /**
  * Read with the booking lookup so a return visit can hydrate, and so the first

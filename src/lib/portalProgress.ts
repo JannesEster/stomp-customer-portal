@@ -36,7 +36,39 @@ function stepDone(stepId: StepDef['id'], design: DesignState): boolean {
 export function portalSummary(design: DesignState, screensBooked: number | null): string {
   const lines = applicableSteps(design, screensBooked).map((step) => `${summaryLabel(step)}: ${stepLine(step, design)}`);
   lines.push(`Floor design: ${floorDesignLabel(design)}`);
+  const people = supplierLines(design);
+  if (people) {
+    lines.push('');
+    lines.push('People on the day');
+    lines.push(people);
+  }
   return lines.join('\n');
+}
+
+const SUPPLIER_LINES_MAX = 2_500;
+
+const SUPPLIER_LINE_ROLES = [
+  ['weddingPlanner', 'Wedding planner'],
+  ['photographer', 'Photographer'],
+  ['videographer', 'Videographer'],
+  ['dj', 'DJ'],
+  ['otherSuppliers', 'Other'],
+] as const;
+
+/**
+ * One line per supplier role the couple filled in.
+ * Empty roles are left out. Other keeps its line breaks. The whole text stays within 2,500 characters.
+ */
+export function supplierLines(design: DesignState): string {
+  const lines: string[] = [];
+  for (const [key, label] of SUPPLIER_LINE_ROLES) {
+    const value = (design[key] ?? '').trim();
+    if (!value) continue;
+    lines.push(`${label}: ${value}`);
+  }
+  const text = lines.join('\n');
+  if (text.length <= SUPPLIER_LINES_MAX) return text;
+  return `${text.slice(0, SUPPLIER_LINES_MAX - 1)}…`;
 }
 
 /** Single line name of the floor preview the couple chose, including the main options. */

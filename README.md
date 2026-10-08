@@ -72,7 +72,7 @@ Styling follows stompsphere.com.au: black background, Inter for text, italic Pla
 - **Invite colours**: when a couple uploads an invite (`design/InviteUpload.tsx`), `lib/invite.ts` renders it in the browser (the first page for PDFs, which also becomes the thumbnail) and `lib/palette.ts` picks out its main colours, ranking colourful accents like gold ahead of plain black text. The colours are saved with the design as `invitePalette`, and the first one is meant for the couple's names.
 - **Designs generated from the invite**: once an invite is uploaded, **Generate a design from my invite** (`lib/inviteStyle.ts`) builds a holding screen from the invite's paper and ink colours and the styling note. Colour words in the note (sage, navy, terracotta and so on) set the accent or floor colour, and mood words (modern, classic, romantic, boho, art deco) pick the lettering and layout. The floor is always dark, because big areas of white look harsh on LED, so a light invite is flipped to light lettering on black. `lib/generatedRender.ts` draws it live with the couple's names, the booking date, ornaments and drifting sparkles. It appears as **From your invite** at the start of the style gallery; **Try another version** steps through other layouts and lettering until the invite or note changes. On the after the entrance step, 10 other versions show on the right, and picking one uses that version until dancing time.
 - **Guided steps** (`tabs/DesignTab.tsx`, `design/steps.tsx`): the Design tab shows one step at a time.
-  1. **Your details**: the couple's names (prefilled from the booking, and used on the holding screen), with the wedding date and venue from the booking shown read only. Wedding planner, photographer, videographer, DJ, and a larger Other box (celebrant, florist, a separate MC, and so on) are edited here and on My bookings. They are saved with the design.
+  1. **Your details**: the couple's names (prefilled from the booking, and used on the holding screen), with the wedding date and venue from the booking shown read only. Wedding planner, photographer, videographer, DJ, and a larger Other box (celebrant, florist, a separate MC, and so on) are edited here and on My bookings. They are saved with the design. Filled roles are also copied to **Portal suppliers**. Leaving them blank does not change progress.
   2. **Your holding screen**: the style gallery, the invite or styling upload and the photo of the two of them. While either the bridal entrance time or the dancing start time is still blank, every step says so above the title and **Insert times here** opens Notes/Details. Review and submit uses "You haven't selected times." instead. Submitting in that state sets `submittedWithoutTimes` and the review line changes to "Submitted without times.", with a Times not included tag on the summary. A later submit that includes both times clears it. Coming back resumes the same step.
   3. **Reactions before the entrance**: reactions while guests arrive. Picks carry on after the entrance. Leaving them all unticked adds a reactions step after step 4, so reactions can still be chosen for that part of the night.
   4. **After the bridal entrance**: what the floor shows until dancing time.
@@ -194,7 +194,7 @@ The script needs `AIRTABLE_TOKEN`. It never prints that token. Without `--record
 
 `GET /api/portal/:token` looks up exactly one Bookings record. The token is checked before the request (at least 22 URL-safe characters, 128 bits). The Airtable formula escapes quotes. Unknown tokens, and more than one match, are 404. There is no route that lists bookings. Lookups are limited to 30 a minute per IP.
 
-The GET response adds `savedAnswers` (the parsed **Portal answers** JSON, or null when that field is blank or not valid JSON) and `lastSavedAt`. Portal summary, progress, steps missing, first opened, floor design, and the floor preview attachment are not returned.
+The GET response adds `savedAnswers` (the parsed **Portal answers** JSON, or null when that field is blank or not valid JSON) and `lastSavedAt`. Portal summary, progress, steps missing, first opened, floor design, floor preview, and Portal suppliers are not returned. Supplier names travel inside the saved answers.
 
 `POST /api/portal/:token/answers` (also `POST /api/p/:token/answers`) saves the couple's design on that same booking. It uses the same token check and the same one booking lookup. A malformed token is 400. A missing `AIRTABLE_TOKEN` is 503. The JSON body is limited to about 64kb (413 over that). The answers are checked against the design state: unknown keys are dropped, strings and arrays are capped, and a wrong shape is 400 `invalid_answers` with nothing written. The stored JSON stays under 90,000 characters.
 
@@ -203,13 +203,14 @@ The write sets only these Bookings fields, by name:
 | Field | What is stored |
 | --- | --- |
 | Portal answers | The validated design as JSON. |
-| Portal summary | A plain English line for each step that applies, plus the floor design name. A step they have not opened says Not looked at yet. A step they kept as the default says Default kept. |
+| Portal summary | A plain English line for each step that applies, plus the floor design name. A step they have not opened says Not looked at yet. A step they kept as the default says Default kept. When any supplier role is filled, a People on the day section lists only those roles. |
 | Portal progress | Steps the couple has looked at and finished, divided by the steps that apply, from 0 to 1. A step counts only after they change a choice on it or leave it with Next. An untouched default does not count. Computed on the server. Screen steps are left out when no screens are booked. |
 | Portal steps missing | The human names of the unfinished steps, separated by commas. Untouched defaults are listed until the couple confirms them. Empty when they are all done. |
 | Portal last saved | The server time, on every save. |
 | Portal first opened | The server time the first time the page is opened or saved. Left as it is once set. |
 | Portal floor design | A single line naming the floor design and the main options. |
 | Portal floor preview | PNG snapshots of the floor. Replaced with the latest set on each preview upload. |
+| Portal suppliers | One line for each filled role: Wedding planner, Photographer, Videographer, DJ, and Other. Empty when none are filled. Not a progress step. |
 
 `POST /api/portal/:token/opened` (and the `/api/p/` alias) stamps **Portal first opened** the first time the page loads, before any answer is saved. If it is already set, the request writes nothing.
 

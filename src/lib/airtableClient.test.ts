@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { createAirtableClient } from './airtableClient';
-import { PORTAL_WRITE_FIELDS, PRIVATE_OR_UNUSED_FIELDS, pickPortalWriteFields } from './airtableFields';
+import {
+  PORTAL_SUPPLIERS_FIELD,
+  PORTAL_WRITE_FIELDS,
+  PRIVATE_OR_UNUSED_FIELDS,
+  pickPortalWriteFields,
+} from './airtableFields';
 import { readPortalConfig } from './portalConfig';
 import { portalTokenFormula } from './portalToken';
 
@@ -36,7 +41,11 @@ describe('Airtable client', () => {
     expect(fields).not.toContain('Portal summary');
     expect(fields).not.toContain('Portal floor preview');
     expect(fields).not.toContain('Wedding planner');
+    expect(fields).not.toContain('Photographer');
+    expect(fields).not.toContain('Videographer');
+    expect(fields).not.toContain('DJ');
     expect(fields).not.toContain('Other suppliers');
+    expect(fields).not.toContain('Portal suppliers');
     expect(fields).not.toContain('Important notes');
     expect(fields).not.toContain('Customer Xero account link');
     expect(fields).not.toContain('Portal link');
@@ -245,6 +254,40 @@ describe('Airtable client', () => {
     for (const name of forbidden) {
       expect(Object.keys(pickPortalWriteFields({ [name]: 'nope' }))).toEqual([]);
     }
+  });
+
+  it('adds only Portal suppliers to the write whitelist and still drops private fields', () => {
+    expect(PORTAL_WRITE_FIELDS).toEqual([
+      'Portal answers',
+      'Portal summary',
+      'Portal progress',
+      'Portal steps missing',
+      'Portal last saved',
+      'Portal first opened',
+      'Portal floor design',
+      'Portal floor preview',
+      'Portal suppliers',
+    ]);
+    expect(PORTAL_SUPPLIERS_FIELD).toBe('Portal suppliers');
+    expect(PORTAL_WRITE_FIELDS).not.toContain('Important notes');
+    expect(PORTAL_WRITE_FIELDS).not.toContain('Customer Xero account link');
+    expect(PORTAL_WRITE_FIELDS).not.toContain('Wedding planner');
+    expect(PORTAL_WRITE_FIELDS).not.toContain('Photographer');
+    expect(PORTAL_WRITE_FIELDS).not.toContain('Videographer');
+    expect(PORTAL_WRITE_FIELDS).not.toContain('DJ');
+    expect(PORTAL_WRITE_FIELDS).not.toContain('Other suppliers');
+    expect(
+      pickPortalWriteFields({
+        'Portal suppliers': 'Wedding planner: Ada Planner',
+        'Important notes': 'LEAK-ME',
+        'Customer Xero account link': 'https://example.com/xero-admin-not-for-customers',
+        'Wedding planner': 'Ada Planner',
+        Photographer: 'Cam Nguyen',
+        Videographer: 'Priya Shah',
+        DJ: 'Noah Ellis',
+        'Other suppliers': 'Celebrant: Jo',
+      }),
+    ).toEqual({ 'Portal suppliers': 'Wedding planner: Ada Planner' });
   });
 
   it('uploads a floor preview PNG to the attachment endpoint and logs a forbidden write without the body', async () => {
