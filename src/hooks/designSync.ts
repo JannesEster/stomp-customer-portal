@@ -1,6 +1,6 @@
 import { DESIGN_VERSION, usableDesign } from '../lib/design';
 import { formatDateTime } from '../lib/format';
-import type { Booking, DesignState } from '../types';
+import type { Booking, DesignState, SupplierDetails } from '../types';
 
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
@@ -19,7 +19,7 @@ export function pickHydratedDesign(
   local: DesignState | null,
   remote: unknown,
   remoteSavedAt: string | null,
-  booking: Pick<Booking, 'coupleNames'>,
+  booking: Pick<Booking, 'coupleNames'> & Partial<SupplierDetails>,
 ): HydratedDesign {
   const remoteDesign = currentDesign(remote) ? usableDesign(remote, booking) : null;
   const localDesign = currentDesign(local) ? usableDesign(local, booking) : null;

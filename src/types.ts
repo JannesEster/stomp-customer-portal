@@ -32,8 +32,8 @@ export interface Booking {
   /** Extra ids, matching src/config/extras.json, or an add-on name when it is not a known extra. */
   extras: string[];
   /**
-   * Supplier names from the booking, when those columns are present.
-   * The couple edits the same names on the design. Empty when the booking has none.
+   * Staff-entered supplier names, trimmed and capped, used as starting values
+   * when the couple has not saved answers for this design. Empty when the column is blank.
    */
   weddingPlanner?: string;
   photographer?: string;

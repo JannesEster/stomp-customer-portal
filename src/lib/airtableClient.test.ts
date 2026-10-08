@@ -40,11 +40,12 @@ describe('Airtable client', () => {
     expect(fields).toContain('Portal first opened');
     expect(fields).not.toContain('Portal summary');
     expect(fields).not.toContain('Portal floor preview');
-    expect(fields).not.toContain('Wedding planner');
-    expect(fields).not.toContain('Photographer');
-    expect(fields).not.toContain('Videographer');
-    expect(fields).not.toContain('DJ');
-    expect(fields).not.toContain('Other suppliers');
+    expect(fields).toContain('Wedding planner');
+    expect(fields).toContain('Photographer');
+    expect(fields).toContain('Videographer');
+    expect(fields).toContain('DJ');
+    expect(fields).toContain('Other suppliers');
+    expect(fields).not.toContain('Wedding Planners');
     expect(fields).not.toContain('Portal suppliers');
     expect(fields).not.toContain('Important notes');
     expect(fields).not.toContain('Customer Xero account link');

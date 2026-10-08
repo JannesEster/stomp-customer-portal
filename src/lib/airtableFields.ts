@@ -31,10 +31,9 @@ export interface AirtableFieldNames {
   venueName: string;
   venueAddress: string;
   /**
-   * Couple-typed supplier names on Bookings.
-   * Mapped when the record includes them. Not requested until the columns exist:
-   * Airtable rejects the whole lookup if a requested field is missing.
-   * Wedding Planners (plural) is a linked table and stays private.
+   * Staff-entered supplier names on Bookings. The lookup requests these exact
+   * names and the portal returns them as starting values. The portal never writes them.
+   * The old Wedding Planners field is unused and is never fetched.
    */
   weddingPlanner: string;
   photographer: string;
@@ -138,9 +137,6 @@ export const PRIVATE_OR_UNUSED_FIELDS = [
 ] as const;
 
 export function bookingFieldsToFetch(fields: AirtableFieldNames): string[] {
-  // Supplier columns (Wedding planner, Photographer, Videographer, DJ, Other suppliers)
-  // are mapped in bookingMap when a record already includes them. Do not request them
-  // here until those columns exist on Bookings. A missing fields[] name fails the lookup.
   return unique([
     fields.bookingName,
     fields.leadLink,
@@ -149,6 +145,11 @@ export function bookingFieldsToFetch(fields: AirtableFieldNames): string[] {
     fields.address,
     fields.packageName,
     fields.floorSqm,
+    fields.weddingPlanner,
+    fields.photographer,
+    fields.videographer,
+    fields.dj,
+    fields.otherSuppliers,
   ]);
 }
 

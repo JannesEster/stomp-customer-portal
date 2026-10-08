@@ -79,11 +79,11 @@ export function mapPortalRecords(
     floorSqm,
     screensBooked: split.screensBooked,
     extras: split.extras,
-    weddingPlanner: asString(bookingFields[fields.weddingPlanner]),
-    photographer: asString(bookingFields[fields.photographer]),
-    videographer: asString(bookingFields[fields.videographer]),
-    dj: asString(bookingFields[fields.dj]),
-    otherSuppliers: asString(bookingFields[fields.otherSuppliers]),
+    weddingPlanner: supplierText(bookingFields[fields.weddingPlanner], SUPPLIER_ROLE_MAX),
+    photographer: supplierText(bookingFields[fields.photographer], SUPPLIER_ROLE_MAX),
+    videographer: supplierText(bookingFields[fields.videographer], SUPPLIER_ROLE_MAX),
+    dj: supplierText(bookingFields[fields.dj], SUPPLIER_ROLE_MAX),
+    otherSuppliers: supplierText(bookingFields[fields.otherSuppliers], OTHER_SUPPLIERS_MAX),
   };
 
   const customer: Customer = {
@@ -146,8 +146,16 @@ function matchExtra(name: string, extras: ExtraCatalogItem[]): string {
   return hit?.id ?? name;
 }
 
+/** Same caps as supplier answers: 120 for one role, 2,000 for Other suppliers. */
+const SUPPLIER_ROLE_MAX = 120;
+const OTHER_SUPPLIERS_MAX = 2_000;
+
 function asString(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
+}
+
+function supplierText(value: unknown, max: number): string {
+  return asString(value).slice(0, max);
 }
 
 function asStringList(value: unknown): string[] {

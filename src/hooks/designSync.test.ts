@@ -54,6 +54,51 @@ describe('pickHydratedDesign', () => {
     expect(hydrated.design.otherSuppliers).toBe('Celebrant: Jo\nFlorist: Lane');
   });
 
+  it('uses staff prefill only when the design has no saved answers, and a saved blank wins', () => {
+    const prefilled = {
+      coupleNames: 'Sam & Alex',
+      weddingPlanner: 'Ada Planner',
+      photographer: 'Cam Nguyen',
+      videographer: 'Priya Shah',
+      dj: 'Noah Ellis',
+      otherSuppliers: 'Celebrant: Jo',
+    };
+    const fresh = pickHydratedDesign(null, null, null, prefilled);
+    expect(fresh.source).toBe('default');
+    expect(fresh.pushLocal).toBe(false);
+    expect(fresh.design.weddingPlanner).toBe('Ada Planner');
+    expect(fresh.design.photographer).toBe('Cam Nguyen');
+    expect(fresh.design.videographer).toBe('Priya Shah');
+    expect(fresh.design.dj).toBe('Noah Ellis');
+    expect(fresh.design.otherSuppliers).toBe('Celebrant: Jo');
+
+    const remote = at('2026-03-01T00:00:00.000Z');
+    remote.weddingPlanner = '';
+    remote.dj = 'Saved DJ';
+    const saved = pickHydratedDesign(null, remote, '2026-03-02T00:00:00.000Z', prefilled);
+    expect(saved.source).toBe('remote');
+    expect(saved.design.weddingPlanner).toBe('');
+    expect(saved.design.dj).toBe('Saved DJ');
+    expect(saved.design.photographer).toBe('');
+    expect(saved.design.videographer).toBe('');
+    expect(saved.design.otherSuppliers).toBe('');
+
+    const blankStaff = {
+      coupleNames: 'Sam & Alex',
+      weddingPlanner: '',
+      photographer: '',
+      videographer: '',
+      dj: '',
+      otherSuppliers: '',
+    };
+    const empty = pickHydratedDesign(null, null, null, blankStaff);
+    expect(empty.design.weddingPlanner).toBe('');
+    expect(empty.design.photographer).toBe('');
+    expect(empty.design.videographer).toBe('');
+    expect(empty.design.dj).toBe('');
+    expect(empty.design.otherSuppliers).toBe('');
+  });
+
   it('keeps a local draft when the server copy is blank or unusable, and does not push a fresh default', () => {
     const local = at('2026-05-01T00:00:00.000Z');
     local.stylingNote = 'kept';
