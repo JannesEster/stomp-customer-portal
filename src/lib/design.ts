@@ -1,6 +1,7 @@
 import { effectsConfig, findScreenStyle, findStyle, type UploadRule } from '../config';
 import { isKnownStepId, type StepId } from '../design/steps';
 import { generatedFor } from './inviteStyle';
+import { fileMime } from './portalFiles';
 import type { Booking, DesignState, HoldingDesign, MediaItem, MediaKind, Phase, SupplierDetails, Timing } from '../types';
 
 export const DESIGN_VERSION = 3;
@@ -196,10 +197,11 @@ export function mediaKindOf(mimeType: string): MediaKind | null {
 
 /** Returns a customer facing error, or null if the file is allowed. */
 export function validateUpload(file: Pick<File, 'name' | 'type' | 'size'>, rule: UploadRule): string | null {
-  if (!rule.accept.includes(file.type)) {
+  const type = fileMime(file);
+  if (!rule.accept.includes(type)) {
     return `${file.name} isn't a supported file type.`;
   }
-  const kind = mediaKindOf(file.type);
+  const kind = mediaKindOf(type);
   const maxMb =
     (kind === 'video' ? rule.maxVideoMb : kind === 'image' ? rule.maxImageMb : undefined) ?? rule.maxMb;
   if (maxMb !== undefined && file.size > maxMb * 1024 * 1024) {

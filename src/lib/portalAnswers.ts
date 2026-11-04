@@ -1,5 +1,6 @@
 import { isKnownStepId, STEP_IDS, type StepId } from '../design/steps';
 import { DESIGN_VERSION, usableDesign } from './design';
+import { isPortalFileState } from './portalFiles';
 import type { DesignState, GeneratedStyle, HoldingDesign, MediaItem, ScreenMode, ScreensDesign, StoredFile } from '../types';
 
 /** Stored Portal answers JSON must stay under Airtable's long text comfort limit. */
@@ -11,6 +12,7 @@ const LIMITS = {
   fileName: 180,
   fileType: 80,
   fileId: 80,
+  uploadError: 300,
   colour: 32,
   time: 5,
   id: 80,
@@ -109,16 +111,35 @@ function readHolding(value: unknown, fallbackNames: string): HoldingDesign {
   };
 }
 
+const ATTACHMENT_ID = /^att[A-Za-z0-9]{14}$/;
+
 function readFile(value: unknown): StoredFile {
   const source = objectOf(value);
   const size = source.size;
   if (typeof size !== 'number' || !Number.isFinite(size) || size < 0) throw new BadAnswers();
-  return {
+  const file: StoredFile = {
     id: requiredString(source.id, LIMITS.fileId),
     name: requiredString(source.name, LIMITS.fileName),
     type: requiredString(source.type, LIMITS.fileType),
     size: Math.min(Math.round(size), 2_000_000_000),
   };
+  if (source.attachmentId != null && source.attachmentId !== '') {
+    const attachmentId = requiredString(source.attachmentId, 32);
+    if (!ATTACHMENT_ID.test(attachmentId)) throw new BadAnswers();
+    file.attachmentId = attachmentId;
+  }
+  if (source.uploadState != null && source.uploadState !== '') {
+    const state = requiredString(source.uploadState, 20);
+    if (!isPortalFileState(state)) throw new BadAnswers();
+    file.uploadState = state;
+  }
+  if (typeof source.uploadError === 'string' && source.uploadError) {
+    file.uploadError = requiredString(source.uploadError, LIMITS.uploadError);
+  }
+  if (source.uploadedAt != null && source.uploadedAt !== '') {
+    file.uploadedAt = readIso(source.uploadedAt);
+  }
+  return file;
 }
 
 function readScreens(value: unknown): ScreensDesign {

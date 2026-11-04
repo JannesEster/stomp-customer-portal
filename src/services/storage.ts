@@ -2,12 +2,15 @@ import type { StoredFile } from '../types';
 
 /**
  * Where design data and uploaded files live. The portal only ever talks to this interface.
- * PENDING Jannes's decision: this browser store is temporary. The real store and upload limits are not decided yet.
+ * On a portal link the file is also sent to the booking. This browser keeps a copy until that send works,
+ * so a failed upload can be retried and a later visit can finish it.
  */
 export interface StorageProvider {
   loadData<T>(key: string): Promise<T | null>;
   saveData<T>(key: string, value: T): Promise<void>;
   saveFile(file: File): Promise<StoredFile>;
+  /** The original bytes, or null if this browser no longer has them. */
+  getFile(fileId: string): Promise<Blob | null>;
   /** A URL the browser can display, or null if the file is gone. */
   getFileUrl(fileId: string): Promise<string | null>;
   deleteFile(fileId: string): Promise<void>;
@@ -23,8 +26,8 @@ interface FileRecord {
 }
 
 /**
- * PENDING Jannes's decision. JSON data in localStorage, file blobs in IndexedDB
- * (localStorage is too small for photos and videos). Everything stays in this browser.
+ * JSON data in localStorage, file blobs in IndexedDB (localStorage is too small for photos and videos).
+ * The seeded demo never leaves this browser. A portal link uploads the blob to the booking as well.
  */
 export class LocalStorageProvider implements StorageProvider {
   private dbPromise: Promise<IDBDatabase> | null = null;
@@ -54,6 +57,11 @@ export class LocalStorageProvider implements StorageProvider {
     const record: FileRecord = { meta, blob: file };
     await this.request((store) => store.put(record, meta.id), 'readwrite');
     return meta;
+  }
+
+  async getFile(fileId: string): Promise<Blob | null> {
+    const record = await this.request<FileRecord | undefined>((store) => store.get(fileId));
+    return record?.blob ?? null;
   }
 
   async getFileUrl(fileId: string): Promise<string | null> {

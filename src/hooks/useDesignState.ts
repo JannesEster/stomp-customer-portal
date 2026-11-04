@@ -4,6 +4,8 @@ import type { Booking, DesignState } from '../types';
 import type { StepId } from '../design/steps';
 import { confirmStep, withConfirmed } from '../lib/design';
 import { createCoalescedSaver, pickHydratedDesign, type SaveStatus } from './designSync';
+import { runPortalFileMigration, withFilePatch } from '../lib/portalFiles';
+import { sharePortalUpload, uploadPortalFile } from '../services/uploadClient';
 import {
   beaconPortalAnswers,
   captureFloorPngs,
@@ -11,6 +13,7 @@ import {
   postFloorPreviews,
   postPortalAnswers,
   shouldUploadFloorPreview,
+  visiblePreviewFailure,
 } from './floorPreviewSync';
 
 export type { SaveStatus };
@@ -28,6 +31,8 @@ export function useDesignState(booking: Booking) {
   const [design, setDesign] = useState<DesignState | null>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [previewNonce, setPreviewNonce] = useState(0);
   const dirty = useRef(false);
   const latest = useRef<DesignState | null>(null);
   const flushNow = useRef(false);
@@ -55,12 +60,52 @@ export function useDesignState(booking: Booking) {
         setSavedAt(remote.lastSavedAt);
         setSaveStatus('saved');
       }
+      latest.current = picked.design;
       setDesign(picked.design);
+      if (token) void migrateLocalFiles(picked.design);
     })();
+    async function migrateLocalFiles(start: DesignState) {
+      if (!token) return;
+      await runPortalFileMigration({
+        design: start,
+        readBlob: async (fileId) => {
+          try {
+            return await storage.getFile(fileId);
+          } catch {
+            return null;
+          }
+        },
+        upload: (input) =>
+          sharePortalUpload(`${token}:${input.fileId}`, () =>
+            uploadPortalFile({
+              token,
+              file: input.blob,
+              filename: input.name,
+              type: input.type,
+              role: input.role,
+            }),
+          ),
+        onPatch: (fileId, patch) => {
+          if (cancelled) return;
+          const current = latest.current;
+          if (!current) return;
+          const patched = withFilePatch(current, fileId, patch);
+          if (patched === current) return;
+          const next =
+            patch.uploadState && patch.uploadState !== 'uploading'
+              ? { ...patched, updatedAt: new Date().toISOString() }
+              : patched;
+          latest.current = next;
+          if (patch.uploadState !== 'uploading') dirty.current = true;
+          setDesign(next);
+        },
+      });
+    }
+
     return () => {
       cancelled = true;
     };
-  }, [key, booking, storage, portal]);
+  }, [key, booking, storage, portal, token]);
 
   useEffect(() => {
     if (!token) {
@@ -175,9 +220,12 @@ export function useDesignState(booking: Booking) {
       try {
         const images = await captureFloorPngs(booking, current);
         if (images?.length) await postFloorPreviews(token, images);
-        if (images?.length) previewHash.current = expectedHash;
-      } catch {
-        /* Preview failures stay quiet. The design name is saved with the answers. */
+        if (images?.length) {
+          previewHash.current = expectedHash;
+          setPreviewError(null);
+        }
+      } catch (err) {
+        setPreviewError(visiblePreviewFailure(err));
       } finally {
         previewFlight.current = false;
         if (previewQueued.current) {
@@ -187,7 +235,7 @@ export function useDesignState(booking: Booking) {
         }
       }
     }
-  }, [design, token, booking]);
+  }, [design, token, booking, previewNonce]);
 
   /** Any edit puts a submitted design back into draft until it is submitted again. */
   const update = useCallback((change: (d: DesignState) => DesignState) => {
@@ -224,7 +272,14 @@ export function useDesignState(booking: Booking) {
     );
   }, []);
 
-  return { design, update, submit, noteStep, saveStatus, savedAt, serverSync };
+  const retryPreview = useCallback(() => {
+    previewHash.current = null;
+    previewNow.current = true;
+    setPreviewError(null);
+    setPreviewNonce((n) => n + 1);
+  }, []);
+
+  return { design, update, submit, noteStep, saveStatus, savedAt, serverSync, previewError, retryPreview };
 }
 
 export type UpdateDesign = (change: (d: DesignState) => DesignState) => void;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createDefaultDesign } from '../lib/design';
-import { floorPreviewHash, shouldUploadFloorPreview } from './floorPreviewSync';
+import { floorPreviewHash, shouldUploadFloorPreview, visiblePreviewFailure } from './floorPreviewSync';
 
 describe('floor preview upload decisions', () => {
   it('uploads when the floor inputs change, and again on submit', () => {
@@ -17,5 +17,13 @@ describe('floor preview upload decisions', () => {
     });
     expect(next).not.toBe(same);
     expect(shouldUploadFloorPreview(same, next, 'change')).toBe(true);
+  });
+
+  it('turns a preview_failed error into a message the couple can see', () => {
+    const message = visiblePreviewFailure(new Error('preview_failed'));
+    expect(message.length).toBeGreaterThan(0);
+    expect(message).not.toBe('preview_failed');
+    expect(message).not.toMatch(/ - /);
+    expect(message).not.toMatch(/[—–]/);
   });
 });

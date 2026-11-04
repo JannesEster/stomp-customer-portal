@@ -331,4 +331,27 @@ describe('Airtable client', () => {
     expect(logs.join('\n')).not.toContain('secret answers');
     expect(logs.join('\n')).not.toContain(png);
   });
+
+  it('uploads a customer file to the Portal uploads field id and returns only the attachment id', async () => {
+    const calls: { url: string; body: string }[] = [];
+    const client = createAirtableClient(config(), async (url, init) => {
+      calls.push({ url: String(url), body: typeof init?.body === 'string' ? init.body : '' });
+      return Response.json({
+        id: 'attUPLOADFILE0001',
+        url: 'https://v5.airtableusercontent.com/do-not-keep',
+        filename: 'Holding screen pre-bridal (photo.jpg)',
+        type: 'image/jpeg',
+        size: 4,
+      });
+    });
+    const stored = await client.uploadPortalFile('recFAKEBOOK000001', {
+      base64: 'aGVsbG8=',
+      filename: 'Holding screen pre-bridal (photo.jpg)',
+      contentType: 'image/jpeg',
+    });
+    expect(stored).toEqual({ id: 'attUPLOADFILE0001' });
+    expect(calls[0].url).toContain('/fldTR2yzH3qRhUv4I/uploadAttachment');
+    expect(JSON.parse(calls[0].body).filename).toBe('Holding screen pre-bridal (photo.jpg)');
+    expect(JSON.stringify(stored)).not.toContain('do-not-keep');
+  });
 });

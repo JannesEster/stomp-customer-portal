@@ -119,7 +119,7 @@ getFileUrl(fileId): Promise<string | null>
 deleteFile(fileId): Promise<void>
 ```
 
-`LocalStorageProvider` keeps JSON in `localStorage` (keys `stomp-portal:design:<bookingId>` and `stomp-portal:notes:<bookingId>`) and file blobs in IndexedDB (`stomp-portal-files`), because `localStorage` is too small for photos and video. Designs only store file references (`StoredFile`), never file contents. On a `/p/<token>` link the design answers are also written to the booking. Photos and videos stay in this browser. The seeded demo still uses the browser only.
+`LocalStorageProvider` keeps JSON in `localStorage` (keys `stomp-portal:design:<bookingId>` and `stomp-portal:notes:<bookingId>`) and file blobs in IndexedDB (`stomp-portal-files`), because `localStorage` is too small for photos and video. Designs only store file references (`StoredFile`), never file contents. On a `/p/<token>` link the design answers are written to the booking, and each photo, video, or invite is uploaded to **Portal uploads** on that booking. The browser keeps the blob until that upload succeeds, then a later visit sends anything still sitting in IndexedDB. The seeded demo still uses the browser only.
 
 ## Config files (`src/config/`)
 
@@ -156,6 +156,8 @@ The server reads these. Defaults match the Stomp base as of 7 October 2026. Only
 | `PORTAL_TOKEN_FIELD_NAME` | `Portal token` | Used only when `PORTAL_TOKEN_FIELD` is a field id. |
 | `PUBLIC_BASE_URL` | unset | When set, the API adds `portalUrl` as `{PUBLIC_BASE_URL}/p/{token}`. On Render this is `https://stomp-portal.onrender.com`. |
 | `PORT` | `3000` | Render sets this. The server listens on `0.0.0.0`. |
+| `PORTAL_UPLOADS_FIELD_ID` | `fldTR2yzH3qRhUv4I` | Optional. Portal uploads attachment field. No new secret is required. |
+| `PORTAL_UPLOADS_LIST_FIELD_ID` | `fldJJa8j1dPmhaln2` | Optional. Portal uploads list long text field. |
 | `BOOKING_NAME_FIELD` | `Booking name` | |
 | `LEAD_LINK_FIELD` | `Lead` | |
 | `EVENT_DATE_FIELD` | `Event date` | |
@@ -211,10 +213,14 @@ The write sets only these Bookings fields, by name:
 | Portal floor design | A single line naming the floor design and the main options. |
 | Portal floor preview | PNG snapshots of the floor. Replaced with the latest set on each preview upload. |
 | Portal suppliers | One line for each filled role: Wedding planner, Photographer, Videographer, DJ, and Other. Empty when none are filled. Not a progress step. |
+| Portal uploads | Customer photos, videos, and invites, appended with Airtable's upload attachment endpoint. Removed by rewriting the remaining attachment ids. |
+| Portal uploads list | One labelled line per file, rewritten on each answer save. |
 
 `POST /api/portal/:token/opened` (and the `/api/p/` alias) stamps **Portal first opened** the first time the page loads, before any answer is saved. If it is already set, the request writes nothing.
 
-`POST /api/portal/:token/preview` (and the `/api/p/` alias) accepts one to three PNG data URLs or base64 images, about 1.5MB decoded each (413 over that). Anything that is not a PNG is 400. The server clears **Portal floor preview** on that one record, then uploads the PNGs to Airtable's attachment endpoint. The browser sends a snapshot when the floor design changes, and again on submit.
+`POST /api/portal/:token/preview` (and the `/api/p/` alias) accepts one to three PNG data URLs or base64 images, about 1.5MB decoded each (413 over that). Anything that is not a PNG is 400. The server clears **Portal floor preview** on that one record, then uploads the PNGs to Airtable's attachment endpoint. The browser sends a snapshot when the floor design changes, and again on submit. If that preview cannot be saved, the page says so and offers Retry. The design answers are still saved.
+
+`POST /api/portal/:token/uploads` accepts one multipart file and a role (`holding-pre`, `holding-post`, `holding-dancing`, `media-start`, `media-middle`, `media-end`, `invite`, `invite-preview`). The token is checked and matched to one booking before anything is stored. HEIC and HEIF are converted to JPEG. Large photos are reduced until they fit under 5 MB. The file is then appended to **Portal uploads** (`fldTR2yzH3qRhUv4I`) through Airtable's upload attachment endpoint. The response is the attachment id, name, type, and size. Airtable file URLs are not returned and are not saved in **Portal answers**, because they expire. Thumbnails are loaded through `GET /api/portal/:token/files/:attachmentId`, which reads a fresh URL from the booking. `POST /api/portal/:token/uploads/remove` drops one attachment by rewriting the field with the remaining attachment ids. Each answer save rewrites **Portal uploads list** (`fldJJa8j1dPmhaln2`) with one line per file: label, filename, type, size, Perth time, and whether it was saved. A file that is still over 5 MB after processing is not attached. The couple sees a message asking them to email or text it to Stomp Sphere, and the file name and size stay in the answers and the list.
 
 Writes are limited to about 20 a minute per IP and per token. Preview uploads are also limited to about 6 a token every 10 minutes. Over the limit is 429. If Airtable refuses a write with 401 or 403, the portal returns 502 `write_forbidden`. Logs stay limited to status, table, operation, and error type. Tokens, answer bodies, and Airtable response bodies are not logged.
 
@@ -264,7 +270,7 @@ The static site `stomp-customer-portal` stays up separately for now. It still ha
 
 1. **Hosting.** The Render service in the blueprint is `stomp-portal`. The static site `stomp-customer-portal` stays up separately for now and has no API. Which address customers should use is pending Jannes's decision.
 2. **Customer login.** The portal link is the login for now (`TokenAuthProvider`). `AuthProvider` stays so a real account login can replace it later.
-3. **Storage and upload limits.** Design answers on a portal link are written to the booking. Photos and videos still stay in this browser. Upload limits for those files are pending Jannes's decision.
+3. **Upload size.** Photos up to 20 MB are reduced to fit Airtable's 5 MB attachment limit. HEIC and HEIF become JPEG. Videos and PDFs over 5 MB are noted on the booking and the couple is asked to email or text them to Stomp Sphere.
 4. **Floor size and screens.** Airtable has square metres, not width and length, and no screens count. Only 12 sqm and 27 sqm map to a size. Screens are inferred from lead add-ons when the option says so.
 5. **Live content pricing.** Pending Jannes's decision. When a booking does not include Live event streaming, the tick is still only a request (`liveContentRequested`). Nothing is charged in the portal.
 

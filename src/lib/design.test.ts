@@ -279,6 +279,15 @@ describe('validateUpload', () => {
     expect(validateUpload({ name: 'c.gif', type: 'image/gif', size: 10 }, rule)).toMatch(/supported/);
   });
 
+  it('accepts a HEIC photo when the phone leaves the type blank', () => {
+    const photos = {
+      accept: ['image/jpeg', 'image/heic', 'image/heif'],
+      maxImageMb: 20,
+    };
+    expect(validateUpload({ name: 'rings.HEIC', type: '', size: 1024 }, photos)).toBeNull();
+    expect(validateUpload({ name: 'rings.heif', type: 'application/octet-stream', size: 1024 }, photos)).toBeNull();
+  });
+
   it('applies the image and video limits separately', () => {
     expect(validateUpload({ name: 'a.jpg', type: 'image/jpeg', size: 2 * mb }, rule)).toMatch(/1 MB/);
     expect(validateUpload({ name: 'b.mp4', type: 'video/mp4', size: 11 * mb }, rule)).toMatch(/10 MB/);
