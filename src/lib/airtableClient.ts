@@ -278,7 +278,7 @@ export function createAirtableClient(
         signal: AbortSignal.timeout(60_000),
       });
       const body = await readJson(res, { table: config.bookingsTable, operation: 'uploadPortalFile' });
-      const id = attachmentIdFrom(body);
+      const id = attachmentIdFrom(body, filename);
       if (!id) throw new Error('Airtable upload returned no attachment id');
       return { id };
     },
@@ -346,10 +346,24 @@ async function readErrorType(res: Response): Promise<string | null> {
   }
 }
 
-function attachmentIdFrom(body: unknown): string | null {
+/**
+ * uploadAttachment replies with the record: { id: rec..., fields: { <fieldId>: [attachments] } }.
+ * The new file is the last attachment with the filename we sent. Older shapes with a top level att id still work.
+ */
+export function attachmentIdFrom(body: unknown, filename?: string): string | null {
   if (!body || typeof body !== 'object') return null;
-  const id = (body as { id?: unknown }).id;
-  return typeof id === 'string' && ATTACHMENT_ID.test(id) ? id : null;
+  const top = (body as { id?: unknown }).id;
+  if (typeof top === 'string' && ATTACHMENT_ID.test(top)) return top;
+  const fields = (body as { fields?: unknown }).fields;
+  if (!fields || typeof fields !== 'object') return null;
+  const items: Array<{ id?: unknown; filename?: unknown }> = [];
+  for (const value of Object.values(fields as Record<string, unknown>)) {
+    if (Array.isArray(value)) for (const item of value) if (item && typeof item === 'object') items.push(item);
+  }
+  const valid = items.filter((item) => typeof item.id === 'string' && ATTACHMENT_ID.test(item.id));
+  const named = filename ? valid.filter((item) => item.filename === filename) : [];
+  const pick = (named.length ? named : valid).at(-1);
+  return pick ? (pick.id as string) : null;
 }
 
 /** Keep https links on Airtable's own file hosts. Anything else is dropped before it can be fetched. */
