@@ -355,3 +355,22 @@ describe('Airtable client', () => {
     expect(JSON.stringify(stored)).not.toContain('do-not-keep');
   });
 });
+
+import { attachmentIdFrom as pickUploadedId } from './airtableClient';
+describe('attachmentIdFrom (uploadAttachment reply)', () => {
+  it('reads the new attachment from the record shaped reply', () => {
+    const body = {
+      id: 'recBWmWohft38lYlC',
+      fields: {
+        fldTR2yzH3qRhUv4I: [
+          { id: 'attAAAAAAAAAAAAAA', filename: 'Old (a.jpg)' },
+          { id: 'attBBBBBBBBBBBBBB', filename: 'Holding screen pre-bridal (b.jpg)' },
+        ],
+      },
+    };
+    expect(pickUploadedId(body, 'Holding screen pre-bridal (b.jpg)')).toBe('attBBBBBBBBBBBBBB');
+    expect(pickUploadedId(body)).toBe('attBBBBBBBBBBBBBB');
+    expect(pickUploadedId({ id: 'attCCCCCCCCCCCCCC' })).toBe('attCCCCCCCCCCCCCC');
+    expect(pickUploadedId({ id: 'recBWmWohft38lYlC' })).toBeNull();
+  });
+});
