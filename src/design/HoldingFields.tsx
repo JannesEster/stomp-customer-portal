@@ -1,12 +1,12 @@
 import { useRef, useState } from 'react';
 import { findStyle, holdingStylesConfig, portalConfig, type HoldingStyleDef } from '../config';
 import { acceptAttr, mediaKindOf, validateUpload } from '../lib/design';
-import { roleForPhase, withFilePatch } from '../lib/portalFiles';
+import { replaceSingleSlot, roleForPhase, withFilePatch } from '../lib/portalFiles';
 import { useFileUrl } from '../hooks/useFileUrl';
 import { usePortalFileActions } from '../hooks/usePortalFileActions';
 import type { UpdateDesign } from '../hooks/useDesignState';
 import { generatedFor, INVITE_STYLE_ID, LAYOUT_LABELS, TYPOGRAPHY_LABELS } from '../lib/inviteStyle';
-import type { DesignState, HoldingDesign, Phase } from '../types';
+import type { DesignState, HoldingDesign, Phase, StoredFile } from '../types';
 import { fileStillUsed } from './common';
 import { FileStateLine } from './FileState';
 import { GeneratedThumb } from './GeneratedThumb';
@@ -90,23 +90,27 @@ export function NamesField({ design, update, phase }: PartProps) {
 }
 
 export function CouplePhoto({ design, update, phase }: PartProps) {
-  const { send, retry, removeStored, serverSync } = usePortalFileActions();
+  const { send, retry, removeStored, discardUnsaved, serverSync } = usePortalFileActions();
   const h = design.designs[phase];
   const style = findStyle(h.styleId);
   const [mediaError, setMediaError] = useState<string | null>(null);
+  const [pending, setPending] = useState<StoredFile | null>(null);
   const input = useRef<HTMLInputElement>(null);
   const mediaUrl = useFileUrl(h.media);
   const rule = portalConfig.uploads.holdingMedia;
   const set = setterFor(update, phase);
   const role = roleForPhase(phase);
-  const replaced = useRef<typeof h.media>(null);
 
-  const dropReplaced = async () => {
-    const old = replaced.current;
-    replaced.current = null;
-    if (!old || fileStillUsed(design, old.id, phase)) return;
-    const removed = await removeStored(old);
-    if (!removed.ok) setMediaError(removed.message);
+  const applyAttempt = async (kept: StoredFile | null, attempt: StoredFile) => {
+    const decision = replaceSingleSlot(kept, attempt);
+    setPending(decision.pending);
+    if (decision.pending) return;
+    if (decision.slot) set({ media: decision.slot });
+    setMediaError(null);
+    if (decision.remove && !fileStillUsed(design, decision.remove.id, phase)) {
+      const removed = await removeStored(decision.remove);
+      if (!removed.ok) setMediaError(removed.message);
+    }
   };
 
   const onFile = async (file: File | undefined) => {
@@ -114,13 +118,21 @@ export function CouplePhoto({ design, update, phase }: PartProps) {
     const error = validateUpload(file, rule);
     setMediaError(error);
     if (error) return;
-    if (h.media) replaced.current = h.media;
-    const stored = await send(file, role, (pending) => set({ media: pending }));
-    set({ media: stored });
-    await dropReplaced();
+    if (pending && !pending.attachmentId) void discardUnsaved(pending);
+    const kept = h.media;
+    const stored = await send(file, role, (next) => {
+      const decision = replaceSingleSlot(kept, next);
+      setPending(decision.pending);
+      if (!decision.pending && decision.slot) set({ media: decision.slot });
+    });
+    await applyAttempt(kept, stored);
   };
 
   const onRemove = async () => {
+    if (pending) {
+      void discardUnsaved(pending);
+      setPending(null);
+    }
     if (!h.media) return;
     const removed = await removeStored(h.media);
     if (!removed.ok) {
@@ -140,6 +152,23 @@ export function CouplePhoto({ design, update, phase }: PartProps) {
     });
   };
 
+  const onRetryPending = () => {
+    if (!pending) return;
+    const kept = h.media;
+    const id = pending.id;
+    setPending({ ...pending, uploadState: 'uploading', uploadError: null });
+    void retry(pending, role).then((patch) => {
+      void applyAttempt(kept, { ...pending, ...patch, id });
+    });
+  };
+
+  const onCancelPending = () => {
+    if (!pending) return;
+    void discardUnsaved(pending);
+    setPending(null);
+    setMediaError(null);
+  };
+
   return (
     <fieldset>
       <legend>Photo or video of the two of you</legend>
@@ -157,6 +186,9 @@ export function CouplePhoto({ design, update, phase }: PartProps) {
         ))}
       {h.media && !mediaUrl && <p className="muted small">{h.media.name}</p>}
       {h.media && <FileStateLine file={h.media} serverSync={serverSync} onRetry={onRetry} />}
+      {pending && (
+        <FileStateLine file={pending} serverSync={serverSync} onRetry={onRetryPending} onCancel={onCancelPending} />
+      )}
       <div className="row">
         <button type="button" className="secondary" onClick={() => input.current?.click()}>
           {h.media ? 'Replace' : 'Upload photo or video'}

@@ -14,8 +14,8 @@ import {
 import { useFileUrl } from '../hooks/useFileUrl';
 import { usePortalFileActions } from '../hooks/usePortalFileActions';
 import type { UpdateDesign } from '../hooks/useDesignState';
-import { withFilePatch } from '../lib/portalFiles';
-import type { DesignState } from '../types';
+import { replaceSingleSlot, withFilePatch } from '../lib/portalFiles';
+import type { DesignState, StoredFile } from '../types';
 import { fileStillUsed } from './common';
 import { FileStateLine } from './FileState';
 import { GeneratedThumb } from './GeneratedThumb';
@@ -29,10 +29,11 @@ export function InviteUpload({
   update: UpdateDesign;
   eventDate: string;
 }) {
-  const { send, retry, removeStored, serverSync } = usePortalFileActions();
+  const { send, retry, removeStored, discardUnsaved, serverSync } = usePortalFileActions();
   const input = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [pending, setPending] = useState<StoredFile | null>(null);
   const invite = design.invite;
   const thumbUrl = useFileUrl(design.invitePreview ?? (invite?.type.startsWith('image/') ? invite : null));
 
@@ -51,10 +52,19 @@ export function InviteUpload({
     setError(err);
     if (err) return;
     setBusy(true);
+    const keptInvite = design.invite;
+    const keptPreview = design.invitePreview;
     try {
-      const stored = await send(file, 'invite', (pending) => {
-        update((d) => ({ ...d, invite: pending }));
+      if (pending && !pending.attachmentId) void discardUnsaved(pending);
+      const stored = await send(file, 'invite', (next) => {
+        const decision = replaceSingleSlot(keptInvite, next);
+        setPending(decision.pending);
+        if (!decision.pending && decision.slot) update((d) => ({ ...d, invite: decision.slot }));
       });
+      const decision = replaceSingleSlot(keptInvite, stored);
+      setPending(decision.pending);
+      if (decision.pending) return;
+
       let analysis: InviteAnalysis = { palette: null, namesColour: null, preview: null };
       try {
         // Loaded on demand so PDF.js stays out of the first page load on phones.
@@ -66,12 +76,7 @@ export function InviteUpload({
       const previewFile = analysis.preview
         ? new File([analysis.preview], `${file.name}.png`, { type: 'image/png' })
         : null;
-      const preview = previewFile
-        ? await send(previewFile, 'invite-preview', (pending) => {
-            update((d) => ({ ...d, invitePreview: pending }));
-          })
-        : null;
-      await releaseFiles();
+      const preview = previewFile ? await send(previewFile, 'invite-preview') : null;
       update((d) => ({
         ...d,
         invite: stored,
@@ -80,12 +85,46 @@ export function InviteUpload({
         inviteNamesColour: analysis.namesColour,
         invitePaper: analysis.palette?.background ?? null,
       }));
+      if (decision.remove && !fileStillUsed(design, decision.remove.id, 'invite')) {
+        const removed = await removeStored(decision.remove);
+        if (!removed.ok) setError(removed.message);
+      }
+      if (keptPreview && keptPreview.id !== preview?.id && !fileStillUsed(design, keptPreview.id, 'invite')) {
+        const removed = await removeStored(keptPreview);
+        if (!removed.ok) setError(removed.message);
+      }
     } finally {
       setBusy(false);
     }
   };
 
+  const onRetryPending = () => {
+    if (!pending) return;
+    const keptInvite = design.invite;
+    setPending({ ...pending, uploadState: 'uploading', uploadError: null });
+    void retry(pending, 'invite').then((patch) => {
+      const next = { ...pending, ...patch };
+      const decision = replaceSingleSlot(keptInvite, next);
+      setPending(decision.pending);
+      if (decision.pending || !decision.slot) return;
+      update((d) => ({ ...d, invite: decision.slot }));
+      if (decision.remove && !fileStillUsed(design, decision.remove.id, 'invite')) {
+        void removeStored(decision.remove);
+      }
+    });
+  };
+
+  const onCancelPending = () => {
+    if (!pending) return;
+    void discardUnsaved(pending);
+    setPending(null);
+  };
+
   const remove = async () => {
+    if (pending) {
+      void discardUnsaved(pending);
+      setPending(null);
+    }
     await releaseFiles();
     update((d) => ({
       ...d,
@@ -147,6 +186,9 @@ export function InviteUpload({
         </p>
       )}
       {invite && <FileStateLine file={invite} serverSync={serverSync} onRetry={onRetry} />}
+      {pending && (
+        <FileStateLine file={pending} serverSync={serverSync} onRetry={onRetryPending} onCancel={onCancelPending} />
+      )}
       {design.invitePreview &&
         (design.invitePreview.uploadState === 'error' || design.invitePreview.uploadState === 'too_large') && (
         <FileStateLine
