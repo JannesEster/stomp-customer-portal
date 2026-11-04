@@ -128,7 +128,13 @@ async function drawOffscreen(booking: Booking, design: DesignState, phase: Phase
   }
 
   const posterSrc = style?.poster ?? (showsDancingVideos(design, phase) ? dancingVideosConfig.videos[0]?.poster : null);
-  const poster = posterSrc ? await loadImage(posterSrc) : null;
+  // Posters carry sample names baked in, so staff saw them under the couple's names. Use a frame of the clean video first.
+  const cleanFrame = style?.video ? await loadVideoFrame(style.video) : null;
+  const poster: CanvasImageSource & { width: number; height: number } | null = cleanFrame
+    ? Object.assign(cleanFrame, { width: cleanFrame.videoWidth, height: cleanFrame.videoHeight })
+    : posterSrc
+      ? await loadImage(posterSrc)
+      : null;
 
   if (poster) {
     ctx.fillStyle = '#000';
@@ -172,6 +178,32 @@ async function drawOffscreen(booking: Booking, design: DesignState, phase: Phase
   }
 
   return new Promise((resolve) => canvas.toBlob((blob) => resolve(blob), 'image/png'));
+}
+
+function loadVideoFrame(src: string): Promise<HTMLVideoElement | null> {
+  return new Promise((resolve) => {
+    if (typeof document === 'undefined') return resolve(null);
+    const video = document.createElement('video');
+    let done = false;
+    const finish = (value: HTMLVideoElement | null) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      resolve(value && value.videoWidth > 0 && value.videoHeight > 0 ? value : null);
+    };
+    const timer = setTimeout(() => finish(null), 8000);
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = 'auto';
+    video.onloadeddata = () => {
+      const target = Number.isFinite(video.duration) ? Math.min(1, video.duration / 2) : 0;
+      if (target <= 0) finish(video);
+      else video.currentTime = target;
+    };
+    video.onseeked = () => finish(video);
+    video.onerror = () => finish(null);
+    video.src = src;
+  });
 }
 
 function loadImage(src: string): Promise<HTMLImageElement | null> {

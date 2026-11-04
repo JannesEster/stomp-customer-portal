@@ -118,7 +118,7 @@ export function App() {
 
       <p className="muted small portal-pending">
         {auth instanceof TokenAuthProvider
-          ? 'Your design choices are saved for Stomp. Photos and videos stay in this browser.'
+          ? 'Your design choices and photos are saved to your Stomp booking. Videos over 5 MB need to be emailed or texted to Stomp Sphere.'
           : 'Designs and files are saved in this browser only. Where they are stored is pending Jannes\'s decision.'}
       </p>
       {auth instanceof MockAuthProvider && <DemoSwitcher auth={auth} current={customer} />}
