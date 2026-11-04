@@ -248,6 +248,45 @@ export type UploadOutcome =
   | { ok: false; kind: 'too_large'; message: string; notedAt: string }
   | { ok: false; kind: 'error'; message: string; notedAt: string };
 
+export interface SlotReplacement {
+  /** What the single slot shows once this attempt is applied. */
+  slot: StoredFile | null;
+  /** A rejected or in-progress file shown beside a file that is already saved. */
+  pending: StoredFile | null;
+  /** The previous file to delete, and only after the replacement has actually saved. */
+  remove: StoredFile | null;
+}
+
+/** A file the booking already has, or a demo copy that was saved on this device. */
+function slotIsSaved(file: StoredFile | null): file is StoredFile {
+  if (!file) return false;
+  if (file.uploadState === 'saved' || file.uploadState === 'local') return true;
+  return !!file.attachmentId && file.uploadState !== 'error' && file.uploadState !== 'too_large';
+}
+
+function attemptIsSaved(file: StoredFile): boolean {
+  return file.uploadState === 'saved' || file.uploadState === 'local';
+}
+
+/**
+ * A single slot such as the holding screen photo.
+ * The saved file and its attachment stay put until the replacement has saved.
+ * A rejection or a failed send is reported beside it, and nothing is removed.
+ */
+export function replaceSingleSlot(current: StoredFile | null, attempt: StoredFile): SlotReplacement {
+  if (attemptIsSaved(attempt)) {
+    return {
+      slot: attempt,
+      pending: null,
+      remove: current && current.id !== attempt.id ? current : null,
+    };
+  }
+  if (!slotIsSaved(current)) {
+    return { slot: attempt, pending: null, remove: null };
+  }
+  return { slot: current, pending: attempt, remove: null };
+}
+
 export function outcomeToPatch(outcome: UploadOutcome): Partial<StoredFile> | null {
   if (outcome.kind === 'skip') return null;
   if (outcome.ok && outcome.kind === 'saved') {

@@ -46,6 +46,19 @@ export function usePortalFileActions() {
     [storage, token],
   );
 
+  /** Drop a file that never reached the booking. A saved attachment is left alone. */
+  const discardUnsaved = useCallback(
+    async (file: StoredFile): Promise<void> => {
+      if (file.attachmentId) return;
+      try {
+        await storage.deleteFile(file.id);
+      } catch {
+        /* The local copy can stay. The booking was not touched. */
+      }
+    },
+    [storage],
+  );
+
   const removeStored = useCallback(
     async (file: StoredFile): Promise<{ ok: true } | { ok: false; message: string }> => {
       if (token && file.attachmentId) {
@@ -62,7 +75,7 @@ export function usePortalFileActions() {
     [storage, token],
   );
 
-  return { send, retry, removeStored, serverSync: token !== null };
+  return { send, retry, removeStored, discardUnsaved, serverSync: token !== null };
 }
 
 function applyOutcome(file: StoredFile, outcome: UploadOutcome): StoredFile {

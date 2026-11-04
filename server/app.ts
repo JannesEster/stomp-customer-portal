@@ -408,6 +408,10 @@ export function createApp(opts: {
     }
   }
 
+  /**
+   * Drops one attachment. The caller must do this only after a replacement has saved,
+   * otherwise a rejected file would take the saved photo off the booking.
+   */
   async function removeUpload(req: Request, res: Response): Promise<void> {
     res.set('Cache-Control', 'no-store');
     const token = acceptWrite(req, res);

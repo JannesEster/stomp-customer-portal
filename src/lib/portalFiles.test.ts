@@ -3,6 +3,7 @@ import { createDefaultDesign } from './design';
 import {
   MISSING_DEVICE_MESSAGE,
   TOO_LARGE_MESSAGE,
+  UPLOAD_FAILED_MESSAGE,
   UPLOAD_LABELS,
   attachmentFilename,
   blocksBeforeUpload,
@@ -13,6 +14,7 @@ import {
   outcomeToPatch,
   portalUploadsList,
   preserveStoredFiles,
+  replaceSingleSlot,
   runPortalFileMigration,
   withFilePatch,
 } from './portalFiles';
@@ -145,6 +147,85 @@ describe('answer preservation', () => {
     expect(merged.designs.holding.media?.attachmentId).toBe(ATTACHMENT);
     expect(merged.designs.holding.media?.uploadState).toBe('saved');
     expect(merged.designs.holding.media?.name).toBe('hands.jpg');
+  });
+});
+
+describe('replacing a single saved file', () => {
+  const saved: StoredFile = {
+    id: 'file-hands',
+    name: 'hands.jpg',
+    type: 'image/jpeg',
+    size: 80_000,
+    attachmentId: ATTACHMENT,
+    uploadState: 'saved',
+    uploadedAt: '2026-11-04T01:30:00.000Z',
+  };
+
+  it('swaps the slot and drops the previous attachment only after the replacement has saved', () => {
+    const next: StoredFile = {
+      id: 'file-new',
+      name: 'rings.jpg',
+      type: 'image/jpeg',
+      size: 90_000,
+      attachmentId: 'attNEWRINGS000001',
+      uploadState: 'saved',
+      uploadedAt: '2026-11-04T02:00:00.000Z',
+    };
+    const decision = replaceSingleSlot(saved, next);
+    expect(decision.slot).toBe(next);
+    expect(decision.pending).toBeNull();
+    expect(decision.remove).toBe(saved);
+    expect(decision.remove?.attachmentId).toBe(ATTACHMENT);
+  });
+
+  it('keeps the saved photo when the replacement is over 5 MB', () => {
+    const rejected: StoredFile = {
+      id: 'file-clip',
+      name: 'dance.mp4',
+      type: 'video/mp4',
+      size: 80_000_000,
+      uploadState: 'too_large',
+      uploadError: TOO_LARGE_MESSAGE,
+      attachmentId: null,
+    };
+    const decision = replaceSingleSlot(saved, rejected);
+    expect(decision.slot).toBe(saved);
+    expect(decision.slot?.attachmentId).toBe(ATTACHMENT);
+    expect(decision.remove).toBeNull();
+    expect(decision.pending).toBe(rejected);
+    expect(decision.pending?.uploadError).toBe(TOO_LARGE_MESSAGE);
+  });
+
+  it('keeps the saved photo when the replacement fails to send', () => {
+    const failed: StoredFile = {
+      id: 'file-new',
+      name: 'rings.jpg',
+      type: 'image/jpeg',
+      size: 2_000_000,
+      uploadState: 'error',
+      uploadError: UPLOAD_FAILED_MESSAGE,
+      attachmentId: null,
+    };
+    const decision = replaceSingleSlot(saved, failed);
+    expect(decision.slot).toBe(saved);
+    expect(decision.slot?.attachmentId).toBe(ATTACHMENT);
+    expect(decision.remove).toBeNull();
+    expect(decision.pending?.uploadState).toBe('error');
+    expect(decision.pending?.uploadError).toBe(UPLOAD_FAILED_MESSAGE);
+  });
+
+  it('does not remove the saved photo while the replacement is still uploading', () => {
+    const uploading: StoredFile = {
+      id: 'file-new',
+      name: 'rings.jpg',
+      type: 'image/jpeg',
+      size: 2_000_000,
+      uploadState: 'uploading',
+    };
+    const decision = replaceSingleSlot(saved, uploading);
+    expect(decision.slot).toBe(saved);
+    expect(decision.remove).toBeNull();
+    expect(decision.pending?.uploadState).toBe('uploading');
   });
 });
 

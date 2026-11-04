@@ -6,13 +6,16 @@ export function FileStateLine({
   file,
   serverSync,
   onRetry,
+  onCancel,
 }: {
   file: StoredFile;
   serverSync: boolean;
   onRetry?: () => void;
+  onCancel?: () => void;
 }) {
   const status = fileStatusLabel(file, serverSync);
   if (!status) return null;
+  const canCancel = !!onCancel && file.uploadState !== 'uploading' && file.uploadState !== 'saved';
   return (
     <p className={status.tone === 'error' ? 'error file-state' : 'muted small file-state'} aria-live="polite">
       {status.text}
@@ -21,6 +24,14 @@ export function FileStateLine({
           {' '}
           <button type="button" className="link" onClick={onRetry}>
             Retry
+          </button>
+        </>
+      )}
+      {canCancel && (
+        <>
+          {' '}
+          <button type="button" className="link" onClick={onCancel}>
+            Cancel
           </button>
         </>
       )}
