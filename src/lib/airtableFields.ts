@@ -92,6 +92,12 @@ export const PORTAL_FLOOR_PREVIEW_FIELD: PortalWriteField = 'Portal floor previe
 /** Filled supplier roles, one line each. An empty string when the couple has named nobody. */
 export const PORTAL_SUPPLIERS_FIELD: PortalWriteField = 'Portal suppliers';
 
+/** Multiple attachments. Airtable copies each file the portal uploads. */
+export const DEFAULT_PORTAL_UPLOADS_FIELD_ID = 'fldTR2yzH3qRhUv4I';
+/** One labelled line per customer file. Long text. */
+export const DEFAULT_PORTAL_UPLOADS_LIST_FIELD_ID = 'fldJJa8j1dPmhaln2';
+export const PORTAL_UPLOADS_FIELD_NAME = 'Portal uploads';
+
 /**
  * Read with the booking lookup so a return visit can hydrate, and so the first
  * opened stamp is only written when it is still blank. Not part of the public booking.
@@ -104,11 +110,18 @@ export const PORTAL_READ_FIELDS = [
 
 const PORTAL_WRITE_FIELD_SET = new Set<string>(PORTAL_WRITE_FIELDS);
 
-/** Keep a PATCH to the write whitelist. Extra keys, including anything the client posted, are dropped. */
-export function pickPortalWriteFields(fields: Record<string, unknown>): Partial<Record<PortalWriteField, unknown>> {
-  const picked: Partial<Record<PortalWriteField, unknown>> = {};
+/**
+ * Keep a PATCH to the write whitelist. Extra keys, including anything the client posted, are dropped.
+ * `extraKeys` is for configured field ids such as Portal uploads. Names outside the whitelist stay dropped.
+ */
+export function pickPortalWriteFields(
+  fields: Record<string, unknown>,
+  extraKeys: readonly string[] = [],
+): Record<string, unknown> {
+  const allowed = new Set<string>([...PORTAL_WRITE_FIELD_SET, ...extraKeys]);
+  const picked: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(fields)) {
-    if (PORTAL_WRITE_FIELD_SET.has(key)) picked[key as PortalWriteField] = value;
+    if (allowed.has(key)) picked[key] = value;
   }
   return picked;
 }

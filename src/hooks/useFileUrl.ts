@@ -3,18 +3,37 @@ import { useServices } from '../services';
 import type { StoredFile } from '../types';
 
 export function useFileUrl(file: StoredFile | null | undefined): string | null {
-  const { storage } = useServices();
+  const { storage, portal } = useServices();
   const [url, setUrl] = useState<string | null>(null);
   const id = file?.id ?? null;
+  const saved = file?.uploadState === 'saved' && !!file.attachmentId;
+  const remote =
+    file?.attachmentId && portal?.token
+      ? `/api/portal/${encodeURIComponent(portal.token)}/files/${encodeURIComponent(file.attachmentId)}?variant=${
+          file.type.startsWith('video/') ? 'full' : 'thumb'
+        }`
+      : null;
 
   useEffect(() => {
     let cancelled = false;
     setUrl(null);
-    if (id) storage.getFileUrl(id).then((u) => !cancelled && setUrl(u));
+    // A saved file is served from the booking, because the copy on this device may still be the original HEIC.
+    if (saved && remote) {
+      setUrl(remote);
+      return;
+    }
+    if (id) {
+      void storage.getFileUrl(id).then((local) => {
+        if (cancelled) return;
+        setUrl(local ?? remote);
+      });
+    } else if (remote) {
+      setUrl(remote);
+    }
     return () => {
       cancelled = true;
     };
-  }, [id, storage]);
+  }, [id, remote, saved, storage]);
 
   return url;
 }

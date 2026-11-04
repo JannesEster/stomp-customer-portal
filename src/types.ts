@@ -51,11 +51,21 @@ export interface SupplierDetails {
   otherSuppliers: string;
 }
 
+/** Where a customer file is in the send to the booking. URLs are never stored. */
+export type PortalFileState = 'local' | 'uploading' | 'saved' | 'error' | 'too_large';
+
 export interface StoredFile {
   id: string;
   name: string;
   type: string;
   size: number;
+  /** Airtable attachment id on Portal uploads, once the file is on the booking. */
+  attachmentId?: string | null;
+  uploadState?: PortalFileState | null;
+  /** Customer facing reason the file is not on the booking. */
+  uploadError?: string | null;
+  /** When the file was stored, or when an oversized file was noted. */
+  uploadedAt?: string | null;
 }
 
 export interface MediaItem {

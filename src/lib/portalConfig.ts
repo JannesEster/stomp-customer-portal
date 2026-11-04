@@ -1,6 +1,8 @@
 import {
   DEFAULT_BASE_ID,
   DEFAULT_FIELD_NAMES,
+  DEFAULT_PORTAL_UPLOADS_FIELD_ID,
+  DEFAULT_PORTAL_UPLOADS_LIST_FIELD_ID,
   DEFAULT_TABLES,
   DEFAULT_TOKEN_FIELD,
   type AirtableFieldNames,
@@ -30,6 +32,10 @@ export interface PortalEnvConfig {
   tokenFieldId: string | null;
   publicBaseUrl: string | null;
   fields: AirtableFieldNames;
+  /** Portal uploads attachment field. Field id, so renames do not break writes. */
+  portalUploadsFieldId: string;
+  /** Portal uploads list long text field. */
+  portalUploadsListFieldId: string;
   port: number;
 }
 
@@ -54,6 +60,14 @@ export function readPortalConfig(env: Record<string, string | undefined>): Porta
   }
 
   const fields = fieldNamesFromEnv(env);
+  const portalUploadsFieldId = env.PORTAL_UPLOADS_FIELD_ID?.trim() || DEFAULT_PORTAL_UPLOADS_FIELD_ID;
+  const portalUploadsListFieldId = env.PORTAL_UPLOADS_LIST_FIELD_ID?.trim() || DEFAULT_PORTAL_UPLOADS_LIST_FIELD_ID;
+  if (!FIELD_ID.test(portalUploadsFieldId)) {
+    throw new PortalConfigError('PORTAL_UPLOADS_FIELD_ID is not a field id');
+  }
+  if (!FIELD_ID.test(portalUploadsListFieldId)) {
+    throw new PortalConfigError('PORTAL_UPLOADS_LIST_FIELD_ID is not a field id');
+  }
   const publicBaseUrl = blankToNull(env.PUBLIC_BASE_URL);
   if (publicBaseUrl && !isAcceptableBaseUrl(publicBaseUrl)) {
     throw new PortalConfigError('PUBLIC_BASE_URL must be an https URL, or http://localhost');
@@ -69,6 +83,8 @@ export function readPortalConfig(env: Record<string, string | undefined>): Porta
     tokenFieldId,
     publicBaseUrl: publicBaseUrl ? publicBaseUrl.replace(/\/$/, '') : null,
     fields,
+    portalUploadsFieldId,
+    portalUploadsListFieldId,
     port: portFromEnv(env.PORT),
   };
 }

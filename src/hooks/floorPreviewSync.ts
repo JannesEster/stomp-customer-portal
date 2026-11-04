@@ -204,6 +204,12 @@ export async function postFloorPreviews(token: string, images: FloorPreviewImage
   if (!response.ok) throw new Error('preview_failed');
 }
 
+/** The floor preview used to fail quietly. Callers show this instead of hiding the error. */
+export function visiblePreviewFailure(error: unknown): string {
+  void error;
+  return "Couldn't update the floor preview for Stomp. Your answers are still saved.";
+}
+
 export async function postPortalAnswers(token: string, design: DesignState): Promise<{ lastSavedAt: string }> {
   const response = await fetch(`/api/portal/${encodeURIComponent(token)}/answers`, {
     method: 'POST',

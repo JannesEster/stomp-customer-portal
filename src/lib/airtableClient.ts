@@ -17,7 +17,8 @@ const RECORD_ID = /^rec[A-Za-z0-9]{14}$/;
 const AIRTABLE_PATCH_LIMIT = 10;
 const AIRTABLE_ATTACHMENT_MAX_BYTES = 5 * 1024 * 1024;
 const PREVIEW_FILENAMES = new Set(['floor-holding.png', 'floor-after.png', 'floor-dancing.png']);
-const WRITE_OPS = new Set(['patchBooking', 'uploadFloorPreview']);
+const WRITE_OPS = new Set(['patchBooking', 'uploadFloorPreview', 'uploadPortalFile']);
+const ATTACHMENT_ID = /^att[A-Za-z0-9]{14}$/;
 const SAFE_LABEL = /^[A-Za-z0-9][A-Za-z0-9 _-]{0,80}$/;
 /** Airtable error.type values are short SNAKE_CASE codes, never a token or a sentence. */
 const SAFE_TYPE = /^[A-Z][A-Z0-9_]{0,63}$/;
@@ -64,11 +65,27 @@ export function portalWriteFailureLine(err: unknown): string {
   return 'portal write upstream failure';
 }
 
+export interface PortalAttachment {
+  id: string;
+  url: string;
+  thumbUrl: string | null;
+  type: string;
+  filename: string;
+  size: number;
+}
+
 export interface PortalWriter {
   /** PATCH one booking. Only PORTAL_WRITE_FIELDS are sent, with typecast false. */
   patchBooking(recordId: string, fields: Record<string, unknown>): Promise<void>;
   /** Append one PNG to Portal floor preview. The caller clears that field first. */
   uploadFloorPreview(recordId: string, file: { base64: string; filename: string }): Promise<void>;
+  /** Append one customer file to Portal uploads. Returns the attachment id and nothing else. */
+  uploadPortalFile(
+    recordId: string,
+    file: { base64: string; filename: string; contentType: string },
+  ): Promise<{ id: string }>;
+  /** Current Portal uploads attachments. URLs are fresh and must not be stored. */
+  listPortalUploads(recordId: string): Promise<PortalAttachment[]>;
 }
 
 export interface AirtableClient extends AirtableGateway, PortalWriter {
@@ -198,7 +215,10 @@ export function createAirtableClient(
 
     async patchBooking(recordId: string, fields: Record<string, unknown>): Promise<void> {
       if (!RECORD_ID.test(recordId)) throw new Error('Refusing a portal write for a bad record id');
-      const picked = pickPortalWriteFields(fields);
+      const picked = pickPortalWriteFields(fields, [
+        config.portalUploadsFieldId,
+        config.portalUploadsListFieldId,
+      ]);
       if (Object.keys(picked).length === 0) return;
       const res = await request(`${config.bookingsTable}/${recordId}`, '', {
         method: 'PATCH',
@@ -228,6 +248,57 @@ export function createAirtableClient(
         signal: AbortSignal.timeout(20_000),
       });
       await readJson(res, { table: config.bookingsTable, operation: 'uploadFloorPreview' });
+    },
+
+    async uploadPortalFile(
+      recordId: string,
+      file: { base64: string; filename: string; contentType: string },
+    ): Promise<{ id: string }> {
+      if (!RECORD_ID.test(recordId)) throw new Error('Refusing a portal write for a bad record id');
+      const contentType = file.contentType.toLowerCase();
+      if (!/^[a-z0-9.+-]+\/[a-z0-9.+-]+$/.test(contentType)) {
+        throw new Error('Refusing a portal upload with an unsafe content type');
+      }
+      const base64 = file.base64.replace(/\s/g, '');
+      if (!/^[A-Za-z0-9+/]+={0,2}$/.test(base64)) throw new Error('Refusing a portal upload that is not base64');
+      const bytes = Buffer.from(base64, 'base64');
+      if (bytes.length === 0 || bytes.length > AIRTABLE_ATTACHMENT_MAX_BYTES) {
+        throw new Error('Refusing a portal upload outside the attachment size limit');
+      }
+      const filename = file.filename.replace(/[^\w.\- ()]+/g, '').slice(0, 180) || 'file';
+      const url = `https://content.airtable.com/v0/${encodeURIComponent(config.baseId)}/${recordId}/${encodeURIComponent(config.portalUploadsFieldId)}/uploadAttachment`;
+      const res = await fetchImpl(url, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ contentType, file: base64, filename }),
+        signal: AbortSignal.timeout(60_000),
+      });
+      const body = await readJson(res, { table: config.bookingsTable, operation: 'uploadPortalFile' });
+      const id = attachmentIdFrom(body);
+      if (!id) throw new Error('Airtable upload returned no attachment id');
+      return { id };
+    },
+
+    async listPortalUploads(recordId: string): Promise<PortalAttachment[]> {
+      if (!RECORD_ID.test(recordId)) return [];
+      const params = new URLSearchParams();
+      params.set('filterByFormula', `RECORD_ID()='${recordId}'`);
+      params.set('maxRecords', '1');
+      params.set('returnFieldsByFieldId', 'true');
+      params.append('fields[]', config.portalUploadsFieldId);
+      const res = await request(config.bookingsTable, params.toString());
+      const body = (await readJson(res, { table: config.bookingsTable, operation: 'listPortalUploads' })) as {
+        records?: unknown[];
+      };
+      const match = (body.records ?? []).flatMap((record) => {
+        const parsed = asRecord(record);
+        return parsed && parsed.id === recordId ? [parsed] : [];
+      })[0];
+      return parseAttachments(match?.fields?.[config.portalUploadsFieldId]);
     },
   };
 
@@ -273,6 +344,49 @@ async function readErrorType(res: Response): Promise<string | null> {
   } catch {
     return null;
   }
+}
+
+function attachmentIdFrom(body: unknown): string | null {
+  if (!body || typeof body !== 'object') return null;
+  const id = (body as { id?: unknown }).id;
+  return typeof id === 'string' && ATTACHMENT_ID.test(id) ? id : null;
+}
+
+/** Keep https links on Airtable's own file hosts. Anything else is dropped before it can be fetched. */
+export function isAirtableFileUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    if (url.protocol !== 'https:') return false;
+    return url.hostname === 'dl.airtable.com' || url.hostname.endsWith('.airtableusercontent.com');
+  } catch {
+    return false;
+  }
+}
+
+function parseAttachments(value: unknown): PortalAttachment[] {
+  if (!Array.isArray(value)) return [];
+  const attachments: PortalAttachment[] = [];
+  for (const item of value) {
+    if (!item || typeof item !== 'object') continue;
+    const source = item as Record<string, unknown>;
+    const id = source.id;
+    const url = source.url;
+    if (typeof id !== 'string' || !ATTACHMENT_ID.test(id)) continue;
+    if (typeof url !== 'string' || !isAirtableFileUrl(url)) continue;
+    const thumbs = source.thumbnails as { large?: { url?: unknown }; small?: { url?: unknown } } | undefined;
+    const large = thumbs?.large?.url;
+    const small = thumbs?.small?.url;
+    const thumb = typeof large === 'string' ? large : typeof small === 'string' ? small : null;
+    attachments.push({
+      id,
+      url,
+      thumbUrl: thumb && isAirtableFileUrl(thumb) ? thumb : null,
+      type: typeof source.type === 'string' ? source.type : 'application/octet-stream',
+      filename: typeof source.filename === 'string' ? source.filename : 'file',
+      size: typeof source.size === 'number' && Number.isFinite(source.size) ? source.size : 0,
+    });
+  }
+  return attachments;
 }
 
 function asRecord(value: unknown): AirtableRecord | null {

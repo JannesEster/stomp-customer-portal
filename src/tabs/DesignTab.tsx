@@ -38,7 +38,8 @@ function timeReminder(stepId: StepId, design: DesignState): string | null {
 }
 
 export function DesignTab({ booking }: { booking: Booking }) {
-  const { design, update, submit, noteStep, saveStatus, savedAt, serverSync } = useDesignState(booking);
+  const { design, update, submit, noteStep, saveStatus, savedAt, serverSync, previewError, retryPreview } =
+    useDesignState(booking);
   const showAfterReactions = !design || design.reactions.length === 0;
   const steps = useMemo(
     () => stepsFor(screenCount(booking.screensBooked), showAfterReactions),
@@ -171,6 +172,17 @@ export function DesignTab({ booking }: { booking: Booking }) {
             savedAt,
             serverSync,
           })}
+          {previewError && (
+            <>
+              {' '}
+              <span className="error">
+                {previewError}{' '}
+                <button type="button" className="link" onClick={retryPreview}>
+                  Retry
+                </button>
+              </span>
+            </>
+          )}
         </span>
         <div className="row">
           {prev && (

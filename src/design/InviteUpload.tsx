@@ -12,10 +12,12 @@ import {
   inviteInputs,
 } from '../lib/inviteStyle';
 import { useFileUrl } from '../hooks/useFileUrl';
-import { useServices } from '../services';
+import { usePortalFileActions } from '../hooks/usePortalFileActions';
 import type { UpdateDesign } from '../hooks/useDesignState';
+import { withFilePatch } from '../lib/portalFiles';
 import type { DesignState } from '../types';
 import { fileStillUsed } from './common';
+import { FileStateLine } from './FileState';
 import { GeneratedThumb } from './GeneratedThumb';
 
 export function InviteUpload({
@@ -27,16 +29,19 @@ export function InviteUpload({
   update: UpdateDesign;
   eventDate: string;
 }) {
-  const { storage } = useServices();
+  const { send, retry, removeStored, serverSync } = usePortalFileActions();
   const input = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const invite = design.invite;
   const thumbUrl = useFileUrl(design.invitePreview ?? (invite?.type.startsWith('image/') ? invite : null));
 
-  const releaseFiles = () => {
+  const releaseFiles = async () => {
     for (const f of [design.invite, design.invitePreview]) {
-      if (f && !fileStillUsed(design, f.id, 'invite')) void storage.deleteFile(f.id);
+      if (f && !fileStillUsed(design, f.id, 'invite')) {
+        const removed = await removeStored(f);
+        if (!removed.ok) setError(removed.message);
+      }
     }
   };
 
@@ -47,7 +52,9 @@ export function InviteUpload({
     if (err) return;
     setBusy(true);
     try {
-      const stored = await storage.saveFile(file);
+      const stored = await send(file, 'invite', (pending) => {
+        update((d) => ({ ...d, invite: pending }));
+      });
       let analysis: InviteAnalysis = { palette: null, namesColour: null, preview: null };
       try {
         // Loaded on demand so PDF.js stays out of the first page load on phones.
@@ -56,10 +63,15 @@ export function InviteUpload({
       } catch {
         // An invite we can't read still goes to Stomp, just without colours or a thumbnail.
       }
-      const preview = analysis.preview
-        ? await storage.saveFile(new File([analysis.preview], `${file.name}.png`, { type: 'image/png' }))
+      const previewFile = analysis.preview
+        ? new File([analysis.preview], `${file.name}.png`, { type: 'image/png' })
         : null;
-      releaseFiles();
+      const preview = previewFile
+        ? await send(previewFile, 'invite-preview', (pending) => {
+            update((d) => ({ ...d, invitePreview: pending }));
+          })
+        : null;
+      await releaseFiles();
       update((d) => ({
         ...d,
         invite: stored,
@@ -73,8 +85,8 @@ export function InviteUpload({
     }
   };
 
-  const remove = () => {
-    releaseFiles();
+  const remove = async () => {
+    await releaseFiles();
     update((d) => ({
       ...d,
       invite: null,
@@ -83,6 +95,15 @@ export function InviteUpload({
       inviteNamesColour: null,
       invitePaper: null,
     }));
+  };
+
+  const onRetry = () => {
+    if (!invite) return;
+    const id = invite.id;
+    update((d) => withFilePatch(d, id, { uploadState: 'uploading', uploadError: null }));
+    void retry(invite, 'invite').then((patch) => {
+      update((d) => withFilePatch(d, id, patch));
+    });
   };
 
   /** The first press gives the best match; pressing again steps through other versions until the invite or note changes. */
@@ -124,6 +145,22 @@ export function InviteUpload({
         <p className="muted small">
           {invite.name}, {formatFileSize(invite.size)}
         </p>
+      )}
+      {invite && <FileStateLine file={invite} serverSync={serverSync} onRetry={onRetry} />}
+      {design.invitePreview &&
+        (design.invitePreview.uploadState === 'error' || design.invitePreview.uploadState === 'too_large') && (
+        <FileStateLine
+          file={design.invitePreview}
+          serverSync={serverSync}
+          onRetry={() => {
+            const preview = design.invitePreview;
+            if (!preview) return;
+            update((d) => withFilePatch(d, preview.id, { uploadState: 'uploading', uploadError: null }));
+            void retry(preview, 'invite-preview').then((patch) => {
+              update((d) => withFilePatch(d, preview.id, patch));
+            });
+          }}
+        />
       )}
 
       {design.inviteNamesColour && (
@@ -184,7 +221,7 @@ export function InviteUpload({
           {invite ? 'Replace file' : 'Upload PDF or image'}
         </button>
         {invite && !busy && (
-          <button type="button" className="link" onClick={remove}>
+          <button type="button" className="link" onClick={() => void remove()}>
             Remove
           </button>
         )}

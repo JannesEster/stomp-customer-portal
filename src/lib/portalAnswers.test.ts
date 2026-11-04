@@ -70,6 +70,43 @@ describe('sanitizePortalAnswers', () => {
     expect(sanitizePortalAnswers({ ...posted(), confirmedSteps: 'details' }, names).ok).toBe(false);
   });
 
+  it('keeps an attachment id and drops any stored url', () => {
+    const design = posted();
+    design.entranceTime = '16:40';
+    design.designs.holding.names = 'Sam and Alex';
+    design.designs.holding.media = {
+      id: 'filefake00000001',
+      name: 'hands.jpg',
+      type: 'image/jpeg',
+      size: 1200,
+      attachmentId: 'attABCDEFGHIJKLMN',
+      uploadState: 'saved',
+      uploadedAt: '2026-11-04T01:30:00.000Z',
+      uploadError: null,
+    };
+    const result = sanitizePortalAnswers(
+      {
+        ...design,
+        designs: {
+          ...design.designs,
+          holding: {
+            ...design.designs.holding,
+            media: { ...design.designs.holding.media, url: 'https://v5.airtableusercontent.com/secret' },
+          },
+        },
+      },
+      names,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.design.entranceTime).toBe('16:40');
+    expect(result.design.designs.holding.names).toBe('Sam and Alex');
+    expect(result.design.designs.holding.media?.attachmentId).toBe('attABCDEFGHIJKLMN');
+    expect(result.design.designs.holding.media?.uploadState).toBe('saved');
+    expect(JSON.stringify(result.design)).not.toContain('airtableusercontent');
+    expect(JSON.stringify(result.design)).not.toContain('secret');
+  });
+
   it('rejects a design that is the wrong shape', () => {
     expect(sanitizePortalAnswers(null, names).ok).toBe(false);
     expect(sanitizePortalAnswers({ version: 2 }, names).ok).toBe(false);

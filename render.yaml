@@ -26,6 +26,10 @@ services:
         value: Portal token
       - key: PORTAL_TOKEN_FIELD_ID
         value: fldBr9O48s8nRuxrm
+      - key: PORTAL_UPLOADS_FIELD_ID
+        value: fldTR2yzH3qRhUv4I
+      - key: PORTAL_UPLOADS_LIST_FIELD_ID
+        value: fldJJa8j1dPmhaln2
       - key: PUBLIC_BASE_URL
         value: https://stomp-portal.onrender.com
       - key: BOOKING_NAME_FIELD

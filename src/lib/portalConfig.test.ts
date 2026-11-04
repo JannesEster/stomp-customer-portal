@@ -15,6 +15,8 @@ describe('portal config', () => {
     expect(config.fields.weddingPlanner).toBe('Wedding planner');
     expect(config.fields.otherSuppliers).toBe('Other suppliers');
     expect(config.fields.leadAddOns).toBe('Add-ons');
+    expect(config.portalUploadsFieldId).toBe('fldTR2yzH3qRhUv4I');
+    expect(config.portalUploadsListFieldId).toBe('fldJJa8j1dPmhaln2');
     expect(config.port).toBe(3000);
   });
 

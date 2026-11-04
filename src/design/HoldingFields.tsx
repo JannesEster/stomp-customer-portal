@@ -1,12 +1,14 @@
 import { useRef, useState } from 'react';
 import { findStyle, holdingStylesConfig, portalConfig, type HoldingStyleDef } from '../config';
 import { acceptAttr, mediaKindOf, validateUpload } from '../lib/design';
+import { roleForPhase, withFilePatch } from '../lib/portalFiles';
 import { useFileUrl } from '../hooks/useFileUrl';
-import { useServices } from '../services';
+import { usePortalFileActions } from '../hooks/usePortalFileActions';
 import type { UpdateDesign } from '../hooks/useDesignState';
 import { generatedFor, INVITE_STYLE_ID, LAYOUT_LABELS, TYPOGRAPHY_LABELS } from '../lib/inviteStyle';
 import type { DesignState, HoldingDesign, Phase } from '../types';
 import { fileStillUsed } from './common';
+import { FileStateLine } from './FileState';
 import { GeneratedThumb } from './GeneratedThumb';
 
 interface PartProps {
@@ -88,7 +90,7 @@ export function NamesField({ design, update, phase }: PartProps) {
 }
 
 export function CouplePhoto({ design, update, phase }: PartProps) {
-  const { storage } = useServices();
+  const { send, retry, removeStored, serverSync } = usePortalFileActions();
   const h = design.designs[phase];
   const style = findStyle(h.styleId);
   const [mediaError, setMediaError] = useState<string | null>(null);
@@ -96,9 +98,15 @@ export function CouplePhoto({ design, update, phase }: PartProps) {
   const mediaUrl = useFileUrl(h.media);
   const rule = portalConfig.uploads.holdingMedia;
   const set = setterFor(update, phase);
+  const role = roleForPhase(phase);
+  const replaced = useRef<typeof h.media>(null);
 
-  const release = () => {
-    if (h.media && !fileStillUsed(design, h.media.id, phase)) void storage.deleteFile(h.media.id);
+  const dropReplaced = async () => {
+    const old = replaced.current;
+    replaced.current = null;
+    if (!old || fileStillUsed(design, old.id, phase)) return;
+    const removed = await removeStored(old);
+    if (!removed.ok) setMediaError(removed.message);
   };
 
   const onFile = async (file: File | undefined) => {
@@ -106,9 +114,30 @@ export function CouplePhoto({ design, update, phase }: PartProps) {
     const error = validateUpload(file, rule);
     setMediaError(error);
     if (error) return;
-    const stored = await storage.saveFile(file);
-    release();
+    if (h.media) replaced.current = h.media;
+    const stored = await send(file, role, (pending) => set({ media: pending }));
     set({ media: stored });
+    await dropReplaced();
+  };
+
+  const onRemove = async () => {
+    if (!h.media) return;
+    const removed = await removeStored(h.media);
+    if (!removed.ok) {
+      setMediaError(removed.message);
+      return;
+    }
+    setMediaError(null);
+    set({ media: null });
+  };
+
+  const onRetry = () => {
+    if (!h.media) return;
+    const id = h.media.id;
+    update((d) => withFilePatch(d, id, { uploadState: 'uploading', uploadError: null }));
+    void retry(h.media, role).then((patch) => {
+      update((d) => withFilePatch(d, id, patch));
+    });
   };
 
   return (
@@ -126,19 +155,14 @@ export function CouplePhoto({ design, update, phase }: PartProps) {
         ) : (
           <img className="thumb" src={mediaUrl} alt="Your photo" />
         ))}
+      {h.media && !mediaUrl && <p className="muted small">{h.media.name}</p>}
+      {h.media && <FileStateLine file={h.media} serverSync={serverSync} onRetry={onRetry} />}
       <div className="row">
         <button type="button" className="secondary" onClick={() => input.current?.click()}>
           {h.media ? 'Replace' : 'Upload photo or video'}
         </button>
         {h.media && (
-          <button
-            type="button"
-            className="link"
-            onClick={() => {
-              release();
-              set({ media: null });
-            }}
-          >
+          <button type="button" className="link" onClick={() => void onRemove()}>
             Remove
           </button>
         )}
@@ -154,7 +178,8 @@ export function CouplePhoto({ design, update, phase }: PartProps) {
         }}
       />
       <p className="muted small">
-        Photos up to {rule.maxImageMb} MB, videos up to {rule.maxVideoMb} MB.
+        Photos up to {rule.maxImageMb} MB. Larger photos are reduced to fit. Videos over 5 MB can't be stored on your
+        booking, so email or text those to Stomp Sphere.
       </p>
       {mediaError && <p className="error">{mediaError}</p>}
     </fieldset>

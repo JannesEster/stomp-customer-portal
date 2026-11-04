@@ -1,11 +1,12 @@
 import { findEffect, findScreenStyle, findStyle, timingLabel } from '../config';
 import { floorPixels, screenCount } from '../lib/dimensions';
-import { mediaFor, timingFor } from '../lib/design';
+import { mediaFor, mediaKindOf, timingFor } from '../lib/design';
 import { formatAud, formatDateTime, formatEventDate, formatTime } from '../lib/format';
 import { liveContentView } from '../lib/liveContent';
 import { formatStyleDate } from '../lib/liveText';
 import { generatedFor, LAYOUT_LABELS, TYPOGRAPHY_LABELS } from '../lib/inviteStyle';
-import type { Booking, DesignState, HoldingDesign } from '../types';
+import { useFileUrl } from '../hooks/useFileUrl';
+import type { Booking, DesignState, HoldingDesign, StoredFile } from '../types';
 import { Accent, PHASES } from './common';
 import { SCREEN_KIND_LABELS } from './ScreenSteps';
 
@@ -226,6 +227,15 @@ export function DesignSummary({ booking, design }: { booking: Booking; design: D
   );
 }
 
+function StoredThumb({ file }: { file: StoredFile }) {
+  const url = useFileUrl(file);
+  if (!url) return null;
+  if (mediaKindOf(file.type) === 'video') {
+    return <video className="summary-thumb" src={url} muted playsInline preload="metadata" aria-label={file.name} />;
+  }
+  return <img className="summary-thumb" src={url} alt={file.name} />;
+}
+
 function HoldingSummary({
   h,
   eventDate,
@@ -260,7 +270,10 @@ function HoldingSummary({
           {style?.live.date ? formatStyleDate(eventDate, style.live.date.format) : formatEventDate(eventDate)}
         </li>
       )}
-      <li>Photo or video: {h.media ? h.media.name : 'None'}</li>
+      <li>
+        Photo or video: {h.media ? h.media.name : 'None'}
+        {h.media && <StoredThumb file={h.media} />}
+      </li>
     </ul>
   );
 }

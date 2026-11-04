@@ -2,10 +2,12 @@ import { useRef, useState } from 'react';
 import { findScreenStyle, portalConfig, screenStylesConfig, timingLabel, type ScreenStyleDef } from '../config';
 import { acceptAttr, mediaFor, mediaKindOf, timingFor, validateUpload } from '../lib/design';
 import { formatFileSize } from '../lib/format';
+import { fileMime, roleForTiming, withFilePatch } from '../lib/portalFiles';
 import { useFileUrl } from '../hooks/useFileUrl';
-import { useServices } from '../services';
+import { usePortalFileActions } from '../hooks/usePortalFileActions';
 import type { UpdateDesign } from '../hooks/useDesignState';
 import type { DesignState, MediaItem, Phase, ScreenMode } from '../types';
+import { FileStateLine } from './FileState';
 import { OptionList, type OptionDef } from './common';
 
 export const SCREEN_KIND_LABELS: Record<ScreenStyleDef['kind'], string> = {
@@ -122,9 +124,10 @@ export function ScreenPartStep({
 }
 
 function PartMedia({ design, update, phase }: { design: DesignState; update: UpdateDesign; phase: Phase }) {
-  const { storage } = useServices();
+  const { send, retry, removeStored, serverSync } = usePortalFileActions();
   const rule = portalConfig.uploads.media;
   const timing = timingFor(phase);
+  const role = roleForTiming(timing);
   const items = mediaFor(design, phase);
   const [errors, setErrors] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
@@ -134,36 +137,54 @@ function PartMedia({ design, update, phase }: { design: DesignState; update: Upd
     if (!files?.length) return;
     setBusy(true);
     const errs: string[] = [];
-    const added: MediaItem[] = [];
     try {
       for (const f of Array.from(files)) {
         const err = validateUpload(f, rule);
-        const kind = mediaKindOf(f.type);
+        const kind = mediaKindOf(fileMime(f));
         if (err || !kind) {
           errs.push(err ?? `${f.name} isn't a supported file type.`);
           continue;
         }
-        const stored = await storage.saveFile(f);
-        added.push({ id: crypto.randomUUID(), file: stored, kind, timing, addedAt: new Date().toISOString() });
+        const stored = await send(f, role, (pending) => {
+          const item: MediaItem = {
+            id: crypto.randomUUID(),
+            file: pending,
+            kind: pending.type.startsWith('video/') ? 'video' : 'image',
+            timing,
+            addedAt: new Date().toISOString(),
+          };
+          update((d) => ({ ...d, media: [...d.media, item] }));
+        });
+        update((d) => withFilePatch(d, stored.id, stored));
       }
     } finally {
       setErrors(errs);
       setBusy(false);
-      if (added.length) update((d) => ({ ...d, media: [...d.media, ...added] }));
     }
   };
 
-  const remove = (item: MediaItem) => {
-    void storage.deleteFile(item.file.id);
+  const remove = async (item: MediaItem) => {
+    const removed = await removeStored(item.file);
+    if (!removed.ok) {
+      update((d) => withFilePatch(d, item.file.id, { uploadState: 'error', uploadError: removed.message }));
+      return;
+    }
     update((d) => ({ ...d, media: d.media.filter((m) => m.id !== item.id) }));
+  };
+
+  const onRetry = (item: MediaItem) => {
+    update((d) => withFilePatch(d, item.file.id, { uploadState: 'uploading', uploadError: null }));
+    void retry(item.file, role).then((patch) => {
+      update((d) => withFilePatch(d, item.file.id, patch));
+    });
   };
 
   return (
     <div className="uploader">
       <h3>Photos and videos {PART_NAMES[phase]}</h3>
       <p className="muted small">
-        They take turns on your screens in the order you add them. Photos up to {rule.maxImageMb} MB, videos up to{' '}
-        {rule.maxVideoMb} MB.
+        They take turns on your screens in the order you add them. Photos up to {rule.maxImageMb} MB. Larger photos are
+        reduced to fit. Videos over 5 MB can't be stored on your booking, so email or text those to Stomp Sphere.
       </p>
       <button type="button" className="secondary" disabled={busy} onClick={() => input.current?.click()}>
         {busy ? 'Uploading…' : 'Add photos and videos'}
@@ -192,7 +213,13 @@ function PartMedia({ design, update, phase }: { design: DesignState; update: Upd
       ) : (
         <ul className="media-list">
           {items.map((m) => (
-            <MediaRow key={m.id} item={m} onRemove={() => remove(m)} />
+            <MediaRow
+              key={m.id}
+              item={m}
+              serverSync={serverSync}
+              onRemove={() => void remove(m)}
+              onRetry={() => onRetry(m)}
+            />
           ))}
         </ul>
       )}
@@ -200,12 +227,30 @@ function PartMedia({ design, update, phase }: { design: DesignState; update: Upd
   );
 }
 
-function MediaRow({ item, onRemove }: { item: MediaItem; onRemove: () => void }) {
+function MediaRow({
+  item,
+  serverSync,
+  onRemove,
+  onRetry,
+}: {
+  item: MediaItem;
+  serverSync: boolean;
+  onRemove: () => void;
+  onRetry: () => void;
+}) {
   const url = useFileUrl(item.file);
   return (
     <li className="media-row">
       <div className="media-thumb">
-        {url && (item.kind === 'video' ? <video src={url} muted playsInline preload="metadata" /> : <img src={url} alt="" />)}
+        {url ? (
+          item.kind === 'video' ? (
+            <video src={url} muted playsInline preload="metadata" />
+          ) : (
+            <img src={url} alt="" />
+          )
+        ) : (
+          <span className="muted small">{item.file.name}</span>
+        )}
         {item.kind === 'video' && <span className="badge">Video</span>}
       </div>
       <div className="media-info">
@@ -213,6 +258,7 @@ function MediaRow({ item, onRemove }: { item: MediaItem; onRemove: () => void })
           {item.file.name}
         </span>
         <span className="muted small">{formatFileSize(item.file.size)}</span>
+        <FileStateLine file={item.file} serverSync={serverSync} onRetry={onRetry} />
       </div>
       <button type="button" className="link" onClick={onRemove} aria-label={`Remove ${item.file.name}`}>
         Remove

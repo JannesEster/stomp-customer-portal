@@ -102,6 +102,20 @@ p {
   margin: 0.4rem 0;
 }
 
+.file-state {
+  margin: 0.2rem 0 0;
+}
+
+.summary-thumb {
+  display: block;
+  width: 120px;
+  height: 80px;
+  margin-top: 0.4rem;
+  object-fit: cover;
+  border-radius: 8px;
+  background: #111;
+}
+
 .note {
   background: var(--panel-bg);
   border: 1px solid var(--panel-border);
