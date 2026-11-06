@@ -434,6 +434,105 @@ describe('portal floor preview writes', () => {
     expect(calls.filter((call) => call.url.includes('content.airtable.com'))).toEqual([]);
   });
 
+  it('accepts a name-only holding photo and invite when the id is left out', async () => {
+    const { base, calls } = await start({ addOns: ['2 portrait screens'] });
+    const design = createDefaultDesign({ coupleNames: 'Fake Customer' }, new Date('2026-11-01T00:00:00.000Z'));
+    design.status = 'draft';
+    design.stylingNote = 'Please match the linen';
+    design.invitePalette = ['#f9f9f9'];
+    design.inviteNamesColour = '#222222';
+    design.invitePaper = '#f9f9f9';
+    const answers = JSON.parse(JSON.stringify(design)) as {
+      designs: { holding: { media: Record<string, unknown> | null } };
+      invite: Record<string, unknown> | null;
+    };
+    answers.designs.holding.media = { name: 'holding.png', type: 'image/png', size: 34567 };
+    answers.invite = { name: 'invite.png', type: 'image/png', size: 89012 };
+    expect(answers.designs.holding.media).not.toHaveProperty('id');
+    expect(answers.invite).not.toHaveProperty('id');
+    expect(answers.designs.holding.media).not.toHaveProperty('attachmentId');
+
+    const res = await fetch(`${base}/api/portal/${TOKEN}/answers`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ answers }),
+    });
+    expect(res.status).toBe(200);
+
+    const saved = JSON.parse(String(patches(calls)[0].fields['Portal answers'])) as {
+      status: string;
+      stylingNote: string;
+      invitePalette: string[];
+      inviteNamesColour: string;
+      invitePaper: string;
+      designs: { holding: { media: { name: string; type: string; size: number; attachmentId?: string } } };
+      invite: { name: string; type: string; size: number; attachmentId?: string };
+    };
+    expect(saved.status).toBe('draft');
+    expect(saved.stylingNote).toBe('Please match the linen');
+    expect(saved.designs.holding.media).toMatchObject({ name: 'holding.png', type: 'image/png', size: 34567 });
+    expect(saved.designs.holding.media.attachmentId).toBeUndefined();
+    expect(saved.invite).toMatchObject({ name: 'invite.png', type: 'image/png', size: 89012 });
+    expect(saved.invite.attachmentId).toBeUndefined();
+    expect(saved.invitePalette).toEqual(['#f9f9f9']);
+    expect(saved.inviteNamesColour).toBe('#222222');
+    expect(saved.invitePaper).toBe('#f9f9f9');
+  });
+
+  it('accepts a holding file that has an id and an upload error but no attachment', async () => {
+    const { base, calls } = await start({ addOns: ['2 portrait screens'] });
+    const design = createDefaultDesign({ coupleNames: 'Fake Customer' }, new Date('2026-11-01T00:00:00.000Z'));
+    design.status = 'draft';
+    design.stylingNote = 'Please match the linen';
+    design.invite = null;
+    design.invitePalette = ['#f9f9f9'];
+    design.inviteNamesColour = '#222222';
+    design.invitePaper = '#f9f9f9';
+    design.designs.holding.media = {
+      id: '4f3a0c2e-6b71-4d5a-9c18-2e7b6a1d0f33',
+      name: 'holding.png',
+      type: 'image/png',
+      size: 45678,
+      uploadState: 'error',
+      uploadError: 'This file is no longer on this device. Please choose it again.',
+      uploadedAt: 'not-a-timestamp',
+    };
+
+    const res = await fetch(`${base}/api/portal/${TOKEN}/answers`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ answers: design }),
+    });
+    expect(res.status).toBe(200);
+
+    const saved = JSON.parse(String(patches(calls)[0].fields['Portal answers'])) as {
+      stylingNote: string;
+      invite: unknown;
+      invitePalette: string[];
+      inviteNamesColour: string;
+      invitePaper: string;
+      designs: {
+        holding: {
+          media: { id: string; name: string; type: string; size: number; uploadState?: string; attachmentId?: string };
+        };
+      };
+    };
+    expect(saved.stylingNote).toBe('Please match the linen');
+    expect(saved.invite).toBeNull();
+    expect(saved.invitePalette).toEqual(['#f9f9f9']);
+    expect(saved.inviteNamesColour).toBe('#222222');
+    expect(saved.invitePaper).toBe('#f9f9f9');
+    expect(saved.designs.holding.media).toMatchObject({
+      id: '4f3a0c2e-6b71-4d5a-9c18-2e7b6a1d0f33',
+      name: 'holding.png',
+      type: 'image/png',
+      size: 45678,
+      uploadState: 'error',
+      uploadError: 'This file is no longer on this device. Please choose it again.',
+    });
+    expect(saved.designs.holding.media.attachmentId).toBeUndefined();
+  });
+
   it('caps preview uploads per token and maps 403 to write_forbidden', async () => {
     const { base } = await start({}, { previewMax: 2 });
     const post = () =>

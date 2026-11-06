@@ -107,6 +107,29 @@ describe('sanitizePortalAnswers', () => {
     expect(JSON.stringify(result.design)).not.toContain('secret');
   });
 
+  it('keeps a holding photo and invite that were saved with no file id', () => {
+    const design = posted();
+    design.stylingNote = 'Please match the linen';
+    design.invitePalette = ['#f9f9f9'];
+    design.inviteNamesColour = '#222222';
+    design.invitePaper = '#f9f9f9';
+    const answers = JSON.parse(JSON.stringify(design)) as {
+      designs: { holding: { media: { id?: string | null; name: string; type: string; size: number } | null } };
+      invite: { id?: string | null; name: string; type: string; size: number } | null;
+    };
+    answers.designs.holding.media = { name: 'holding.png', type: 'image/png', size: 34567 };
+    answers.invite = { id: null, name: 'invite.png', type: 'image/png', size: 89012 };
+    const result = sanitizePortalAnswers(answers, names);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.design.designs.holding.media).toMatchObject({ name: 'holding.png', type: 'image/png', size: 34567 });
+    expect(result.design.invite).toMatchObject({ name: 'invite.png', type: 'image/png', size: 89012 });
+    expect(result.design.invitePalette).toEqual(['#f9f9f9']);
+    expect(result.design.inviteNamesColour).toBe('#222222');
+    expect(result.design.invitePaper).toBe('#f9f9f9');
+    expect(result.design.stylingNote).toBe('Please match the linen');
+  });
+
   it('rejects a design that is the wrong shape', () => {
     expect(sanitizePortalAnswers(null, names).ok).toBe(false);
     expect(sanitizePortalAnswers({ version: 2 }, names).ok).toBe(false);

@@ -12,6 +12,11 @@ export const UPLOAD_FAILED_MESSAGE = "Couldn't upload this file. Please try agai
 export const OTHER_DEVICE_FILE_NOTE =
   'This file is saved on another device. Please add it again here or email it to Stomp Sphere.';
 
+/** A saved name, type and size with no id and no attachment. Nothing on this device can match it. */
+export function isNameOnlyFile(file: { id?: string | null; attachmentId?: string | null; name?: string | null } | null | undefined): boolean {
+  return !!file?.name && !file.attachmentId && !file.id;
+}
+
 export const REMOVE_FAILED_MESSAGE = "Couldn't remove this file from your booking. Please try again.";
 
 export const HEIC_FAILED_MESSAGE =
@@ -130,8 +135,8 @@ export interface PortalFileSlot {
 export function listPortalFiles(design: DesignState): PortalFileSlot[] {
   const slots: PortalFileSlot[] = [];
   const add = (file: StoredFile | null | undefined, role: UploadRole) => {
-    if (!file || typeof file.id !== 'string' || !file.id) return;
-    slots.push({ role, file });
+    if (!file || typeof file.name !== 'string' || !file.name) return;
+    slots.push({ role, file: { ...file, id: typeof file.id === 'string' ? file.id : '' } });
   };
   add(design.designs?.holding?.media, 'holding-pre');
   add(design.designs?.after?.media, 'holding-post');
@@ -155,7 +160,7 @@ export function migrationCandidates(design: DesignState): PortalFileSlot[] {
   const seen = new Set<string>();
   const out: PortalFileSlot[] = [];
   for (const slot of listPortalFiles(design)) {
-    if (!fileNeedsUpload(slot.file) || seen.has(slot.file.id)) continue;
+    if (!slot.file.id || !fileNeedsUpload(slot.file) || seen.has(slot.file.id)) continue;
     seen.add(slot.file.id);
     out.push(slot);
   }
@@ -217,8 +222,13 @@ export function withFilePatch(design: DesignState, fileId: string, patch: Partia
  */
 export function preserveStoredFiles(posted: DesignState, stored: DesignState | null): DesignState {
   if (!stored) return posted;
-  const previous = new Map(listPortalFiles(stored).map((slot) => [slot.file.id, slot.file]));
-  return mapStoredFiles(posted, (file) => mergeStoredFile(file, previous.get(file.id)));
+  const previous = new Map(listPortalFiles(stored).map((slot) => [storedFileKey(slot), slot.file]));
+  return mapStoredFiles(posted, (file, role) => mergeStoredFile(file, previous.get(storedFileKey({ role, file }))));
+}
+
+function storedFileKey(slot: PortalFileSlot): string {
+  if (slot.file.id) return slot.file.id;
+  return `${slot.role}:${slot.file.name}:${slot.file.type}:${slot.file.size}`;
 }
 
 function mergeStoredFile(file: StoredFile, prior: StoredFile | undefined): StoredFile {
