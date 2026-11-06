@@ -114,12 +114,18 @@ function readHolding(value: unknown, fallbackNames: string): HoldingDesign {
 
 const ATTACHMENT_ID = /^att[A-Za-z0-9]{14}$/;
 
+/** Older saves stored a name, type and size only. A missing id is still a real file. */
+function readOptionalFileId(value: unknown): string {
+  if (value == null || value === '') return '';
+  return requiredString(value, LIMITS.fileId);
+}
+
 function readFile(value: unknown): StoredFile {
   const source = objectOf(value);
   const size = source.size;
   if (typeof size !== 'number' || !Number.isFinite(size) || size < 0) throw new BadAnswers();
   const file: StoredFile = {
-    id: requiredString(source.id, LIMITS.fileId),
+    id: readOptionalFileId(source.id),
     name: requiredString(source.name, LIMITS.fileName),
     type: requiredString(source.type, LIMITS.fileType),
     size: Math.min(Math.round(size), 2_000_000_000),

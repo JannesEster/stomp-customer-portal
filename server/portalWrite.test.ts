@@ -434,6 +434,48 @@ describe('portal floor preview writes', () => {
     expect(calls.filter((call) => call.url.includes('content.airtable.com'))).toEqual([]);
   });
 
+  it('accepts a name-only holding photo and invite with no file id', async () => {
+    const { base, calls } = await start({ addOns: ['2 portrait screens'] });
+    const design = createDefaultDesign({ coupleNames: 'Fake Customer' }, new Date('2026-11-01T00:00:00.000Z'));
+    design.status = 'draft';
+    design.stylingNote = 'Please match the linen';
+    design.invitePalette = ['#f9f9f9'];
+    design.inviteNamesColour = '#222222';
+    design.invitePaper = '#f9f9f9';
+    const answers = JSON.parse(JSON.stringify(design)) as {
+      designs: { holding: { media: { id?: string | null; name: string; type: string; size: number } | null } };
+      invite: { id?: string | null; name: string; type: string; size: number } | null;
+    };
+    answers.designs.holding.media = { id: null, name: 'holding.png', type: 'image/png', size: 34567 };
+    answers.invite = { id: null, name: 'invite.png', type: 'image/png', size: 89012 };
+
+    const res = await fetch(`${base}/api/portal/${TOKEN}/answers`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ answers }),
+    });
+    expect(res.status).toBe(200);
+
+    const saved = JSON.parse(String(patches(calls)[0].fields['Portal answers'])) as {
+      status: string;
+      stylingNote: string;
+      invitePalette: string[];
+      inviteNamesColour: string;
+      invitePaper: string;
+      designs: { holding: { media: { name: string; type: string; size: number; attachmentId?: string } } };
+      invite: { name: string; type: string; size: number; attachmentId?: string };
+    };
+    expect(saved.status).toBe('draft');
+    expect(saved.stylingNote).toBe('Please match the linen');
+    expect(saved.designs.holding.media).toMatchObject({ name: 'holding.png', type: 'image/png', size: 34567 });
+    expect(saved.designs.holding.media.attachmentId).toBeUndefined();
+    expect(saved.invite).toMatchObject({ name: 'invite.png', type: 'image/png', size: 89012 });
+    expect(saved.invite.attachmentId).toBeUndefined();
+    expect(saved.invitePalette).toEqual(['#f9f9f9']);
+    expect(saved.inviteNamesColour).toBe('#222222');
+    expect(saved.invitePaper).toBe('#f9f9f9');
+  });
+
   it('caps preview uploads per token and maps 403 to write_forbidden', async () => {
     const { base } = await start({}, { previewMax: 2 });
     const post = () =>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { fileStatusLabel, OTHER_DEVICE_FILE_NOTE } from '../lib/portalFiles';
+import { fileStatusLabel, isNameOnlyFile, OTHER_DEVICE_FILE_NOTE } from '../lib/portalFiles';
 import { useServices } from '../services';
 import type { StoredFile } from '../types';
 
@@ -29,6 +29,8 @@ export function useOtherDeviceNote(file: StoredFile | null | undefined): string 
     };
   }, [id, hasAttachment, storage]);
 
+  if (!file || hasAttachment) return null;
+  if (isNameOnlyFile(file)) return OTHER_DEVICE_FILE_NOTE;
   return missing ? OTHER_DEVICE_FILE_NOTE : null;
 }
 

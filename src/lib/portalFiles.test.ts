@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createDefaultDesign } from './design';
 import {
+  isNameOnlyFile,
   OTHER_DEVICE_FILE_NOTE,
   TOO_LARGE_MESSAGE,
   UPLOAD_FAILED_MESSAGE,
@@ -106,6 +107,9 @@ describe('portal file states', () => {
     expect(fileStatusLabel(file, false)?.text).toBe('Saved on this device');
     expect(fileStatusLabel(file, true)).toBeNull();
     expect(OTHER_DEVICE_FILE_NOTE).not.toMatch(/[—–]| - /);
+    expect(isNameOnlyFile({ name: 'holding.png' })).toBe(true);
+    expect(isNameOnlyFile({ id: null, name: 'invite.png', attachmentId: null })).toBe(true);
+    expect(isNameOnlyFile({ id: 'file-1', name: 'holding.png', attachmentId: ATTACHMENT })).toBe(false);
   });
 
   it('does not send a video that is already over 5 MB', () => {
