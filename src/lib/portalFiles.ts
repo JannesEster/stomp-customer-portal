@@ -9,7 +9,8 @@ export const TOO_LARGE_MESSAGE =
 
 export const UPLOAD_FAILED_MESSAGE = "Couldn't upload this file. Please try again.";
 
-export const MISSING_DEVICE_MESSAGE = 'This file is no longer on this device. Please choose it again.';
+export const OTHER_DEVICE_FILE_NOTE =
+  'This file is saved on another device. Please add it again here or email it to Stomp Sphere.';
 
 export const REMOVE_FAILED_MESSAGE = "Couldn't remove this file from your booking. Please try again.";
 
@@ -217,9 +218,12 @@ export function withFilePatch(design: DesignState, fileId: string, patch: Partia
 export function preserveStoredFiles(posted: DesignState, stored: DesignState | null): DesignState {
   if (!stored) return posted;
   const previous = new Map(listPortalFiles(stored).map((slot) => [slot.file.id, slot.file]));
-  return mapStoredFiles(posted, (file) => {
-    const prior = previous.get(file.id);
-    if (!prior?.attachmentId || file.attachmentId) return file;
+  return mapStoredFiles(posted, (file) => mergeStoredFile(file, previous.get(file.id)));
+}
+
+function mergeStoredFile(file: StoredFile, prior: StoredFile | undefined): StoredFile {
+  if (!prior || prior.id !== file.id) return file;
+  if (prior.attachmentId && !file.attachmentId) {
     return {
       ...file,
       attachmentId: prior.attachmentId,
@@ -230,7 +234,32 @@ export function preserveStoredFiles(posted: DesignState, stored: DesignState | n
       type: prior.type || file.type,
       size: prior.size || file.size,
     };
-  });
+  }
+  // Saved by name only. An open on another device must not rewrite that metadata.
+  if (!prior.attachmentId && file.name === prior.name && file.type === prior.type && file.size === prior.size) {
+    return { ...prior };
+  }
+  return file;
+}
+
+/**
+ * Keep invite and colour fields the server already has when this save does not change them.
+ * A real removal sets `inviteCleared` and is kept. The flag itself is not stored.
+ */
+export function mergePortalAnswers(posted: DesignState, stored: DesignState | null): DesignState {
+  const next: DesignState = { ...preserveStoredFiles(posted, stored) };
+  delete next.inviteCleared;
+  if (!stored || (posted.inviteCleared === true && posted.invite == null)) return next;
+  if (posted.invite == null && stored.invite != null) next.invite = stored.invite;
+  if (next.invite && posted.invitePreview == null && stored.invitePreview != null) next.invitePreview = stored.invitePreview;
+  if (next.invite && posted.invitePalette.length === 0 && stored.invitePalette.length > 0) {
+    next.invitePalette = stored.invitePalette;
+  }
+  if (next.invite && posted.inviteNamesColour == null && stored.inviteNamesColour) {
+    next.inviteNamesColour = stored.inviteNamesColour;
+  }
+  if (next.invite && posted.invitePaper == null && stored.invitePaper) next.invitePaper = stored.invitePaper;
+  return next;
 }
 
 export type UploadOutcome =
@@ -360,9 +389,11 @@ export function fileStatusLabel(
     }
     return { tone: 'muted', text: 'Saved on this device', retry: false };
   }
-  if (file.uploadState === 'uploading' || !file.uploadState || file.uploadState === 'local') {
+  if (file.uploadState === 'uploading') return { tone: 'muted', text: 'Uploading…', retry: false };
+  if (!file.uploadState || file.uploadState === 'local') {
     if (file.attachmentId) return { tone: 'muted', text: 'Saved', retry: false };
-    return { tone: 'muted', text: 'Uploading…', retry: false };
+    if (file.uploadState === 'local') return { tone: 'muted', text: 'Saved on this device', retry: false };
+    return null;
   }
   if (file.uploadState === 'saved' || file.attachmentId) return { tone: 'muted', text: 'Saved', retry: false };
   if (file.uploadState === 'too_large') return { tone: 'error', text: file.uploadError || TOO_LARGE_MESSAGE, retry: false };
@@ -387,12 +418,10 @@ export async function runPortalFileMigration(opts: {
   onPatch: (fileId: string, patch: Partial<StoredFile>) => void;
 }): Promise<void> {
   for (const slot of migrationCandidates(opts.design)) {
-    opts.onPatch(slot.file.id, { uploadState: 'uploading', uploadError: null });
     const blob = await opts.readBlob(slot.file.id);
-    if (!blob) {
-      opts.onPatch(slot.file.id, { uploadState: 'error', uploadError: MISSING_DEVICE_MESSAGE });
-      continue;
-    }
+    // No blob on this device. Leave name-only metadata untouched and do not report an error.
+    if (!blob) continue;
+    opts.onPatch(slot.file.id, { uploadState: 'uploading', uploadError: null });
     const outcome = await opts.upload({
       fileId: slot.file.id,
       blob,

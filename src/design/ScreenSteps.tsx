@@ -7,7 +7,7 @@ import { useFileUrl } from '../hooks/useFileUrl';
 import { usePortalFileActions } from '../hooks/usePortalFileActions';
 import type { UpdateDesign } from '../hooks/useDesignState';
 import type { DesignState, MediaItem, Phase, ScreenMode } from '../types';
-import { FileStateLine } from './FileState';
+import { FilePresence } from './FileState';
 import { OptionList, type OptionDef } from './common';
 
 export const SCREEN_KIND_LABELS: Record<ScreenStyleDef['kind'], string> = {
@@ -258,7 +258,7 @@ function MediaRow({
           {item.file.name}
         </span>
         <span className="muted small">{formatFileSize(item.file.size)}</span>
-        <FileStateLine file={item.file} serverSync={serverSync} onRetry={onRetry} />
+        <FilePresence file={item.file} serverSync={serverSync} onRetry={onRetry} />
       </div>
       <button type="button" className="link" onClick={onRemove} aria-label={`Remove ${item.file.name}`}>
         Remove

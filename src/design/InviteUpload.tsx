@@ -17,7 +17,7 @@ import type { UpdateDesign } from '../hooks/useDesignState';
 import { replaceSingleSlot, withFilePatch } from '../lib/portalFiles';
 import type { DesignState, StoredFile } from '../types';
 import { fileStillUsed } from './common';
-import { FileStateLine } from './FileState';
+import { FilePresence, FileStateLine } from './FileState';
 import { GeneratedThumb } from './GeneratedThumb';
 
 export function InviteUpload({
@@ -80,6 +80,7 @@ export function InviteUpload({
       update((d) => ({
         ...d,
         invite: stored,
+        inviteCleared: false,
         invitePreview: preview,
         invitePalette: analysis.palette?.colours ?? [],
         inviteNamesColour: analysis.namesColour,
@@ -133,6 +134,7 @@ export function InviteUpload({
       invitePalette: [],
       inviteNamesColour: null,
       invitePaper: null,
+      inviteCleared: true,
     }));
   };
 
@@ -185,7 +187,7 @@ export function InviteUpload({
           {invite.name}, {formatFileSize(invite.size)}
         </p>
       )}
-      {invite && <FileStateLine file={invite} serverSync={serverSync} onRetry={onRetry} />}
+      {invite && <FilePresence file={invite} serverSync={serverSync} onRetry={onRetry} />}
       {pending && (
         <FileStateLine file={pending} serverSync={serverSync} onRetry={onRetryPending} onCancel={onCancelPending} />
       )}

@@ -88,6 +88,7 @@ function readDesign(input: unknown, coupleNames: string): DesignState {
     invitePalette: readShortStrings(root.invitePalette, LIMITS.palette, LIMITS.colour),
     inviteNamesColour: root.inviteNamesColour == null ? null : requiredString(root.inviteNamesColour, LIMITS.colour),
     invitePaper: root.invitePaper == null ? null : requiredString(root.invitePaper, LIMITS.colour),
+    ...(root.inviteCleared === true ? { inviteCleared: true as const } : {}),
     inviteStyle: root.inviteStyle == null ? null : readGenerated(root.inviteStyle),
     afterInviteStyle: root.afterInviteStyle == null ? null : readGenerated(root.afterInviteStyle),
     stylingNote: optionalString(root.stylingNote, LIMITS.note),

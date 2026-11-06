@@ -150,6 +150,11 @@ export interface DesignState extends SupplierDetails {
   inviteNamesColour: string | null;
   /** The invite's paper colour */
   invitePaper: string | null;
+  /**
+   * Set when the couple removes the invite. A save that merely lacks these fields
+   * does not clear them. Not stored after the save is merged.
+   */
+  inviteCleared?: boolean;
   /** Chosen by setting a design's styleId to INVITE_STYLE_ID */
   inviteStyle: GeneratedStyle | null;
   /** Another generated version, for after the entrance. Chosen with INVITE_AFTER_STYLE_ID */

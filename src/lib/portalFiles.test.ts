@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createDefaultDesign } from './design';
 import {
-  MISSING_DEVICE_MESSAGE,
+  OTHER_DEVICE_FILE_NOTE,
   TOO_LARGE_MESSAGE,
   UPLOAD_FAILED_MESSAGE,
   UPLOAD_LABELS,
@@ -10,6 +10,7 @@ import {
   fileNeedsUpload,
   fileStatusLabel,
   formatPerth,
+  mergePortalAnswers,
   migrationCandidates,
   outcomeToPatch,
   portalUploadsList,
@@ -103,6 +104,8 @@ describe('portal file states', () => {
       false,
     );
     expect(fileStatusLabel(file, false)?.text).toBe('Saved on this device');
+    expect(fileStatusLabel(file, true)).toBeNull();
+    expect(OTHER_DEVICE_FILE_NOTE).not.toMatch(/[—–]| - /);
   });
 
   it('does not send a video that is already over 5 MB', () => {
@@ -147,6 +150,38 @@ describe('answer preservation', () => {
     expect(merged.designs.holding.media?.attachmentId).toBe(ATTACHMENT);
     expect(merged.designs.holding.media?.uploadState).toBe('saved');
     expect(merged.designs.holding.media?.name).toBe('hands.jpg');
+  });
+
+  it('keeps name-only file metadata and invite colours when a later save leaves them out', () => {
+    const stored = design();
+    stored.invite = { id: 'invite-1', name: 'invite.pdf', type: 'application/pdf', size: 40_000 };
+    stored.invitePalette = ['#112233', '#abcdef'];
+    stored.inviteNamesColour = '#112233';
+    stored.invitePaper = '#fff8e7';
+    const posted = design();
+    posted.entranceTime = '18:15';
+    posted.invite = null;
+    posted.invitePalette = [];
+    posted.inviteNamesColour = null;
+    posted.invitePaper = null;
+    posted.designs.holding.media = {
+      ...(posted.designs.holding.media as StoredFile),
+      uploadState: 'error',
+      uploadError: 'This file is no longer on this device.',
+    };
+    const merged = mergePortalAnswers(posted, stored);
+    expect(merged.entranceTime).toBe('18:15');
+    expect(merged.invite).toEqual(stored.invite);
+    expect(merged.invitePalette).toEqual(stored.invitePalette);
+    expect(merged.inviteNamesColour).toBe('#112233');
+    expect(merged.invitePaper).toBe('#fff8e7');
+    expect(merged.designs.holding.media).toEqual(stored.designs.holding.media);
+    expect(merged.inviteCleared).toBeUndefined();
+
+    const cleared = mergePortalAnswers({ ...posted, inviteCleared: true }, stored);
+    expect(cleared.invite).toBeNull();
+    expect(cleared.invitePalette).toEqual([]);
+    expect(cleared.inviteCleared).toBeUndefined();
   });
 });
 
@@ -254,8 +289,9 @@ describe('IndexedDB migration', () => {
     expect(current.designs.holding.names).toBe('Sam and Alex');
     expect(current.designs.holding.media?.attachmentId).toBe(ATTACHMENT);
     expect(current.designs.holding.media?.uploadState).toBe('saved');
-    expect(current.media[0].file.uploadState).toBe('error');
-    expect(current.media[0].file.uploadError).toBe(MISSING_DEVICE_MESSAGE);
+    expect(current.media[0].file).toEqual(design().media[0].file);
+    expect(current.media[0].file.uploadState).toBeUndefined();
+    expect(patches.every((item) => item.id === 'file-hands')).toBe(true);
     expect(patches.some((item) => item.patch.uploadState === 'uploading')).toBe(true);
   });
 

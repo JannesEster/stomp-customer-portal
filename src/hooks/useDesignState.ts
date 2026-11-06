@@ -4,15 +4,14 @@ import type { Booking, DesignState } from '../types';
 import type { StepId } from '../design/steps';
 import { confirmStep, withConfirmed } from '../lib/design';
 import { createCoalescedSaver, pickHydratedDesign, type SaveStatus } from './designSync';
-import { runPortalFileMigration, withFilePatch } from '../lib/portalFiles';
 import { sharePortalUpload, uploadPortalFile } from '../services/uploadClient';
+import { openPortalOnDevice, shouldSendFloorPreview } from './portalVisit';
 import {
   beaconPortalAnswers,
   captureFloorPngs,
   floorPreviewHash,
   postFloorPreviews,
   postPortalAnswers,
-  shouldUploadFloorPreview,
   visiblePreviewFailure,
 } from './floorPreviewSync';
 
@@ -34,6 +33,7 @@ export function useDesignState(booking: Booking) {
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [previewNonce, setPreviewNonce] = useState(0);
   const dirty = useRef(false);
+  const userEdited = useRef(false);
   const latest = useRef<DesignState | null>(null);
   const flushNow = useRef(false);
   const previewNow = useRef(false);
@@ -53,21 +53,14 @@ export function useDesignState(booking: Booking) {
       const remote = portal ? await portal.load() : null;
       if (cancelled) return;
       const picked = pickHydratedDesign(local, remote?.savedAnswers ?? null, remote?.lastSavedAt ?? null, booking);
-      previewHash.current = picked.pushLocal ? null : floorPreviewHash(picked.design);
       if (picked.source === 'remote') void storage.saveData(key, picked.design);
-      if (picked.pushLocal) dirty.current = true;
       if (picked.source === 'remote' && remote?.lastSavedAt) {
         setSavedAt(remote.lastSavedAt);
         setSaveStatus('saved');
       }
-      latest.current = picked.design;
-      setDesign(picked.design);
-      if (token) void migrateLocalFiles(picked.design);
-    })();
-    async function migrateLocalFiles(start: DesignState) {
-      if (!token) return;
-      await runPortalFileMigration({
-        design: start,
+      const opened = await openPortalOnDevice({
+        design: picked.design,
+        migrate: token !== null,
         readBlob: async (fileId) => {
           try {
             return await storage.getFile(fileId);
@@ -75,8 +68,9 @@ export function useDesignState(booking: Booking) {
             return null;
           }
         },
-        upload: (input) =>
-          sharePortalUpload(`${token}:${input.fileId}`, () =>
+        upload: (input) => {
+          if (!token) return Promise.resolve({ ok: true, kind: 'skip' });
+          return sharePortalUpload(`${token}:${input.fileId}`, () =>
             uploadPortalFile({
               token,
               file: input.blob,
@@ -84,23 +78,16 @@ export function useDesignState(booking: Booking) {
               type: input.type,
               role: input.role,
             }),
-          ),
-        onPatch: (fileId, patch) => {
-          if (cancelled) return;
-          const current = latest.current;
-          if (!current) return;
-          const patched = withFilePatch(current, fileId, patch);
-          if (patched === current) return;
-          const next =
-            patch.uploadState && patch.uploadState !== 'uploading'
-              ? { ...patched, updatedAt: new Date().toISOString() }
-              : patched;
-          latest.current = next;
-          if (patch.uploadState !== 'uploading') dirty.current = true;
-          setDesign(next);
+          );
         },
       });
-    }
+      if (cancelled) return;
+      // Loading, migration, and a second tab must not post answers or a floor preview.
+      dirty.current = opened.dirty;
+      previewHash.current = opened.previewHash;
+      latest.current = opened.design;
+      setDesign(opened.design);
+    })();
 
     return () => {
       cancelled = true;
@@ -199,15 +186,27 @@ export function useDesignState(booking: Booking) {
 
   useEffect(() => {
     if (!token || !design) return;
-    const reason = previewNow.current ? 'submit' : 'change';
+    const explicit = previewNow.current;
     previewNow.current = false;
     const hash = floorPreviewHash(design);
-    if (!shouldUploadFloorPreview(previewHash.current, hash, reason)) return;
+    if (
+      !shouldSendFloorPreview({
+        userEdited: userEdited.current,
+        explicit,
+        previousHash: previewHash.current,
+        nextHash: hash,
+      })
+    ) {
+      if (previewTimer.current != null) window.clearTimeout(previewTimer.current);
+      previewTimer.current = null;
+      previewHash.current = hash;
+      return;
+    }
     if (previewTimer.current != null) window.clearTimeout(previewTimer.current);
     previewTimer.current = window.setTimeout(() => {
       previewTimer.current = null;
       void uploadPreview(hash);
-    }, reason === 'submit' ? 0 : PREVIEW_SAVE_MS);
+    }, explicit ? 0 : PREVIEW_SAVE_MS);
 
     async function uploadPreview(expectedHash: string) {
       const current = latest.current;
@@ -240,6 +239,7 @@ export function useDesignState(booking: Booking) {
   /** Any edit puts a submitted design back into draft until it is submitted again. */
   const update = useCallback((change: (d: DesignState) => DesignState) => {
     dirty.current = true;
+    userEdited.current = true;
     setDesign((d) => (d ? { ...change(d), status: 'draft', updatedAt: new Date().toISOString() } : d));
   }, []);
 
