@@ -8,7 +8,7 @@ import type { UpdateDesign } from '../hooks/useDesignState';
 import { generatedFor, INVITE_STYLE_ID, LAYOUT_LABELS, TYPOGRAPHY_LABELS } from '../lib/inviteStyle';
 import type { DesignState, HoldingDesign, Phase, StoredFile } from '../types';
 import { fileStillUsed } from './common';
-import { FileStateLine } from './FileState';
+import { FilePresence, FileStateLine } from './FileState';
 import { GeneratedThumb } from './GeneratedThumb';
 
 interface PartProps {
@@ -185,7 +185,7 @@ export function CouplePhoto({ design, update, phase }: PartProps) {
           <img className="thumb" src={mediaUrl} alt="Your photo" />
         ))}
       {h.media && !mediaUrl && <p className="muted small">{h.media.name}</p>}
-      {h.media && <FileStateLine file={h.media} serverSync={serverSync} onRetry={onRetry} />}
+      {h.media && <FilePresence file={h.media} serverSync={serverSync} onRetry={onRetry} />}
       {pending && (
         <FileStateLine file={pending} serverSync={serverSync} onRetry={onRetryPending} onCancel={onCancelPending} />
       )}

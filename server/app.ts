@@ -29,7 +29,7 @@ import {
   attachmentFilename,
   isUploadRole,
   portalUploadsList,
-  preserveStoredFiles,
+  mergePortalAnswers,
   UPLOAD_LABELS,
   type UploadRole,
 } from '../src/lib/portalFiles';
@@ -225,7 +225,7 @@ export function createApp(opts: {
       return;
     }
 
-    const design = preserveStoredFiles(sanitized.design, storedDesign(result.saved.savedAnswers));
+    const design = mergePortalAnswers(sanitized.design, storedDesign(result.saved.savedAnswers));
     const screens = result.portal.booking.screensBooked;
     const report = portalStepReport(design, screens);
     const savedAt = new Date().toISOString();

@@ -8,6 +8,7 @@ import { generatedFor, LAYOUT_LABELS, TYPOGRAPHY_LABELS } from '../lib/inviteSty
 import { useFileUrl } from '../hooks/useFileUrl';
 import type { Booking, DesignState, HoldingDesign, StoredFile } from '../types';
 import { Accent, PHASES } from './common';
+import { OtherDeviceFileNote } from './FileState';
 import { SCREEN_KIND_LABELS } from './ScreenSteps';
 
 export function SummaryDialog({
@@ -273,6 +274,7 @@ function HoldingSummary({
       <li>
         Photo or video: {h.media ? h.media.name : 'None'}
         {h.media && <StoredThumb file={h.media} />}
+        {h.media && <OtherDeviceFileNote file={h.media} />}
       </li>
     </ul>
   );
