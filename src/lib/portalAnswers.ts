@@ -28,7 +28,7 @@ const LIMITS = {
 const TYPOGRAPHY = ['modern', 'classic', 'romantic', 'boho', 'deco'] as const;
 const LAYOUTS = ['monogram', 'stacked', 'frame', 'minimal'] as const;
 
-export type AnswersResult = { ok: true; design: DesignState } | { ok: false };
+export type AnswersResult = { ok: true; design: DesignState } | { ok: false; reason: string };
 
 /**
  * Strict shape check for a posted design. Unknown keys are dropped.
@@ -39,14 +39,19 @@ export function sanitizePortalAnswers(input: unknown, coupleNames: string): Answ
   try {
     const design = readDesign(input, coupleNames);
     const normalised = usableDesign(design, { coupleNames });
-    if (JSON.stringify(normalised).length > MAX_PORTAL_ANSWERS_CHARS) return { ok: false };
+    if (JSON.stringify(normalised).length > MAX_PORTAL_ANSWERS_CHARS) return { ok: false, reason: 'too_large' };
     return { ok: true, design: normalised };
-  } catch {
-    return { ok: false };
+  } catch (err) {
+    const reason = err instanceof BadAnswers ? err.code : 'invalid_answers';
+    return { ok: false, reason };
   }
 }
 
-class BadAnswers extends Error {}
+class BadAnswers extends Error {
+  constructor(readonly code = 'shape') {
+    super(code);
+  }
+}
 
 function readDesign(input: unknown, coupleNames: string): DesignState {
   const root = objectOf(input);
@@ -122,31 +127,33 @@ function readOptionalFileId(value: unknown): string {
 
 function readFile(value: unknown): StoredFile {
   const source = objectOf(value);
-  const size = source.size;
-  if (typeof size !== 'number' || !Number.isFinite(size) || size < 0) throw new BadAnswers();
   const file: StoredFile = {
     id: readOptionalFileId(source.id),
-    name: requiredString(source.name, LIMITS.fileName),
-    type: requiredString(source.type, LIMITS.fileType),
-    size: Math.min(Math.round(size), 2_000_000_000),
+    name: typeof source.name === 'string' ? source.name.slice(0, LIMITS.fileName) : '',
+    type: typeof source.type === 'string' ? source.type.slice(0, LIMITS.fileType) : '',
+    size: readFileSize(source.size),
   };
-  if (source.attachmentId != null && source.attachmentId !== '') {
-    const attachmentId = requiredString(source.attachmentId, 32);
-    if (!ATTACHMENT_ID.test(attachmentId)) throw new BadAnswers();
-    file.attachmentId = attachmentId;
+  // Legacy files often have no attachment, or error notes from an earlier visit.
+  // Those details must not reject the whole save.
+  if (typeof source.attachmentId === 'string' && ATTACHMENT_ID.test(source.attachmentId)) {
+    file.attachmentId = source.attachmentId;
   }
-  if (source.uploadState != null && source.uploadState !== '') {
-    const state = requiredString(source.uploadState, 20);
-    if (!isPortalFileState(state)) throw new BadAnswers();
-    file.uploadState = state;
+  if (typeof source.uploadState === 'string' && isPortalFileState(source.uploadState)) {
+    file.uploadState = source.uploadState;
   }
   if (typeof source.uploadError === 'string' && source.uploadError) {
-    file.uploadError = requiredString(source.uploadError, LIMITS.uploadError);
+    file.uploadError = source.uploadError.slice(0, LIMITS.uploadError);
   }
-  if (source.uploadedAt != null && source.uploadedAt !== '') {
-    file.uploadedAt = readIso(source.uploadedAt);
+  if (typeof source.uploadedAt === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(source.uploadedAt)) {
+    file.uploadedAt = source.uploadedAt.slice(0, LIMITS.iso);
   }
   return file;
+}
+
+function readFileSize(value: unknown): number {
+  const size = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN;
+  if (!Number.isFinite(size) || size < 0) return 0;
+  return Math.min(Math.round(size), 2_000_000_000);
 }
 
 function readScreens(value: unknown): ScreensDesign {

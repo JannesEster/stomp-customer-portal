@@ -221,6 +221,7 @@ export function createApp(opts: {
 
     const sanitized = sanitizePortalAnswers(answersFromBody(req.body), result.portal.booking.coupleNames);
     if (!sanitized.ok) {
+      console.error(`portal answers rejected reason=${sanitized.reason}`);
       res.status(400).json({ error: 'invalid_answers' });
       return;
     }

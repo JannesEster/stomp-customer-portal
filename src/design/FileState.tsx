@@ -6,7 +6,7 @@ import type { StoredFile } from '../types';
 /** Name-only file, with no copy in this browser. Not an error and not saved into the answers. */
 export function useOtherDeviceNote(file: StoredFile | null | undefined): string | null {
   const { storage } = useServices();
-  const [missing, setMissing] = useState(false);
+  const [missing, setMissing] = useState(() => !!file && !file.attachmentId && !!file.id);
   const id = file?.id ?? null;
   const hasAttachment = !!file?.attachmentId;
 
