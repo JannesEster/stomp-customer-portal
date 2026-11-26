@@ -124,6 +124,7 @@ function fieldNamesFromEnv(env: Record<string, string | undefined>): AirtableFie
     leadBookingFormLink: 'LEAD_BOOKING_FORM_LINK_FIELD',
     leadTermsAccepted: 'LEAD_TERMS_ACCEPTED_FIELD',
     leadBookingFormStatus: 'LEAD_BOOKING_FORM_STATUS_FIELD',
+    leadStatus: 'LEAD_STATUS_FIELD',
   };
   const fields = {} as AirtableFieldNames;
   for (const [key, fallback] of entries) {

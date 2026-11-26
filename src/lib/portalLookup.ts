@@ -57,7 +57,7 @@ export async function lookupBookingByToken(
   const venueId = firstRecordId(booking.fields[opts.fields.venueLink]);
   const venuePromise = venueId ? opts.gateway.getVenue(venueId) : Promise.resolve(null);
   let lead: AirtableRecord | null = null;
-  let leadUnavailable = false;
+  let leadUnavailable = !leadId;
   if (leadId) {
     try {
       lead = await opts.gateway.getLead(leadId);

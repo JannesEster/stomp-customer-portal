@@ -53,6 +53,7 @@ describe('Airtable client', () => {
     expect(fields).not.toContain('Important notes');
     expect(fields).not.toContain('Customer Xero account link');
     expect(fields).not.toContain('Status');
+    expect(fields).not.toContain('Booking form gate');
     expect(fields).toContain('Contract status');
     expect(fields).toContain('Deposit status');
     expect(fields).toContain('Balance status');
@@ -116,7 +117,10 @@ describe('Airtable client', () => {
       'Booking form link',
       'Terms accepted',
       'Booking form status',
+      'Status',
     ]);
+    expect(lead.searchParams.getAll('fields[]')).not.toContain('Booking form gate');
+    expect(JSON.stringify(DEFAULT_FIELD_NAMES)).not.toContain('fldXDM2m4BndT1T96');
     expect(lead.searchParams.getAll('fields[]')).not.toContain('Phone');
     expect(lead.search).not.toContain('Important notes');
     expect(lead.search).not.toContain('Xero');
