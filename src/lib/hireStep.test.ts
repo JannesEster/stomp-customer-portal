@@ -3,6 +3,7 @@ import {
   CONTRACT_SIGNED_CHOICE,
   DEPOSIT_PAID_CHOICE,
   deriveHireStep,
+  hireStepFromFacts,
   type HireSources,
   httpsOnHost,
 } from './hireStep';
@@ -195,5 +196,19 @@ describe('hire step rules', () => {
     expect(json).not.toContain('forms.fillout.com');
     expect(json).not.toContain('in.xero.com');
     expect(json).not.toContain('Signed');
+  });
+});
+
+describe('unsigned with a payment due and no safe pay link', () => {
+  it('asks to sign and points to the email for payment', () => {
+    const step = hireStepFromFacts({
+      signed: false,
+      signUrl: 'https://forms.fillout.com/t/abc',
+      paymentOutstanding: true,
+      payUrl: null,
+    });
+    expect(step.kind).toBe('sign');
+    expect(step.actions.map((a) => a.label)).toEqual(['Sign hire terms']);
+    expect(step.body).toContain('Your payment link is in the email from Stomp Sphere.');
   });
 });
