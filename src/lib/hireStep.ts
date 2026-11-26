@@ -9,6 +9,14 @@ export const DEPOSIT_PAID_CHOICE = 'seli5VD6VKC88Z5ar';
 /** Shown when the lead is Lost. No sign link, no pay link, and not All set. */
 export const LOST_HIRE_NOTE = 'Please contact Stomp Sphere about this booking.';
 
+/** Tick line when Terms accepted is ticked. Not a link. */
+export const HIRE_TERMS_SIGNED = 'Hire terms signed';
+
+/** Built when the lead's Booking form link is missing or not on forms.fillout.com. */
+export const FILLOUT_TERMS_FORM = 'https://forms.fillout.com/t/jYwCSWM41Eus';
+
+const LEAD_RECORD_ID = /^rec[A-Za-z0-9]{14}$/;
+
 export interface HireAction {
   label: string;
   href: string;
@@ -18,6 +26,8 @@ export interface HireStep {
   kind: 'sign' | 'pay' | 'both' | 'ready' | 'unknown' | 'lost';
   title: string;
   body: string;
+  /** Set when terms are accepted and the lead is not Lost. */
+  signedNote: string | null;
   actions: HireAction[];
 }
 
@@ -32,6 +42,8 @@ export interface HireSources {
   depositStatus: unknown;
   balanceStatus: unknown;
   termsAccepted: unknown;
+  /** Linked Lead record id, used only to build the signing URL. */
+  leadId: unknown;
   bookingFormLink: unknown;
   /**
    * Ignored. Booking form status and Contract status do not decide whether terms are signed.
@@ -58,11 +70,25 @@ export function httpsOnHost(value: unknown, host: string): string | null {
   return url.toString();
 }
 
+/**
+ * Lead Booking form link, then a link built from the lead id, then Booking form URL used.
+ * Each step is kept only when it is https on forms.fillout.com.
+ */
+export function signLink(bookingFormLink: unknown, leadId: unknown, bookingFormUrlUsed: unknown): string | null {
+  const direct = httpsOnHost(bookingFormLink, FILLOUT_HOST);
+  if (direct) return direct;
+  if (typeof leadId === 'string' && LEAD_RECORD_ID.test(leadId)) {
+    return `${FILLOUT_TERMS_FORM}?id=${leadId}`;
+  }
+  return httpsOnHost(bookingFormUrlUsed, FILLOUT_HOST);
+}
+
 export function neutralHireStep(): HireStep {
   return {
     kind: 'unknown',
     title: 'Next step',
     body: 'We cannot see your hire terms or payment on this page yet. Those links stay in your emails from Stomp Sphere.',
+    signedNote: null,
     actions: [],
   };
 }
@@ -72,6 +98,7 @@ export function lostHireStep(): HireStep {
     kind: 'lost',
     title: 'Next step',
     body: LOST_HIRE_NOTE,
+    signedNote: null,
     actions: [],
   };
 }
@@ -89,7 +116,7 @@ export function deriveHireStep(source: HireSources): HireStep {
   const signed = source.termsAccepted === true;
   const depositPaid = choiceIs(source.depositStatus, 'Paid', DEPOSIT_PAID_CHOICE);
   const balanceOwed = choiceIs(source.balanceStatus, 'Requested');
-  const signUrl = httpsOnHost(source.bookingFormLink, FILLOUT_HOST) ?? httpsOnHost(source.bookingFormUrlUsed, FILLOUT_HOST);
+  const signUrl = signLink(source.bookingFormLink, source.leadId, source.bookingFormUrlUsed);
   const depositUrl = httpsOnHost(source.depositInvoiceLink, XERO_INVOICE_HOST);
   const finalUrl = httpsOnHost(source.finalInvoiceLink, XERO_INVOICE_HOST);
   const payUrl = !depositPaid ? (depositUrl ?? finalUrl) : balanceOwed ? finalUrl : null;
@@ -125,6 +152,7 @@ export function hireStepFromFacts(facts: {
       kind: showPay ? 'both' : 'sign',
       title: showPay ? 'Sign and pay' : 'Sign',
       body: `Your hire terms are not signed yet.${signing}${paying}`,
+      signedNote: null,
       actions,
     };
   }
@@ -136,6 +164,7 @@ export function hireStepFromFacts(facts: {
       body: facts.payUrl
         ? 'A payment is still due.'
         : 'A payment is still due. Your payment link is in the email from Stomp Sphere.',
+      signedNote: HIRE_TERMS_SIGNED,
       actions: facts.payUrl ? [{ label: 'Pay now', href: facts.payUrl }] : [],
     };
   }
@@ -144,6 +173,7 @@ export function hireStepFromFacts(facts: {
     kind: 'ready',
     title: 'All set',
     body: 'Your hire terms are signed and nothing is left to pay.',
+    signedNote: HIRE_TERMS_SIGNED,
     actions: [],
   };
 }

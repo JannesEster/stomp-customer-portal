@@ -25,6 +25,7 @@ function source(overrides: Partial<HireSources> = {}): HireSources {
     depositStatus: null,
     balanceStatus: null,
     termsAccepted: null,
+    leadId: null,
     bookingFormLink: null,
     bookingFormStatus: null,
     ...overrides,
@@ -51,14 +52,83 @@ describe('hire step rules', () => {
     const step = deriveHireStep(
       source({ leadStatus: 'Booked', termsAccepted: true, depositStatus: 'Paid', balanceStatus: 'Not due' }),
     );
-    expect(step).toMatchObject({ kind: 'ready', title: 'All set', actions: [] });
+    expect(step).toMatchObject({
+      kind: 'ready',
+      title: 'All set',
+      signedNote: 'Hire terms signed',
+      actions: [],
+    });
+    expect(step.actions.map((action) => action.label)).not.toContain('Sign hire terms');
+  });
+
+  it('shows the signed line and Pay when terms are accepted and a payment is due', () => {
+    const step = deriveHireStep(
+      source({
+        leadStatus: 'Booked',
+        termsAccepted: true,
+        depositStatus: 'Paid',
+        balanceStatus: 'Requested',
+        finalInvoiceLink: FINAL,
+      }),
+    );
+    expect(step.kind).toBe('pay');
+    expect(step.signedNote).toBe('Hire terms signed');
+    expect(step.actions).toEqual([{ label: 'Pay now', href: FINAL }]);
+    expect(step.actions.map((action) => action.label)).not.toContain('Sign hire terms');
+    expect(`${step.signedNote} ${step.body}`).not.toMatch(/[—–]/);
+  });
+
+  it('builds the signing URL from the lead id when the form link is missing', () => {
+    const leadId = 'recFAKELEAD000001';
+    const step = deriveHireStep(
+      source({
+        termsAccepted: false,
+        leadId,
+        bookingFormLink: null,
+        bookingFormUrlUsed: BOOKING_FORM,
+        depositStatus: 'Paid',
+        balanceStatus: 'Not due',
+      }),
+    );
+    expect(step.actions).toEqual([
+      { label: 'Sign hire terms', href: `https://forms.fillout.com/t/jYwCSWM41Eus?id=${leadId}` },
+    ]);
+    expect(step.signedNote).toBeNull();
+  });
+
+  it('builds no signing link from a bad lead id', () => {
+    const step = deriveHireStep(
+      source({
+        termsAccepted: false,
+        leadId: 'not-a-record',
+        bookingFormLink: null,
+        bookingFormUrlUsed: null,
+        depositStatus: 'Paid',
+        balanceStatus: 'Not due',
+      }),
+    );
+    expect(step.kind).toBe('sign');
+    expect(step.actions).toEqual([]);
+    expect(step.body).toContain('signing link is in the email from Stomp Sphere');
+
+    const fallback = deriveHireStep(
+      source({
+        termsAccepted: false,
+        leadId: 'recTOO_SHORT',
+        bookingFormLink: 'https://go.xero.com/staff-form',
+        bookingFormUrlUsed: BOOKING_FORM,
+        depositStatus: 'Paid',
+        balanceStatus: 'Not due',
+      }),
+    );
+    expect(fallback.actions).toEqual([{ label: 'Sign hire terms', href: BOOKING_FORM }]);
   });
 
   it('shows no Sign or Pay button when the lead is Lost', () => {
     const step = deriveHireStep(
       source({
         leadStatus: 'Lost',
-        termsAccepted: false,
+        termsAccepted: true,
         bookingFormLink: FILLOUT,
         depositStatus: 'Requested',
         depositInvoiceLink: DEPOSIT,
@@ -69,6 +139,7 @@ describe('hire step rules', () => {
     expect(step.title).not.toBe('All set');
     expect(step.body).toBe(LOST_HIRE_NOTE);
     expect(step.actions).toEqual([]);
+    expect(step.signedNote).toBeNull();
     expect(JSON.stringify(step)).not.toContain('forms.fillout.com');
     expect(JSON.stringify(step)).not.toContain('in.xero.com');
     expect(step.body).not.toMatch(/[—–]/);

@@ -97,6 +97,7 @@ export function mapPortalRecords(
       balanceStatus: bookingFields[fields.balanceStatus],
       leadStatus: leadFields[fields.leadStatus],
       termsAccepted: leadFields[fields.leadTermsAccepted],
+      leadId: lead?.id ?? null,
       bookingFormLink: leadFields[fields.leadBookingFormLink],
       bookingFormStatus: leadFields[fields.leadBookingFormStatus],
     }),

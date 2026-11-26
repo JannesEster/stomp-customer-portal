@@ -10,6 +10,12 @@ export function PortalHome({ booking, design }: { booking: Booking; design: Desi
     <section className="home-card" aria-label="Next step">
       <span className="eyebrow">Next step</span>
       <h2>{step.title}</h2>
+      {step.signedNote ? (
+        <p className="hire-signed">
+          <span className="task-done">Done</span>
+          {step.signedNote}
+        </p>
+      ) : null}
       <p>{step.body}</p>
       {step.actions.length > 0 ? (
         <p className="home-action-row">
