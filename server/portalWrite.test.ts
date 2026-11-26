@@ -145,6 +145,8 @@ describe('portal answer writes', () => {
         progress: 1,
         'Important notes': 'LEAK-ME',
         'Portal token': TOKEN,
+        Status: 'Booked',
+        'Booking form status': 'Submitted',
       }),
     });
     expect(res.status).toBe(200);
@@ -173,6 +175,8 @@ describe('portal answer writes', () => {
     expect(body.fields['Portal first opened']).toBe(body.fields['Portal last saved']);
     expect(body.fields).not.toHaveProperty('Important notes');
     expect(body.fields).not.toHaveProperty('Portal token');
+    expect(body.fields).not.toHaveProperty('Status');
+    expect(body.fields).not.toHaveProperty('Booking form status');
     expect(body.fields).not.toHaveProperty('Portal floor preview');
     expect(JSON.stringify(body)).not.toContain('LEAK-ME');
     expect(JSON.stringify(body)).not.toContain(TOKEN);

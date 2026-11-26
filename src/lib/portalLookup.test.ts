@@ -102,6 +102,13 @@ describe('token lookup', () => {
     expect(source.leads).toEqual([]);
   });
 
+  it('accepts a token when SMS added a trailing full stop', async () => {
+    const source = gateway();
+    const result = await lookup(`${TOKEN}.`, source);
+    expect(result.ok).toBe(true);
+    expect(source.formulas).toEqual([portalTokenFormula(TOKEN, 'Portal token')]);
+  });
+
   it('rejects a malformed token before asking Airtable', async () => {
     const source = gateway();
     const hostile = "xxxxxxxxxxxxxxxxxxxxxx' OR NOT({Portal token}='')";

@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { createAirtableClient } from './airtableClient';
 import {
+  DEFAULT_FIELD_NAMES,
+  PORTAL_NEVER_WRITE_FIELDS,
   PORTAL_SUPPLIERS_FIELD,
   PORTAL_WRITE_FIELDS,
   PRIVATE_OR_UNUSED_FIELDS,
+  bookingFieldsToFetch,
   pickPortalWriteFields,
 } from './airtableFields';
 import { readPortalConfig } from './portalConfig';
@@ -277,6 +280,10 @@ describe('Airtable client', () => {
     expect(PORTAL_WRITE_FIELDS).not.toContain('Videographer');
     expect(PORTAL_WRITE_FIELDS).not.toContain('DJ');
     expect(PORTAL_WRITE_FIELDS).not.toContain('Other suppliers');
+    for (const name of PORTAL_NEVER_WRITE_FIELDS) {
+      expect(PORTAL_WRITE_FIELDS).not.toContain(name);
+      expect(bookingFieldsToFetch(DEFAULT_FIELD_NAMES)).not.toContain(name);
+    }
     expect(
       pickPortalWriteFields({
         'Portal suppliers': 'Wedding planner: Ada Planner',
@@ -289,6 +296,25 @@ describe('Airtable client', () => {
         'Other suppliers': 'Celebrant: Jo',
       }),
     ).toEqual({ 'Portal suppliers': 'Wedding planner: Ada Planner' });
+  });
+
+  it('never writes Status or Booking form status, even when a route passes them as extra keys', () => {
+    expect(PORTAL_NEVER_WRITE_FIELDS).toEqual(['Status', 'Booking form status']);
+    const smuggled = pickPortalWriteFields(
+      {
+        Status: 'Booked',
+        'Booking form status': 'Submitted',
+        'Portal last saved': '2026-01-01T00:00:00.000Z',
+        'Portal answers': '{}',
+      },
+      ['Status', 'Booking form status', 'fldStatusFake000000'],
+    );
+    expect(smuggled).toEqual({
+      'Portal last saved': '2026-01-01T00:00:00.000Z',
+      'Portal answers': '{}',
+    });
+    expect(JSON.stringify(smuggled)).not.toContain('Booked');
+    expect(JSON.stringify(smuggled)).not.toContain('Submitted');
   });
 
   it('uploads a floor preview PNG to the attachment endpoint and logs a forbidden write without the body', async () => {

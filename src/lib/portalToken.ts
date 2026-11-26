@@ -40,15 +40,26 @@ export function blankTokenFormula(fieldName: string): string {
   return `${formulaField(fieldName)} = BLANK()`;
 }
 
+/**
+ * Drop characters chat and SMS apps glue onto a copied link.
+ * Only invisible characters and trailing punctuation are removed.
+ * A quote or space in the middle is left in place so it still fails validation.
+ */
+export function unwrapPortalToken(value: string): string {
+  let raw = value.replace(/[\u200B\u200C\u200D\uFEFF\u00A0]/g, '');
+  try {
+    raw = decodeURIComponent(raw);
+  } catch {
+    // Keep the value when the segment is not valid percent encoding.
+  }
+  return raw.replace(/[\u200B\u200C\u200D\uFEFF\u00A0]/g, '').trim().replace(/[.,;:!?)\]]+$/g, '');
+}
+
 /** Token from a `/p/<token>` path, including a GitHub Pages subfolder. Null when the path is not a portal link. */
 export function readPortalToken(pathname: string): string | null {
   const match = pathname.match(/\/p\/([^/]+)\/?$/);
   if (!match) return null;
-  try {
-    return decodeURIComponent(match[1]);
-  } catch {
-    return match[1];
-  }
+  return unwrapPortalToken(match[1]);
 }
 
 /**

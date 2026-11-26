@@ -6,7 +6,7 @@ import {
 } from './airtableFields';
 import { mapPortalRecords, type AirtableRecord, type ExtraCatalogItem, type MappedPortal } from './bookingMap';
 import { DESIGN_VERSION } from './design';
-import { buildPortalUrl, isValidPortalToken, portalTokenFormula } from './portalToken';
+import { buildPortalUrl, isValidPortalToken, portalTokenFormula, unwrapPortalToken } from './portalToken';
 
 const RECORD_ID = /^rec[A-Za-z0-9]{14}$/;
 
@@ -41,11 +41,12 @@ export async function lookupBookingByToken(
     publicBaseUrl: string | null;
   },
 ): Promise<PortalLookupResult> {
-  if (!isValidPortalToken(token)) {
+  const cleanToken = unwrapPortalToken(token);
+  if (!isValidPortalToken(cleanToken)) {
     return { ok: false, status: 400, error: 'invalid_token' };
   }
 
-  const formula = portalTokenFormula(token, opts.tokenFieldName);
+  const formula = portalTokenFormula(cleanToken, opts.tokenFieldName);
   const matches = await opts.gateway.findBookingsByFormula(formula);
   if (matches.length !== 1) {
     return { ok: false, status: 404, error: 'not_found' };
@@ -62,7 +63,7 @@ export async function lookupBookingByToken(
   return {
     ok: true,
     portal: mapPortalRecords(booking, lead, venue, opts.fields, opts.extras),
-    portalUrl: buildPortalUrl(opts.publicBaseUrl, token),
+    portalUrl: buildPortalUrl(opts.publicBaseUrl, cleanToken),
     saved: {
       savedAnswers: parseSavedAnswers(booking.fields[PORTAL_ANSWERS_FIELD]),
       lastSavedAt: readTimestamp(booking.fields[PORTAL_LAST_SAVED_FIELD]),

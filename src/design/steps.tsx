@@ -49,7 +49,7 @@ const STEPS: StepDef[] = [
       </>
     ),
     intro:
-      "Let's start with the two of you, and the people helping on the day. Your names go on your holding screen, and you can see them on the floor below.",
+      'Names and the people helping on the day, for the floor. This is not the booking form you already filled in.',
     preview: 'floor',
     phase: 'holding',
   },

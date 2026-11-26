@@ -53,7 +53,7 @@ export function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <span className="header-label">Customer portal</span>
+        <span className="header-label">Event portal</span>
         <img
           className="logo"
           src={fromRoot('/brand/stomp-sphere-logo-white.svg')}
@@ -67,19 +67,13 @@ export function App() {
       {booking && (
         <section className="hero">
           <h1>
-            {booking.coupleNames ? (
-              <>
-                Plan your night,
-                <br />
-                <Accent>{booking.coupleNames}!</Accent>
-              </>
-            ) : (
-              'Plan your night'
-            )}
+            Your event <Accent>portal</Accent>
           </h1>
           <p>
+            {booking.coupleNames ? `${booking.coupleNames}. ` : ''}
             {formatEventDate(booking.eventDate) || 'Date not listed yet'}
-            {booking.venue ? ` at ${booking.venue}` : ''}
+            {booking.venue ? ` at ${booking.venue}` : ''}. Choose effects and patterns, and upload your files. This
+            is not the booking form.
           </p>
         </section>
       )}

@@ -39,6 +39,7 @@
 body {
   margin: 0;
   min-height: 100vh;
+  min-height: 100dvh;
   background:
     radial-gradient(60% 35% at 50% 100%, rgba(0, 163, 255, 0.1), transparent 70%) fixed,
     radial-gradient(45% 30% at 90% 0%, rgba(255, 17, 131, 0.08), transparent 70%) fixed,
@@ -143,7 +144,7 @@ p {
 .app {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 1rem 6rem;
+  padding: 0 1rem calc(6rem + env(safe-area-inset-bottom, 0px));
 }
 
 .app-header {
@@ -198,6 +199,85 @@ p {
   max-width: 36rem;
   color: var(--muted);
   font-size: 0.95rem;
+}
+
+.home-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-card);
+  padding: 1.25rem;
+  margin: 0 0 1.25rem;
+}
+
+.home-card h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.75rem;
+}
+
+.home-card h3 {
+  margin: 1.1rem 0 0.4rem;
+  font-size: 1rem;
+}
+
+.home-card p {
+  margin: 0;
+}
+
+.home-action-row {
+  margin-top: 0.9rem !important;
+}
+
+a.home-action {
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 12px 24px;
+  border-radius: var(--radius-pill);
+  background: var(--white);
+  color: var(--black);
+  text-decoration: none;
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+.home-tasks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.home-tasks li {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  margin: 0.35rem 0;
+}
+
+.task-done,
+.task-todo {
+  flex: none;
+  min-width: 3.4rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.task-done {
+  color: var(--glow-blue);
+}
+
+.task-todo {
+  color: var(--muted);
+}
+
+.done-line {
+  margin: 0 0 0.75rem;
+  color: var(--muted);
 }
 
 .tabs {
@@ -312,9 +392,35 @@ h2[tabindex='-1']:focus {
 }
 
 @media (max-width: 599px) {
-  .header-label,
   .signed-in {
-    visibility: hidden;
+    display: none;
+  }
+  .header-label {
+    font-size: 0.75rem;
+    line-height: 1.2;
+  }
+  .hero {
+    padding: 0.85rem 0 0.45rem;
+  }
+  .hero h1 {
+    font-size: 1.7rem;
+  }
+  .hero p {
+    margin-top: 0.4rem;
+  }
+  .tabs {
+    margin-bottom: 0.75rem;
+    padding-top: 0.35rem;
+    padding-bottom: 0.35rem;
+  }
+  .home-card {
+    padding: 0.9rem 1rem 0.7rem;
+  }
+  .home-card h2 {
+    font-size: 1.55rem;
+  }
+  .home-card h3 {
+    margin-top: 0.75rem;
   }
   .tabs {
     justify-content: flex-start;
@@ -322,7 +428,7 @@ h2[tabindex='-1']:focus {
   }
   .submit-bar {
     gap: 0.4rem;
-    padding: 0.6rem 0.75rem;
+    padding: 0.6rem 0.75rem calc(0.6rem + env(safe-area-inset-bottom, 0px));
   }
   .submit-bar .row {
     width: 100%;
@@ -461,6 +567,7 @@ input[type='time'],
 select,
 textarea {
   font: inherit;
+  font-size: 16px;
   width: 100%;
   min-height: 44px;
   padding: 8px 0 9.6px;
@@ -1500,7 +1607,7 @@ textarea.supplier-other {
   -webkit-backdrop-filter: blur(5px);
   border: 1px solid var(--card-border);
   border-radius: var(--radius-card);
-  padding: 0.8rem 1rem;
+  padding: 0.8rem 1rem calc(0.8rem + env(safe-area-inset-bottom, 0px));
 }
 
 .next-label {

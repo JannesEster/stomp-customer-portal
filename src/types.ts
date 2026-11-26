@@ -40,6 +40,17 @@ export interface Booking {
   videographer?: string;
   dj?: string;
   otherSuppliers?: string;
+  /**
+   * Hire terms. Absent when the booking payload does not say.
+   * The live portal does not receive this until a customer signing field is confirmed.
+   */
+  termsSigned?: boolean | null;
+  /** Customer signing page. Only an https link is shown. */
+  signUrl?: string | null;
+  /** True when money is still due. Absent when the booking payload does not say. */
+  paymentDue?: boolean | null;
+  /** Customer pay page. Only an https link is shown. */
+  payUrl?: string | null;
 }
 
 /** People helping on the day. The couple types these, and they map to the booking fields of the same names. */

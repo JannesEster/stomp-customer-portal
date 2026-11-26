@@ -79,6 +79,12 @@ export const PORTAL_WRITE_FIELDS = [
   'Portal suppliers',
 ] as const;
 
+/**
+ * Booking workflow columns. No portal route, including submit, may PATCH these.
+ * They stay blocked even if a caller passes them as extra write keys.
+ */
+export const PORTAL_NEVER_WRITE_FIELDS = ['Status', 'Booking form status'] as const;
+
 export type PortalWriteField = (typeof PORTAL_WRITE_FIELDS)[number];
 
 export const PORTAL_ANSWERS_FIELD: PortalWriteField = 'Portal answers';
@@ -109,16 +115,25 @@ export const PORTAL_READ_FIELDS = [
 ] as const;
 
 const PORTAL_WRITE_FIELD_SET = new Set<string>(PORTAL_WRITE_FIELDS);
+const PORTAL_NEVER_WRITE_SET = new Set<string>(PORTAL_NEVER_WRITE_FIELDS);
+
+for (const name of PORTAL_NEVER_WRITE_FIELDS) {
+  if (PORTAL_WRITE_FIELD_SET.has(name)) {
+    throw new Error(`Portal must not write ${name}`);
+  }
+}
 
 /**
  * Keep a PATCH to the write whitelist. Extra keys, including anything the client posted, are dropped.
  * `extraKeys` is for configured field ids such as Portal uploads. Names outside the whitelist stay dropped.
+ * Status and Booking form status are removed even if they are passed in `extraKeys`.
  */
 export function pickPortalWriteFields(
   fields: Record<string, unknown>,
   extraKeys: readonly string[] = [],
 ): Record<string, unknown> {
   const allowed = new Set<string>([...PORTAL_WRITE_FIELD_SET, ...extraKeys]);
+  for (const name of PORTAL_NEVER_WRITE_SET) allowed.delete(name);
   const picked: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(fields)) {
     if (allowed.has(key)) picked[key] = value;

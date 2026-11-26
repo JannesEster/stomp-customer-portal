@@ -7,7 +7,11 @@
     "venue": "Demo Estate, Swan Valley",
     "floor": { "widthM": 6, "lengthM": 4.5 },
     "screensBooked": 2,
-    "extras": ["live-event-streaming"]
+    "extras": ["live-event-streaming"],
+    "termsSigned": false,
+    "signUrl": "https://example.com/stomp-hire-terms",
+    "paymentDue": true,
+    "payUrl": "https://example.com/stomp-pay"
   },
   {
     "id": "bk-1002",
@@ -17,7 +21,10 @@
     "venue": "Demo Ballroom, Perth",
     "floor": { "widthM": 4, "lengthM": 3 },
     "screensBooked": 1,
-    "extras": []
+    "extras": [],
+    "termsSigned": true,
+    "paymentDue": true,
+    "payUrl": "https://example.com/stomp-pay"
   },
   {
     "id": "bk-1003",
@@ -27,6 +34,8 @@
     "venue": "Demo Winery, Margaret River",
     "floor": { "widthM": 5, "lengthM": 4 },
     "screensBooked": 0,
-    "extras": []
+    "extras": [],
+    "termsSigned": true,
+    "paymentDue": false
   }
 ]
