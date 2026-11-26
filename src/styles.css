@@ -272,6 +272,13 @@ a.home-action {
   color: var(--glow-blue);
 }
 
+.hire-signed {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  margin: 0.35rem 0 0.75rem;
+}
+
 .task-todo {
   color: var(--muted);
 }

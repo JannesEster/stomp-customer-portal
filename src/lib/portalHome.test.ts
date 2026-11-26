@@ -11,6 +11,7 @@ describe('hire next step', () => {
       kind: 'both',
       title: 'Sign and pay',
       body: 'Your hire terms are not signed yet. A payment is still due.',
+      signedNote: null,
       actions: [
         { label: 'Sign hire terms', href: SIGN },
         { label: 'Pay now', href: PAY },
@@ -71,6 +72,7 @@ describe('server hire step on the client', () => {
         kind: 'pay',
         title: 'Pay',
         body: 'A payment is still due.',
+        signedNote: 'Hire terms signed',
         actions: [
           { label: 'Pay now', href: 'https://go.xero.com/AccountsReceivable/View.aspx?InvoiceID=staff' },
           { label: 'Pay now', href: 'https://in.xero.com/invoice/final' },
