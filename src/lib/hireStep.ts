@@ -3,10 +3,11 @@ export const FILLOUT_HOST = 'forms.fillout.com';
 /** Customer invoice pages. go.xero.com is staff only and is never accepted. */
 export const XERO_INVOICE_HOST = 'in.xero.com';
 
-/** Bookings Contract status choice for Signed. */
-export const CONTRACT_SIGNED_CHOICE = 'sellBnkwOQCBMg6kO';
 /** Bookings Deposit status choice for Paid. */
 export const DEPOSIT_PAID_CHOICE = 'seli5VD6VKC88Z5ar';
+
+/** Shown when the lead is Lost. No sign link, no pay link, and not All set. */
+export const LOST_HIRE_NOTE = 'Please contact Stomp Sphere about this booking.';
 
 export interface HireAction {
   label: string;
@@ -14,16 +15,17 @@ export interface HireAction {
 }
 
 export interface HireStep {
-  kind: 'sign' | 'pay' | 'both' | 'ready' | 'unknown';
+  kind: 'sign' | 'pay' | 'both' | 'ready' | 'unknown' | 'lost';
   title: string;
   body: string;
   actions: HireAction[];
 }
 
 export interface HireSources {
-  /** True when the linked Lead could not be read. The step stays neutral. */
+  /** True when there is no linked Lead, or the Lead could not be read. The step stays neutral. */
   leadUnavailable: boolean;
-  contractStatus: unknown;
+  /** Leads Status. Lost hides Sign and Pay. */
+  leadStatus: unknown;
   bookingFormUrlUsed: unknown;
   depositInvoiceLink: unknown;
   finalInvoiceLink: unknown;
@@ -31,7 +33,12 @@ export interface HireSources {
   balanceStatus: unknown;
   termsAccepted: unknown;
   bookingFormLink: unknown;
-  bookingFormStatus: unknown;
+  /**
+   * Ignored. Booking form status and Contract status do not decide whether terms are signed.
+   * Kept so a caller can pass them and the step still follows Terms accepted only.
+   */
+  contractStatus?: unknown;
+  bookingFormStatus?: unknown;
 }
 
 /** https URL on one exact host. Other hosts, including go.xero.com, are dropped. */
@@ -60,18 +67,26 @@ export function neutralHireStep(): HireStep {
   };
 }
 
+export function lostHireStep(): HireStep {
+  return {
+    kind: 'lost',
+    title: 'Next step',
+    body: LOST_HIRE_NOTE,
+    actions: [],
+  };
+}
+
 /**
  * One hire step from booking and lead values.
- * A blank Contract status does not count as signed.
- * All set only when terms are signed, the deposit is Paid, and the balance is not Requested.
+ * Signed means Lead Terms accepted is ticked. A completed form or a signed contract does not count.
+ * A Lost lead shows neither Sign nor Pay, and is not All set.
+ * All set only when terms are accepted, the deposit is Paid, and the balance is not Requested.
  */
 export function deriveHireStep(source: HireSources): HireStep {
   if (source.leadUnavailable) return neutralHireStep();
+  if (choiceIs(source.leadStatus, 'Lost')) return lostHireStep();
 
-  const signed =
-    source.termsAccepted === true ||
-    choiceIs(source.bookingFormStatus, 'Completed') ||
-    choiceIs(source.contractStatus, 'Signed', CONTRACT_SIGNED_CHOICE);
+  const signed = source.termsAccepted === true;
   const depositPaid = choiceIs(source.depositStatus, 'Paid', DEPOSIT_PAID_CHOICE);
   const balanceOwed = choiceIs(source.balanceStatus, 'Requested');
   const signUrl = httpsOnHost(source.bookingFormLink, FILLOUT_HOST) ?? httpsOnHost(source.bookingFormUrlUsed, FILLOUT_HOST);

@@ -177,6 +177,19 @@ describe('token lookup', () => {
     expect(JSON.stringify(result)).not.toContain('go.xero.com');
   });
 
+  it('stays neutral when the booking has no linked lead', async () => {
+    const source = gateway({
+      async findBookingsByFormula() {
+        return [booking({ Lead: [] })];
+      },
+    });
+    const result = await lookup(TOKEN, source);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.portal.booking.hire?.kind).toBe('unknown');
+    expect(source.leads).toEqual([]);
+  });
+
   it('rejects a malformed token before asking Airtable', async () => {
     const source = gateway();
     const hostile = "xxxxxxxxxxxxxxxxxxxxxx' OR NOT({Portal token}='')";

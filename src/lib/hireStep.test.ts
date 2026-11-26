@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
-  CONTRACT_SIGNED_CHOICE,
   DEPOSIT_PAID_CHOICE,
   deriveHireStep,
   hireStepFromFacts,
+  LOST_HIRE_NOTE,
   type HireSources,
   httpsOnHost,
 } from './hireStep';
@@ -17,6 +17,7 @@ const STAFF = 'https://go.xero.com/AccountsReceivable/View.aspx?InvoiceID=staff'
 function source(overrides: Partial<HireSources> = {}): HireSources {
   return {
     leadUnavailable: false,
+    leadStatus: 'Booked',
     contractStatus: null,
     bookingFormUrlUsed: null,
     depositInvoiceLink: null,
@@ -31,34 +32,62 @@ function source(overrides: Partial<HireSources> = {}): HireSources {
 }
 
 describe('hire step rules', () => {
-  it('treats terms accepted, a completed lead form, or a signed contract as signed', () => {
-    expect(deriveHireStep(source({ termsAccepted: true, depositStatus: 'Paid', balanceStatus: 'Not due' })).kind).toBe(
-      'ready',
+  it('shows Sign when a booked lead has not accepted the terms', () => {
+    const step = deriveHireStep(
+      source({
+        leadStatus: 'Booked',
+        termsAccepted: false,
+        bookingFormLink: FILLOUT,
+        depositStatus: 'Paid',
+        balanceStatus: 'Not due',
+      }),
     );
-    expect(
-      deriveHireStep(source({ bookingFormStatus: 'Completed', depositStatus: 'Paid', balanceStatus: 'Paid' })).kind,
-    ).toBe('ready');
-    expect(
-      deriveHireStep(source({ contractStatus: 'Signed', depositStatus: { id: DEPOSIT_PAID_CHOICE }, balanceStatus: 'Waived' }))
-        .kind,
-    ).toBe('ready');
-    expect(
-      deriveHireStep(
-        source({
-          contractStatus: { id: CONTRACT_SIGNED_CHOICE, name: 'Something else' },
-          depositStatus: 'Paid',
-          balanceStatus: null,
-        }),
-      ).kind,
-    ).toBe('ready');
+    expect(step.kind).toBe('sign');
+    expect(step.title).toBe('Sign');
+    expect(step.actions).toEqual([{ label: 'Sign hire terms', href: FILLOUT }]);
   });
 
-  it('does not treat a blank contract status as signed', () => {
-    for (const contractStatus of [null, '', '   ', 'Sent', { id: 'selOther', name: 'Viewed' }]) {
-      const step = deriveHireStep(source({ contractStatus, depositStatus: 'Paid', balanceStatus: 'Not due' }));
-      expect(step.kind).toBe('sign');
-      expect(step.title).toBe('Sign');
-    }
+  it('shows All set when a booked lead has accepted the terms, the deposit is Paid, and no balance is Requested', () => {
+    const step = deriveHireStep(
+      source({ leadStatus: 'Booked', termsAccepted: true, depositStatus: 'Paid', balanceStatus: 'Not due' }),
+    );
+    expect(step).toMatchObject({ kind: 'ready', title: 'All set', actions: [] });
+  });
+
+  it('shows no Sign or Pay button when the lead is Lost', () => {
+    const step = deriveHireStep(
+      source({
+        leadStatus: 'Lost',
+        termsAccepted: false,
+        bookingFormLink: FILLOUT,
+        depositStatus: 'Requested',
+        depositInvoiceLink: DEPOSIT,
+        finalInvoiceLink: FINAL,
+      }),
+    );
+    expect(step.kind).toBe('lost');
+    expect(step.title).not.toBe('All set');
+    expect(step.body).toBe(LOST_HIRE_NOTE);
+    expect(step.actions).toEqual([]);
+    expect(JSON.stringify(step)).not.toContain('forms.fillout.com');
+    expect(JSON.stringify(step)).not.toContain('in.xero.com');
+    expect(step.body).not.toMatch(/[—–]/);
+  });
+
+  it('still shows Sign when the form is Completed but Terms accepted is unticked', () => {
+    const step = deriveHireStep(
+      source({
+        leadStatus: 'Booked',
+        termsAccepted: false,
+        bookingFormStatus: 'Completed',
+        contractStatus: 'Signed',
+        bookingFormLink: FILLOUT,
+        depositStatus: { id: DEPOSIT_PAID_CHOICE },
+        balanceStatus: 'Paid',
+      }),
+    );
+    expect(step.kind).toBe('sign');
+    expect(step.actions.map((action) => action.label)).toEqual(['Sign hire terms']);
   });
 
   it('uses the lead form link, then the booking form URL, and only on forms.fillout.com', () => {
@@ -129,7 +158,7 @@ describe('hire step rules', () => {
 
     const balance = deriveHireStep(
       source({
-        contractStatus: 'Signed',
+        termsAccepted: true,
         depositStatus: 'Paid',
         balanceStatus: 'Requested',
         depositInvoiceLink: DEPOSIT,

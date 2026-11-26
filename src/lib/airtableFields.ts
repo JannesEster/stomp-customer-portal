@@ -50,6 +50,8 @@ export interface AirtableFieldNames {
   leadBookingFormLink: string;
   leadTermsAccepted: string;
   leadBookingFormStatus: string;
+  /** Leads Status. Not Bookings Status, and not Booking form gate. */
+  leadStatus: string;
 }
 
 export const DEFAULT_FIELD_NAMES: AirtableFieldNames = {
@@ -80,6 +82,7 @@ export const DEFAULT_FIELD_NAMES: AirtableFieldNames = {
   leadBookingFormLink: 'Booking form link',
   leadTermsAccepted: 'Terms accepted',
   leadBookingFormStatus: 'Booking form status',
+  leadStatus: 'Status',
 };
 
 /**
@@ -224,6 +227,7 @@ export function leadFieldsToFetch(fields: AirtableFieldNames): string[] {
     fields.leadBookingFormLink,
     fields.leadTermsAccepted,
     fields.leadBookingFormStatus,
+    fields.leadStatus,
   ]);
 }
 
