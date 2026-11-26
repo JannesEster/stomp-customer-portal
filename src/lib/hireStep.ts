@@ -101,7 +101,11 @@ export function hireStepFromFacts(facts: {
     const showPay = facts.paymentOutstanding && !!facts.payUrl;
     if (showPay && facts.payUrl) actions.push({ label: 'Pay now', href: facts.payUrl });
     const signing = facts.signUrl ? '' : ' Your signing link is in the email from Stomp Sphere.';
-    const paying = showPay ? ' A payment is still due.' : '';
+    const paying = !facts.paymentOutstanding
+      ? ''
+      : showPay
+        ? ' A payment is still due.'
+        : ' A payment is still due. Your payment link is in the email from Stomp Sphere.';
     return {
       kind: showPay ? 'both' : 'sign',
       title: showPay ? 'Sign and pay' : 'Sign',
