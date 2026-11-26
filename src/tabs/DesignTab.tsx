@@ -3,6 +3,7 @@ import { designSaveLabel } from '../hooks/designSync';
 import { useDesignState, type UpdateDesign } from '../hooks/useDesignState';
 import { confirmOnLeave, recordStepChoice } from '../lib/design';
 import { screenCount } from '../lib/dimensions';
+import { FIRST_FLOOR_PREVIEW } from '../lib/customerCopy';
 import { formatDateTime } from '../lib/format';
 import { FloorPreview } from '../design/FloorPreview';
 import { AfterEntranceStep, DancingStep, DetailsStep, HoldingScreenStep } from '../design/FloorSteps';
@@ -163,7 +164,7 @@ export function DesignTab({ booking }: { booking: Booking }) {
 
       {step.id === 'details' && (
         <p className="preview-lead">
-          Below is a preview of your floor right now, but nothing has been set. Click Next to make it better.
+          {FIRST_FLOOR_PREVIEW}
         </p>
       )}
       {step.preview === 'floor' && (

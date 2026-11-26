@@ -5,8 +5,8 @@ import { TokenAuthProvider } from './services/portalSession';
 import { MyBookingsTab } from './tabs/MyBookingsTab';
 import { NotesTab } from './tabs/NotesTab';
 import { DesignTab } from './tabs/DesignTab';
-import { Accent } from './design/common';
 import { fromRoot } from './config';
+import { DEMO_STORAGE_NOTE, HERO_PORTAL_LINE } from './lib/customerCopy';
 import { formatEventDate } from './lib/format';
 import type { Booking, Customer } from './types';
 
@@ -66,9 +66,7 @@ export function App() {
 
       {booking && (
         <section className="hero">
-          <h1>
-            Your event <Accent>portal</Accent>
-          </h1>
+          <h1>{HERO_PORTAL_LINE}</h1>
           <p>
             {booking.coupleNames ? `${booking.coupleNames}. ` : ''}
             {formatEventDate(booking.eventDate) || 'Date not listed yet'}
@@ -113,7 +111,7 @@ export function App() {
       <p className="muted small portal-pending">
         {auth instanceof TokenAuthProvider
           ? 'Your design choices and photos are saved to your Stomp booking. Videos over 5 MB need to be emailed or texted to Stomp Sphere.'
-          : 'Designs and files are saved in this browser only. Where they are stored is pending Jannes\'s decision.'}
+          : DEMO_STORAGE_NOTE}
       </p>
       {auth instanceof MockAuthProvider && <DemoSwitcher auth={auth} current={customer} />}
     </div>

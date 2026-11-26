@@ -79,7 +79,7 @@ const STEPS: StepDef[] = [
       </>
     ),
     intro:
-      "Before the bridal entrance, while guests arrive, the floor can react when people walk across your holding screen. Pick as many as you like and they take turns, then they carry on after the entrance. If you'd rather wait, leave them all unticked and you can choose reactions for after the entrance instead. These are recordings from Stomp's floor, so hover or tap one to see it move.",
+      "Before the bridal entrance, while guests arrive, the floor can react when people walk across your holding screen. Pick as many as you like and they take turns, then they carry on after the entrance. If you'd rather wait, leave them all unticked and you can choose reactions for after the entrance instead. These are recordings from Stomp's floor, so tap one to see it move.",
     preview: 'floor',
     phase: 'holding',
   },
@@ -108,7 +108,7 @@ const STEPS: StepDef[] = [
       </>
     ),
     intro:
-      "You didn't pick any reactions before the entrance, so the floor stays still while guests arrive. After the bridal entrance, it can react when people walk across it until the dancing starts. Pick as many as you like and they take turns. If you'd rather not have any reactions at all, leave them unticked. These are recordings from Stomp's floor, so hover or tap one to see it move.",
+      "You didn't pick any reactions before the entrance, so the floor stays still while guests arrive. After the bridal entrance, it can react when people walk across it until the dancing starts. Pick as many as you like and they take turns. If you'd rather not have any reactions at all, leave them unticked. These are recordings from Stomp's floor, so tap one to see it move.",
     preview: 'floor',
     phase: 'after',
   },

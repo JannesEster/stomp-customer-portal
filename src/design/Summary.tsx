@@ -1,7 +1,7 @@
 import { findEffect, findScreenStyle, findStyle, timingLabel } from '../config';
 import { floorPixels, screenCount } from '../lib/dimensions';
 import { mediaFor, mediaKindOf, timingFor } from '../lib/design';
-import { formatAud, formatDateTime, formatEventDate, formatTime } from '../lib/format';
+import { floorReviewLine, formatAud, formatDateTime, formatEventDate, formatTime } from '../lib/format';
 import { liveContentView } from '../lib/liveContent';
 import { formatStyleDate } from '../lib/liveText';
 import { generatedFor, LAYOUT_LABELS, TYPOGRAPHY_LABELS } from '../lib/inviteStyle';
@@ -96,11 +96,7 @@ export function DesignSummary({ booking, design }: { booking: Booking; design: D
             {design.submittedWithoutTimes && !design.dancingStarts && <span className="time-tag">Times not included</span>}
           </li>
           <li>
-            {booking.floor && px
-              ? `Floor ${booking.floor.widthM}m x ${booking.floor.lengthM}m (${px.width} x ${px.height} px)`
-              : booking.floorSqm != null
-                ? `Floor ${booking.floorSqm} sqm. Width and length are not listed yet.`
-                : 'Floor size is not listed yet.'}
+            {floorReviewLine(booking.floor, booking.floorSqm, px)}
           </li>
           <li>
             {booking.screensBooked == null

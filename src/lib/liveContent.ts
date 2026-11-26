@@ -2,9 +2,13 @@ import { extrasConfig, type ExtrasConfig } from '../config';
 import type { Booking } from '../types';
 import { formatAud } from './format';
 
+/** Shown under the live content tick. Nothing is charged in the portal. */
+export const LIVE_CONTENT_PRICE_NOTE =
+  'If adding live content changes your price, Stomp Sphere will confirm with you first. Nothing is charged in the portal.';
+
 /**
- * PENDING Jannes's decision. Ticking live content records a request only.
- * Whether the booking price changes is not decided yet.
+ * Ticking live content records a request only.
+ * Stomp Sphere confirms any price change. The portal does not charge.
  */
 
 export interface LiveContentView {

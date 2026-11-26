@@ -1,5 +1,5 @@
 import { extrasConfig } from '../config';
-import { liveContentView } from '../lib/liveContent';
+import { LIVE_CONTENT_PRICE_NOTE, liveContentView } from '../lib/liveContent';
 import type { UpdateDesign } from '../hooks/useDesignState';
 import type { Booking, DesignState } from '../types';
 
@@ -28,10 +28,7 @@ export function LiveContentSection({
         {view.label}
       </label>
       <p className="muted">{extra?.description}</p>
-      <p className="muted small">
-        Whether adding live content changes your booking price is pending Jannes's decision. Nothing is charged in the
-        portal.
-      </p>
+      <p className="muted small">{LIVE_CONTENT_PRICE_NOTE}</p>
       {!view.included && view.checked && (
         <p className="note">
           Thanks, we've noted your request. Stomp will be in touch to confirm. Nothing is charged through the portal.
