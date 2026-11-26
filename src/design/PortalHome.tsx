@@ -1,9 +1,9 @@
-import { hireStepView, portalTaskList } from '../lib/portalHome';
+import { hireForBooking, portalTaskList } from '../lib/portalHome';
 import type { Booking, DesignState } from '../types';
 
-/** First thing on the design page: one hire step, then what this page is for. */
+/** First thing on the design page: the hire step from the server, then what this page is for. */
 export function PortalHome({ booking, design }: { booking: Booking; design: DesignState | null }) {
-  const step = hireStepView(booking);
+  const step = hireForBooking(booking);
   const tasks = design ? portalTaskList(design) : [];
 
   return (
@@ -11,11 +11,13 @@ export function PortalHome({ booking, design }: { booking: Booking; design: Desi
       <span className="eyebrow">Next step</span>
       <h2>{step.title}</h2>
       <p>{step.body}</p>
-      {step.href && step.action ? (
+      {step.actions.length > 0 ? (
         <p className="home-action-row">
-          <a className="home-action" href={step.href} target="_blank" rel="noopener noreferrer">
-            {step.action}
-          </a>
+          {step.actions.map((action) => (
+            <a key={action.href} className="home-action" href={action.href} target="_blank" rel="noopener noreferrer">
+              {action.label}
+            </a>
+          ))}
         </p>
       ) : null}
       {tasks.length > 0 && (

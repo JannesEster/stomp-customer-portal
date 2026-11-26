@@ -40,6 +40,16 @@ export interface AirtableFieldNames {
   videographer: string;
   dj: string;
   otherSuppliers: string;
+  /** Read to derive the hire step. Never written, and never returned raw. */
+  contractStatus: string;
+  bookingFormUrlUsed: string;
+  depositInvoiceLink: string;
+  finalInvoiceLink: string;
+  depositStatus: string;
+  balanceStatus: string;
+  leadBookingFormLink: string;
+  leadTermsAccepted: string;
+  leadBookingFormStatus: string;
 }
 
 export const DEFAULT_FIELD_NAMES: AirtableFieldNames = {
@@ -61,6 +71,15 @@ export const DEFAULT_FIELD_NAMES: AirtableFieldNames = {
   videographer: 'Videographer',
   dj: 'DJ',
   otherSuppliers: 'Other suppliers',
+  contractStatus: 'Contract status',
+  bookingFormUrlUsed: 'Booking form URL used',
+  depositInvoiceLink: 'Deposit invoice link',
+  finalInvoiceLink: 'Final invoice link',
+  depositStatus: 'Deposit status',
+  balanceStatus: 'Balance status',
+  leadBookingFormLink: 'Booking form link',
+  leadTermsAccepted: 'Terms accepted',
+  leadBookingFormStatus: 'Booking form status',
 };
 
 /**
@@ -83,7 +102,19 @@ export const PORTAL_WRITE_FIELDS = [
  * Booking workflow columns. No portal route, including submit, may PATCH these.
  * They stay blocked even if a caller passes them as extra write keys.
  */
-export const PORTAL_NEVER_WRITE_FIELDS = ['Status', 'Booking form status'] as const;
+export const PORTAL_NEVER_WRITE_FIELDS = [
+  'Status',
+  'Booking form status',
+  'Contract status',
+  'Booking form URL used',
+  'Deposit invoice link',
+  'Final invoice link',
+  'Deposit status',
+  'Balance status',
+  'Customer Xero account link',
+  'Terms accepted',
+  'Booking form link',
+] as const;
 
 export type PortalWriteField = (typeof PORTAL_WRITE_FIELDS)[number];
 
@@ -141,22 +172,19 @@ export function pickPortalWriteFields(
   return picked;
 }
 
-/** Never request these. Portal link is a formula and must not be written either. */
+/**
+ * Never request these. Hire terms and invoices are read through named fields and reduced
+ * to a derived step before anything reaches the browser. Customer Xero account link stays unread.
+ */
 export const PRIVATE_OR_UNUSED_FIELDS = [
   'Important notes',
   'Customer Xero account link',
   'Portal link',
   'Fillout submission id',
-  'Booking form URL used',
   'Quoted amount AUD',
   'Deposit %',
   'Deposit amount',
-  'Deposit status',
   'Balance due date',
-  'Balance status',
-  'Contract status',
-  'Deposit invoice link',
-  'Final invoice link',
   'Final invoice',
   'Activity',
   'Busy Dates',
@@ -178,11 +206,25 @@ export function bookingFieldsToFetch(fields: AirtableFieldNames): string[] {
     fields.videographer,
     fields.dj,
     fields.otherSuppliers,
+    fields.contractStatus,
+    fields.bookingFormUrlUsed,
+    fields.depositInvoiceLink,
+    fields.finalInvoiceLink,
+    fields.depositStatus,
+    fields.balanceStatus,
   ]);
 }
 
 export function leadFieldsToFetch(fields: AirtableFieldNames): string[] {
-  return unique([fields.leadName, fields.leadEmail, fields.leadAddOns, fields.leadVenueName]);
+  return unique([
+    fields.leadName,
+    fields.leadEmail,
+    fields.leadAddOns,
+    fields.leadVenueName,
+    fields.leadBookingFormLink,
+    fields.leadTermsAccepted,
+    fields.leadBookingFormStatus,
+  ]);
 }
 
 export function venueFieldsToFetch(fields: AirtableFieldNames): string[] {

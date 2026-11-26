@@ -1,16 +1,7 @@
+import { customerHireActions, hireStepFromFacts, type HireStep } from './hireStep';
 import type { Booking, DesignState } from '../types';
 
-export type HireKind = 'sign' | 'pay' | 'ready' | 'unknown';
-
-export interface HireStepView {
-  kind: HireKind;
-  title: string;
-  body: string;
-  href: string | null;
-  action: string | null;
-}
-
-/** https links only. Usernames, passwords, and other schemes are dropped. */
+/** https links for the seeded demo. Live links are filtered to Fillout and Xero invoice hosts on the server. */
 export function safeCustomerUrl(value: unknown): string | null {
   if (typeof value !== 'string') return null;
   const trimmed = value.trim();
@@ -27,53 +18,26 @@ export function safeCustomerUrl(value: unknown): string | null {
 }
 
 /**
- * One next step for the booking.
- * Sign wins when hire terms are unsigned, then Pay when money is due, then All set.
+ * Seeded demo step. A live /p/<token> booking already carries `hire` from the server.
  * Missing flags stay unknown so the page does not claim the hire is finished.
  */
-export function hireStepView(
-  booking: Pick<Booking, 'termsSigned' | 'signUrl' | 'paymentDue' | 'payUrl'>,
-): HireStepView {
-  if (booking.termsSigned === false) {
-    const href = safeCustomerUrl(booking.signUrl);
-    return {
-      kind: 'sign',
-      title: 'Sign',
-      body: href
-        ? 'Your hire terms are not signed yet.'
-        : 'Your hire terms are not signed yet. Your signing link is not on this page yet. Check your email from Stomp Sphere.',
-      href,
-      action: href ? 'Sign hire terms' : null,
-    };
+export function hireStepView(booking: Pick<Booking, 'termsSigned' | 'signUrl' | 'paymentDue' | 'payUrl'>): HireStep {
+  const signed = booking.termsSigned === true ? true : booking.termsSigned === false ? false : null;
+  const paymentOutstanding = booking.paymentDue === true ? true : booking.paymentDue === false ? false : null;
+  return hireStepFromFacts({
+    signed,
+    signUrl: safeCustomerUrl(booking.signUrl),
+    paymentOutstanding,
+    payUrl: safeCustomerUrl(booking.payUrl),
+  });
+}
+
+/** Prefer the server step. Drop any action that is not a customer Fillout or Xero invoice link. */
+export function hireForBooking(booking: Pick<Booking, 'hire' | 'termsSigned' | 'signUrl' | 'paymentDue' | 'payUrl'>): HireStep {
+  if (booking.hire && Array.isArray(booking.hire.actions)) {
+    return { ...booking.hire, actions: customerHireActions(booking.hire.actions) };
   }
-  if (booking.paymentDue === true) {
-    const href = safeCustomerUrl(booking.payUrl);
-    return {
-      kind: 'pay',
-      title: 'Pay',
-      body: href
-        ? 'A payment is still due.'
-        : 'A payment is still due. Your pay link is not on this page yet. Check your email from Stomp Sphere.',
-      href,
-      action: href ? 'Pay now' : null,
-    };
-  }
-  if (booking.termsSigned === true && booking.paymentDue === false) {
-    return {
-      kind: 'ready',
-      title: 'All set',
-      body: 'Your hire terms are signed and nothing is left to pay.',
-      href: null,
-      action: null,
-    };
-  }
-  return {
-    kind: 'unknown',
-    title: 'Next step',
-    body: 'We cannot see your hire terms or payment on this page yet. Those links stay in your emails from Stomp Sphere.',
-    href: null,
-    action: null,
-  };
+  return hireStepView(booking);
 }
 
 export interface PortalTask {

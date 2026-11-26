@@ -1,4 +1,5 @@
 import type { AirtableFieldNames } from './airtableFields';
+import { deriveHireStep } from './hireStep';
 import { KNOWN_FLOORS } from './knownFloors';
 import type { Booking, Customer } from '../types';
 
@@ -30,6 +31,7 @@ export const PUBLIC_BOOKING_KEYS = [
   'videographer',
   'dj',
   'otherSuppliers',
+  'hire',
 ] as const;
 
 export const PUBLIC_CUSTOMER_KEYS = ['id', 'name', 'email', 'bookingIds'] as const;
@@ -49,6 +51,7 @@ export function mapPortalRecords(
   venue: AirtableRecord | null,
   fields: AirtableFieldNames,
   extras: ExtraCatalogItem[],
+  options?: { leadUnavailable?: boolean },
 ): MappedPortal {
   const leadFields = lead?.fields ?? {};
   const venueFields = venue?.fields ?? {};
@@ -84,6 +87,18 @@ export function mapPortalRecords(
     videographer: supplierText(bookingFields[fields.videographer], SUPPLIER_ROLE_MAX),
     dj: supplierText(bookingFields[fields.dj], SUPPLIER_ROLE_MAX),
     otherSuppliers: supplierText(bookingFields[fields.otherSuppliers], OTHER_SUPPLIERS_MAX),
+    hire: deriveHireStep({
+      leadUnavailable: options?.leadUnavailable === true,
+      contractStatus: bookingFields[fields.contractStatus],
+      bookingFormUrlUsed: bookingFields[fields.bookingFormUrlUsed],
+      depositInvoiceLink: bookingFields[fields.depositInvoiceLink],
+      finalInvoiceLink: bookingFields[fields.finalInvoiceLink],
+      depositStatus: bookingFields[fields.depositStatus],
+      balanceStatus: bookingFields[fields.balanceStatus],
+      termsAccepted: leadFields[fields.leadTermsAccepted],
+      bookingFormLink: leadFields[fields.leadBookingFormLink],
+      bookingFormStatus: leadFields[fields.leadBookingFormStatus],
+    }),
   };
 
   const customer: Customer = {

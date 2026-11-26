@@ -115,6 +115,15 @@ function fieldNamesFromEnv(env: Record<string, string | undefined>): AirtableFie
     videographer: 'VIDEOGRAPHER_FIELD',
     dj: 'DJ_FIELD',
     otherSuppliers: 'OTHER_SUPPLIERS_FIELD',
+    contractStatus: 'CONTRACT_STATUS_FIELD',
+    bookingFormUrlUsed: 'BOOKING_FORM_URL_FIELD',
+    depositInvoiceLink: 'DEPOSIT_INVOICE_LINK_FIELD',
+    finalInvoiceLink: 'FINAL_INVOICE_LINK_FIELD',
+    depositStatus: 'DEPOSIT_STATUS_FIELD',
+    balanceStatus: 'BALANCE_STATUS_FIELD',
+    leadBookingFormLink: 'LEAD_BOOKING_FORM_LINK_FIELD',
+    leadTermsAccepted: 'LEAD_TERMS_ACCEPTED_FIELD',
+    leadBookingFormStatus: 'LEAD_BOOKING_FORM_STATUS_FIELD',
   };
   const fields = {} as AirtableFieldNames;
   for (const [key, fallback] of entries) {

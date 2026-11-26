@@ -1,20 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import { createDefaultDesign } from './design';
-import { hireStepView, portalTaskList, safeCustomerUrl } from './portalHome';
+import { hireForBooking, hireStepView, portalTaskList, safeCustomerUrl } from './portalHome';
 
 const SIGN = 'https://example.com/stomp-hire-terms';
 const PAY = 'https://example.com/stomp-pay';
 
 describe('hire next step', () => {
-  it('shows Sign, with the signing link, when hire terms are unsigned', () => {
-    expect(
-      hireStepView({ termsSigned: false, signUrl: SIGN, paymentDue: true, payUrl: PAY }),
-    ).toEqual({
-      kind: 'sign',
-      title: 'Sign',
-      body: 'Your hire terms are not signed yet.',
-      href: SIGN,
-      action: 'Sign hire terms',
+  it('shows Sign and Pay when hire terms are unsigned and a payment is due', () => {
+    expect(hireStepView({ termsSigned: false, signUrl: SIGN, paymentDue: true, payUrl: PAY })).toEqual({
+      kind: 'both',
+      title: 'Sign and pay',
+      body: 'Your hire terms are not signed yet. A payment is still due.',
+      actions: [
+        { label: 'Sign hire terms', href: SIGN },
+        { label: 'Pay now', href: PAY },
+      ],
     });
   });
 
@@ -22,8 +22,7 @@ describe('hire next step', () => {
     expect(hireStepView({ termsSigned: true, paymentDue: true, payUrl: `  ${PAY}  ` })).toMatchObject({
       kind: 'pay',
       title: 'Pay',
-      href: PAY,
-      action: 'Pay now',
+      actions: [{ label: 'Pay now', href: PAY }],
     });
   });
 
@@ -31,7 +30,7 @@ describe('hire next step', () => {
     const step = hireStepView({ termsSigned: true, paymentDue: false, signUrl: SIGN, payUrl: PAY });
     expect(step.kind).toBe('ready');
     expect(step.title).toBe('All set');
-    expect(step.href).toBeNull();
+    expect(step.actions).toEqual([]);
     expect(step.body).not.toMatch(/[—–]| - /);
   });
 
@@ -45,11 +44,10 @@ describe('hire next step', () => {
     expect(safeCustomerUrl('http://example.com/pay')).toBeNull();
     expect(safeCustomerUrl('javascript:alert(1)')).toBeNull();
     expect(safeCustomerUrl('https://user:secret@example.com/pay')).toBeNull();
-    const step = hireStepView({ termsSigned: false, signUrl: 'http://example.com/sign' });
+    const step = hireStepView({ termsSigned: false, paymentDue: false, signUrl: 'http://example.com/sign' });
     expect(step.kind).toBe('sign');
-    expect(step.href).toBeNull();
-    expect(step.action).toBeNull();
-    expect(step.body).toContain('signing link is not on this page');
+    expect(step.actions).toEqual([]);
+    expect(step.body).toContain('signing link is in the email from Stomp Sphere');
   });
 
   it('keeps the hire copy free of dash punctuation', () => {
@@ -59,8 +57,28 @@ describe('hire next step', () => {
       hireStepView({ termsSigned: true, paymentDue: false }),
       hireStepView({}),
     ]) {
-      expect(`${step.title} ${step.body} ${step.action ?? ''}`).not.toMatch(/[—–]| - /);
+      expect(`${step.title} ${step.body} ${step.actions.map((action) => action.label).join(' ')}`).not.toMatch(
+        /[—–]| - /,
+      );
     }
+  });
+});
+
+describe('server hire step on the client', () => {
+  it('drops a staff go.xero.com link and keeps a customer invoice link', () => {
+    const step = hireForBooking({
+      hire: {
+        kind: 'pay',
+        title: 'Pay',
+        body: 'A payment is still due.',
+        actions: [
+          { label: 'Pay now', href: 'https://go.xero.com/AccountsReceivable/View.aspx?InvoiceID=staff' },
+          { label: 'Pay now', href: 'https://in.xero.com/invoice/final' },
+        ],
+      },
+    });
+    expect(step.actions).toEqual([{ label: 'Pay now', href: 'https://in.xero.com/invoice/final' }]);
+    expect(JSON.stringify(step)).not.toContain('go.xero.com');
   });
 });
 

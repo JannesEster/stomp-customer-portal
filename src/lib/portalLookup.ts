@@ -55,14 +55,23 @@ export async function lookupBookingByToken(
   const booking = matches[0];
   const leadId = firstRecordId(booking.fields[opts.fields.leadLink]);
   const venueId = firstRecordId(booking.fields[opts.fields.venueLink]);
-  const [lead, venue] = await Promise.all([
-    leadId ? opts.gateway.getLead(leadId) : Promise.resolve(null),
-    venueId ? opts.gateway.getVenue(venueId) : Promise.resolve(null),
-  ]);
+  const venuePromise = venueId ? opts.gateway.getVenue(venueId) : Promise.resolve(null);
+  let lead: AirtableRecord | null = null;
+  let leadUnavailable = false;
+  if (leadId) {
+    try {
+      lead = await opts.gateway.getLead(leadId);
+      if (!lead) leadUnavailable = true;
+    } catch {
+      lead = null;
+      leadUnavailable = true;
+    }
+  }
+  const venue = await venuePromise;
 
   return {
     ok: true,
-    portal: mapPortalRecords(booking, lead, venue, opts.fields, opts.extras),
+    portal: mapPortalRecords(booking, lead, venue, opts.fields, opts.extras, { leadUnavailable }),
     portalUrl: buildPortalUrl(opts.publicBaseUrl, cleanToken),
     saved: {
       savedAnswers: parseSavedAnswers(booking.fields[PORTAL_ANSWERS_FIELD]),

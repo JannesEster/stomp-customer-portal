@@ -224,6 +224,9 @@ p {
 }
 
 .home-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
   margin-top: 0.9rem !important;
 }
 
@@ -392,6 +395,9 @@ h2[tabindex='-1']:focus {
 }
 
 @media (max-width: 599px) {
+  :root {
+    --header-h: 52px;
+  }
   .signed-in {
     display: none;
   }
@@ -400,27 +406,32 @@ h2[tabindex='-1']:focus {
     line-height: 1.2;
   }
   .hero {
-    padding: 0.85rem 0 0.45rem;
+    padding: 0.45rem 0 0.25rem;
   }
   .hero h1 {
-    font-size: 1.7rem;
+    font-size: 1.5rem;
   }
   .hero p {
-    margin-top: 0.4rem;
+    margin-top: 0.3rem;
+    font-size: 0.9rem;
+    line-height: 1.35;
   }
   .tabs {
-    margin-bottom: 0.75rem;
-    padding-top: 0.35rem;
-    padding-bottom: 0.35rem;
+    margin-bottom: 0.55rem;
+    padding-top: 0.3rem;
+    padding-bottom: 0.3rem;
   }
   .home-card {
-    padding: 0.9rem 1rem 0.7rem;
+    padding: 0.75rem 0.9rem 0.55rem;
   }
   .home-card h2 {
-    font-size: 1.55rem;
+    font-size: 1.45rem;
   }
   .home-card h3 {
-    margin-top: 0.75rem;
+    margin-top: 0.55rem;
+  }
+  .home-tasks li {
+    margin: 0.12rem 0;
   }
   .tabs {
     justify-content: flex-start;
@@ -858,6 +869,7 @@ legend {
 
 .design {
   scroll-margin-top: calc(var(--header-h) + 5.25rem);
+  padding-bottom: calc(7.5rem + env(safe-area-inset-bottom, 0px));
 }
 
 .steps {

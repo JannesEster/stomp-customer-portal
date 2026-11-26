@@ -52,6 +52,12 @@ describe('Airtable client', () => {
     expect(fields).not.toContain('Portal suppliers');
     expect(fields).not.toContain('Important notes');
     expect(fields).not.toContain('Customer Xero account link');
+    expect(fields).not.toContain('Status');
+    expect(fields).toContain('Contract status');
+    expect(fields).toContain('Deposit status');
+    expect(fields).toContain('Balance status');
+    expect(fields).toContain('Deposit invoice link');
+    expect(fields).toContain('Final invoice link');
     expect(fields).not.toContain('Portal link');
     expect(calls[0].auth).toBe('Bearer pat_fake_not_real');
   });
@@ -102,7 +108,15 @@ describe('Airtable client', () => {
     expect(lead.pathname).not.toContain('recFAKELEAD000001');
     expect(lead.searchParams.get('filterByFormula')).toBe("RECORD_ID()='recFAKELEAD000001'");
     expect(lead.searchParams.get('maxRecords')).toBe('1');
-    expect(lead.searchParams.getAll('fields[]')).toEqual(['Name', 'Email', 'Add-ons', 'Venue name']);
+    expect(lead.searchParams.getAll('fields[]')).toEqual([
+      'Name',
+      'Email',
+      'Add-ons',
+      'Venue name',
+      'Booking form link',
+      'Terms accepted',
+      'Booking form status',
+    ]);
     expect(lead.searchParams.getAll('fields[]')).not.toContain('Phone');
     expect(lead.search).not.toContain('Important notes');
     expect(lead.search).not.toContain('Xero');
@@ -282,8 +296,9 @@ describe('Airtable client', () => {
     expect(PORTAL_WRITE_FIELDS).not.toContain('Other suppliers');
     for (const name of PORTAL_NEVER_WRITE_FIELDS) {
       expect(PORTAL_WRITE_FIELDS).not.toContain(name);
-      expect(bookingFieldsToFetch(DEFAULT_FIELD_NAMES)).not.toContain(name);
     }
+    expect(bookingFieldsToFetch(DEFAULT_FIELD_NAMES)).not.toContain('Customer Xero account link');
+    expect(bookingFieldsToFetch(DEFAULT_FIELD_NAMES)).not.toContain('Status');
     expect(
       pickPortalWriteFields({
         'Portal suppliers': 'Wedding planner: Ada Planner',
@@ -298,23 +313,48 @@ describe('Airtable client', () => {
     ).toEqual({ 'Portal suppliers': 'Wedding planner: Ada Planner' });
   });
 
-  it('never writes Status or Booking form status, even when a route passes them as extra keys', () => {
-    expect(PORTAL_NEVER_WRITE_FIELDS).toEqual(['Status', 'Booking form status']);
+  it('never writes Status, Booking form status, or hire and invoice fields, even as extra keys', () => {
+    expect(PORTAL_NEVER_WRITE_FIELDS).toEqual([
+      'Status',
+      'Booking form status',
+      'Contract status',
+      'Booking form URL used',
+      'Deposit invoice link',
+      'Final invoice link',
+      'Deposit status',
+      'Balance status',
+      'Customer Xero account link',
+      'Terms accepted',
+      'Booking form link',
+    ]);
     const smuggled = pickPortalWriteFields(
       {
         Status: 'Booked',
         'Booking form status': 'Submitted',
+        'Contract status': 'Signed',
+        'Deposit status': 'Paid',
+        'Balance status': 'Requested',
+        'Deposit invoice link': 'https://go.xero.com/staff',
+        'Final invoice link': 'https://in.xero.com/invoice/final',
+        'Customer Xero account link': 'https://go.xero.com/app',
+        'Booking form URL used': 'https://forms.fillout.com/t/form',
+        'Terms accepted': true,
+        'Booking form link': 'https://forms.fillout.com/t/form',
         'Portal last saved': '2026-01-01T00:00:00.000Z',
         'Portal answers': '{}',
       },
-      ['Status', 'Booking form status', 'fldStatusFake000000'],
+      ['Status', 'Booking form status', 'Contract status', 'Customer Xero account link', 'fldStatusFake000000'],
     );
     expect(smuggled).toEqual({
       'Portal last saved': '2026-01-01T00:00:00.000Z',
       'Portal answers': '{}',
     });
-    expect(JSON.stringify(smuggled)).not.toContain('Booked');
-    expect(JSON.stringify(smuggled)).not.toContain('Submitted');
+    const json = JSON.stringify(smuggled);
+    expect(json).not.toContain('Booked');
+    expect(json).not.toContain('Submitted');
+    expect(json).not.toContain('go.xero.com');
+    expect(json).not.toContain('in.xero.com');
+    expect(json).not.toContain('forms.fillout.com');
   });
 
   it('uploads a floor preview PNG to the attachment endpoint and logs a forbidden write without the body', async () => {
