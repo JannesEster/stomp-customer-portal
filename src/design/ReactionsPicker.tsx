@@ -40,6 +40,11 @@ export function ReactionsPicker({
 
   return (
     <div className="reactions">
+      <p className="done-line">
+        {picked.length
+          ? `${picked.length} ticked. These are kept as you go.`
+          : 'Tick the effects you want. None is fine, and you can change them any time.'}
+      </p>
       <h4>Fantasy reactions, our most popular</h4>
       <div className="effect-grid">{POPULAR.map(card)}</div>
       <button
@@ -95,6 +100,7 @@ function EffectCard({
         )}
       </span>
       <span className="style-name">{effect.name}</span>
+      {checked && <span className="style-tag">Ticked</span>}
       <span className="effect-desc">{effect.description}</span>
       {effect.fillsFloor && <span className="style-tag">Fills the whole floor</span>}
     </label>

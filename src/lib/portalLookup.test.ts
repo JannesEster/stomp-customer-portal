@@ -102,6 +102,81 @@ describe('token lookup', () => {
     expect(source.leads).toEqual([]);
   });
 
+  it('accepts a token when SMS added a trailing full stop', async () => {
+    const source = gateway();
+    const result = await lookup(`${TOKEN}.`, source);
+    expect(result.ok).toBe(true);
+    expect(source.formulas).toEqual([portalTokenFormula(TOKEN, 'Portal token')]);
+  });
+
+  it('returns a derived hire step and leaves staff Xero links off the payload', async () => {
+    const source = gateway({
+      async findBookingsByFormula() {
+        return [
+          booking({
+            'Contract status': '',
+            'Booking form URL used': 'https://go.xero.com/staff-form',
+            'Deposit invoice link': 'https://go.xero.com/AccountsReceivable/View.aspx?InvoiceID=staff',
+            'Final invoice link': 'https://in.xero.com/invoice/final',
+            'Deposit status': 'Requested',
+            'Balance status': 'Not due',
+            'Customer Xero account link': 'https://go.xero.com/app/!staff',
+          }),
+        ];
+      },
+      async getLead(id: string) {
+        return {
+          id,
+          fields: {
+            Name: 'Fake Customer',
+            Email: 'fake.customer@example.com',
+            'Booking form link': 'https://forms.fillout.com/t/hire',
+            'Terms accepted': false,
+            'Booking form status': 'In progress',
+          },
+        };
+      },
+    });
+    const result = await lookup(TOKEN, source);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.portal.booking.hire).toMatchObject({
+      kind: 'both',
+      actions: [
+        { label: 'Sign hire terms', href: 'https://forms.fillout.com/t/hire' },
+        { label: 'Pay now', href: 'https://in.xero.com/invoice/final' },
+      ],
+    });
+    const json = JSON.stringify(result);
+    expect(json).not.toContain('go.xero.com');
+    expect(json).not.toContain('Customer Xero account link');
+    expect(json).not.toContain('Deposit invoice link');
+    expect(json).not.toContain('Contract status');
+  });
+
+  it('uses the neutral hire step when the lead cannot be read', async () => {
+    const source = gateway({
+      async findBookingsByFormula() {
+        return [
+          booking({
+            'Contract status': 'Signed',
+            'Deposit status': 'Paid',
+            'Deposit invoice link': 'https://go.xero.com/staff-only',
+          }),
+        ];
+      },
+      async getLead() {
+        throw new Error('Airtable request failed (503)');
+      },
+    });
+    const result = await lookup(TOKEN, source);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.portal.booking.hire?.kind).toBe('unknown');
+    expect(result.portal.booking.coupleNames).toBe('Fake celebration');
+    expect(JSON.stringify(result)).not.toContain('go.xero.com');
+  });
+
   it('rejects a malformed token before asking Airtable', async () => {
     const source = gateway();
     const hostile = "xxxxxxxxxxxxxxxxxxxxxx' OR NOT({Portal token}='')";

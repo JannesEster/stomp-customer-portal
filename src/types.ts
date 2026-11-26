@@ -1,3 +1,5 @@
+import type { HireStep } from './lib/hireStep';
+
 export type Phase = 'holding' | 'after' | 'dancing';
 export type Timing = 'start' | 'middle' | 'end';
 export type MediaKind = 'image' | 'video';
@@ -40,6 +42,18 @@ export interface Booking {
   videographer?: string;
   dj?: string;
   otherSuppliers?: string;
+  /**
+   * Hire terms on seeded demos. Live links use `hire` instead, and do not send these.
+   */
+  termsSigned?: boolean | null;
+  /** Seed signing page. Live links send `hire.actions` after the host check. */
+  signUrl?: string | null;
+  /** Seed flag. Live links use `hire`. */
+  paymentDue?: boolean | null;
+  /** Seed pay page. Live links send `hire.actions` after the host check. */
+  payUrl?: string | null;
+  /** Derived on the server for a /p/<token> link. Raw invoice fields are not included. */
+  hire?: HireStep | null;
 }
 
 /** People helping on the day. The couple types these, and they map to the booking fields of the same names. */

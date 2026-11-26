@@ -8,6 +8,7 @@ import {
   isValidPortalToken,
   portalTokenFormula,
   readPortalToken,
+  unwrapPortalToken,
 } from './portalToken';
 
 const TOKEN = 'A'.repeat(43);
@@ -49,6 +50,16 @@ describe('portal tokens', () => {
     expect(readPortalToken('/p/abc')).toBe('abc');
     expect(readPortalToken('/stomp-customer-portal/p/abc/')).toBe('abc');
     expect(readPortalToken('/p/abc/extra')).toBeNull();
+  });
+
+  it('strips trailing punctuation and invisible characters that SMS and mail apps add', () => {
+    expect(readPortalToken(`/p/${TOKEN}.`)).toBe(TOKEN);
+    expect(readPortalToken(`/p/${TOKEN})`)).toBe(TOKEN);
+    expect(readPortalToken(`/p/${encodeURIComponent(`${TOKEN}.`)}`)).toBe(TOKEN);
+    expect(unwrapPortalToken(`${TOKEN}\u200b`)).toBe(TOKEN);
+    expect(unwrapPortalToken(`${TOKEN}%2E`)).toBe(TOKEN);
+    const hostile = "xxxxxxxxxxxxxxxxxxxxxx' OR NOT({Portal token}='')";
+    expect(isValidPortalToken(unwrapPortalToken(hostile))).toBe(false);
   });
 
   it('generates 256 bit URL-safe tokens', () => {

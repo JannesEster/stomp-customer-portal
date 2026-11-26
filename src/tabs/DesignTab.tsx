@@ -10,6 +10,7 @@ import { ReactionsPicker } from '../design/ReactionsPicker';
 import { ScreenDesignStep, ScreenPartStep } from '../design/ScreenSteps';
 import { ScreensPreview } from '../design/ScreensPreview';
 import { LiveContentSection } from '../design/LiveContentSection';
+import { PortalHome } from '../design/PortalHome';
 import { DesignSummary, SummaryDialog } from '../design/Summary';
 import { StepIndicator } from '../design/StepIndicator';
 import { stepsFor, type StepDef, type StepId } from '../design/steps';
@@ -34,7 +35,8 @@ function timeReminder(stepId: StepId, design: DesignState): string | null {
   if (stepId === 'review') {
     return design.submittedWithoutTimes ? 'Submitted without times.' : "You haven't selected times.";
   }
-  return "You haven't specified a time for this.";
+  if (stepId === 'floor-after' || stepId === 'floor-dancing') return "You haven't specified a time for this.";
+  return null;
 }
 
 export function DesignTab({ booking }: { booking: Booking }) {
@@ -79,7 +81,14 @@ export function DesignTab({ booking }: { booking: Booking }) {
     heading.current?.focus({ preventScroll: true });
   }, [stepId]);
 
-  if (!design) return <p className="muted">Loading your design…</p>;
+  if (!design) {
+    return (
+      <>
+        <PortalHome booking={booking} design={null} />
+        <p className="muted">Loading your design…</p>
+      </>
+    );
+  }
 
   const found = steps.findIndex((s) => s.id === stepId);
   const index = found === -1 ? steps.findIndex((s) => s.id === 'floor-dancing') : found;
@@ -104,11 +113,12 @@ export function DesignTab({ booking }: { booking: Booking }) {
 
   return (
     <div className="design" ref={top}>
+      <PortalHome booking={booking} design={design} />
       <StepIndicator steps={steps} current={step.id} onSelect={goTo} />
 
       {submitted && design.submittedAt ? (
         <div className={design.submittedWithoutTimes ? 'banner times-missing' : 'banner success'}>
-          Submitted to Stomp on {formatDateTime(design.submittedAt)}.
+          Sent to Stomp Sphere on {formatDateTime(design.submittedAt)}. We will use this for your floor and screens.
           {design.submittedWithoutTimes && <TimesTag />} Any changes go back to draft until you submit again.
         </div>
       ) : design.submittedAt ? (

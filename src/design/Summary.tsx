@@ -35,12 +35,19 @@ export function SummaryDialog({
           Your design <Accent>summary</Accent>
         </h2>
         {design.status === 'submitted' && design.submittedAt ? (
-          <p className="note">
-            Submitted to Stomp on {formatDateTime(design.submittedAt)}.
-            {design.submittedWithoutTimes && <span className="time-tag">Times not included</span>}
-          </p>
+          <>
+            <p className="note">
+              Sent to Stomp Sphere on {formatDateTime(design.submittedAt)}.
+              {design.submittedWithoutTimes && <span className="time-tag">Times not included</span>}
+            </p>
+            <h3>What happens next</h3>
+            <p>
+              Stomp Sphere will set your floor and screens from this design. You can still change it here, then submit
+              again.
+            </p>
+          </>
         ) : (
-          <p className="note">This is still a draft. Stomp hasn't received it yet.</p>
+          <p className="note">This is still a draft. Stomp Sphere has not received it yet.</p>
         )}
 
         <DesignSummary booking={booking} design={design} />

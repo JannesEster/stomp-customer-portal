@@ -43,6 +43,9 @@ export function StylePicker({ design, update, phase, eventDate }: PartProps & { 
   return (
     <fieldset>
       <legend>Style</legend>
+      <p className="done-line">
+        {h.styleId ? 'Chosen. You can change it any time.' : 'Pick a style. Your choice is kept as you go.'}
+      </p>
       <div className="style-grid" role="radiogroup" aria-label="Style">
         {design.inviteStyle && (
           <button
