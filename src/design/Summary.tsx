@@ -57,7 +57,7 @@ export function SummaryDialog({
           {live.included
             ? 'Live event streaming is included in your booking.'
             : live.checked
-              ? `You've asked to add live event streaming (${formatAud(live.priceAud)} extra). Stomp will confirm with you.`
+              ? `You've asked to add live event streaming (${formatAud(live.priceAud)} extra). Stomp Sphere will confirm with you.`
               : 'Not added.'}
         </p>
 

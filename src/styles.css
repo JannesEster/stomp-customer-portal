@@ -279,6 +279,28 @@ a.home-action {
   margin: 0.35rem 0 0.75rem;
 }
 
+.contact-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  margin: 0.8rem 0 0;
+}
+
+.contact-row a {
+  color: var(--white);
+}
+
+.countdown {
+  margin: 0.6rem 0 0;
+  font-weight: 600;
+}
+
+a.home-action.secondary,
+button.home-action.secondary {
+  background: transparent;
+  color: var(--white);
+}
+
 .task-todo {
   color: var(--muted);
 }

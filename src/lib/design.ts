@@ -58,6 +58,7 @@ export function createDefaultDesign(
     inviteStyle: null,
     afterInviteStyle: null,
     stylingNote: '',
+    notes: '',
     liveContentRequested: false,
     confirmedSteps: [],
   };
@@ -84,6 +85,7 @@ export function usableDesign(
   merged.reactions = merged.reactions.filter(offered);
   merged.afterReactions = merged.afterReactions.filter(offered);
   merged.dancingNote = merged.dancingNote ?? '';
+  merged.notes = typeof merged.notes === 'string' ? merged.notes : '';
   merged.screens = {
     styleId: merged.screens?.styleId ?? null,
     note: merged.screens?.note ?? '',

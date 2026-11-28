@@ -4,6 +4,7 @@ import { useDesignState, type UpdateDesign } from '../hooks/useDesignState';
 import { confirmOnLeave, recordStepChoice } from '../lib/design';
 import { screenCount } from '../lib/dimensions';
 import { FIRST_FLOOR_PREVIEW } from '../lib/customerCopy';
+import { hireForBooking } from '../lib/portalHome';
 import { formatDateTime } from '../lib/format';
 import { FloorPreview } from '../design/FloorPreview';
 import { AfterEntranceStep, DancingStep, DetailsStep, HoldingScreenStep } from '../design/FloorSteps';
@@ -82,13 +83,26 @@ export function DesignTab({ booking }: { booking: Booking }) {
     heading.current?.focus({ preventScroll: true });
   }, [stepId]);
 
+  const openStep = (id: 'floor-design' | 'review') => {
+    const target = steps.find((item) => item.id === id);
+    if (!target) return;
+    moved.current = true;
+    setStepId(target.id);
+    setPreviewPhase(target.phase);
+    window.location.hash = 'design';
+  };
+
   if (!design) {
     return (
       <>
-        <PortalHome booking={booking} design={null} />
+        <PortalHome booking={booking} design={null} onOpenStep={openStep} />
         <p className="muted">Loading your design…</p>
       </>
     );
+  }
+
+  if (hireForBooking(booking, design.status === 'submitted').kind === 'lost') {
+    return <PortalHome booking={booking} design={design} />;
   }
 
   const found = steps.findIndex((s) => s.id === stepId);
@@ -114,7 +128,7 @@ export function DesignTab({ booking }: { booking: Booking }) {
 
   return (
     <div className="design" ref={top}>
-      <PortalHome booking={booking} design={design} />
+      <PortalHome booking={booking} design={design} onOpenStep={openStep} />
       <StepIndicator steps={steps} current={step.id} onSelect={goTo} />
 
       {submitted && design.submittedAt ? (
@@ -125,14 +139,14 @@ export function DesignTab({ booking }: { booking: Booking }) {
       ) : design.submittedAt ? (
         <div className="banner">
           You've made changes since you submitted.
-          {design.submittedWithoutTimes && <TimesTag />} Submit again so Stomp has the latest.
+          {design.submittedWithoutTimes && <TimesTag />} Submit again so Stomp Sphere has the latest.
         </div>
       ) : null}
 
       {booking.screensBooked == null && (
         <div className="banner">
           Portrait screens are not listed on your booking yet, so the screen steps are hidden. If you have screens, get
-          in touch with Stomp.
+          in touch with Stomp Sphere.
         </div>
       )}
 
@@ -219,7 +233,7 @@ export function DesignTab({ booking }: { booking: Booking }) {
                 setShowSummary(true);
               }}
             >
-              {submitted ? 'Submitted' : 'Submit design to Stomp'}
+              {submitted ? 'Submitted' : 'Submit design to Stomp Sphere'}
               {!submitted && <ArrowIcon />}
             </button>
           )}

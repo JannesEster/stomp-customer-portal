@@ -43,10 +43,8 @@ export function MyBookingsTab({ booking }: { booking: Booking }) {
               {formatMetres(booking.floor.widthM)} x {formatMetres(booking.floor.lengthM)} ({px.tilesX} x {px.tilesY}{' '}
               tiles)
             </>
-          ) : booking.floorSqm != null ? (
-            <>{booking.floorSqm} sqm. Width and length are not listed yet.</>
           ) : (
-            <>Not listed yet.</>
+            <>Width and length are not listed yet.</>
           )}
         </dd>
         <dt>Portrait screens</dt>
@@ -55,7 +53,7 @@ export function MyBookingsTab({ booking }: { booking: Booking }) {
         <dd>{extras.length ? extras.join(', ') : 'None'}</dd>
       </dl>
       <p className="muted small">
-        Need to change your floor size or screens? Get in touch with Stomp and we'll update your booking.
+        Need to change your floor size or screens? Get in touch with Stomp Sphere and we will update your booking.
       </p>
       {design ? <SupplierFields design={design} update={update} /> : <p className="muted small">Loading the people on the day…</p>}
     </section>

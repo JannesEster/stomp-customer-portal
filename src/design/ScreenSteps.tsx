@@ -92,8 +92,8 @@ export function ScreenPartStep({
       id: 'design',
       label: 'Your screen design',
       hint: style
-        ? `${style.name}, finished by Stomp with your names and date.`
-        : 'The design you pick for your screens, finished by Stomp with your names and date.',
+        ? `${style.name}, finished by Stomp Sphere with your names and date.`
+        : 'The design you pick for your screens, finished by Stomp Sphere with your names and date.',
       recommended: phase === 'holding',
     },
     { id: 'photos', label: 'Your photos and videos', hint: 'Your own photos and videos take turns on the screens.' },

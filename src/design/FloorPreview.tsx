@@ -125,10 +125,8 @@ export function FloorPreview({
       }
       intro={
         booking.floor
-          ? "This is your dance floor at its exact size. The reactions are recordings from Stomp's floor, with someone walking across it."
-          : booking.floorSqm != null
-            ? `This booking lists ${booking.floorSqm} sqm. That is not a floor size the portal can draw yet, so this is a ${SAMPLE_FLOOR.widthM}m x ${SAMPLE_FLOOR.lengthM}m sample. It is not your floor.`
-            : `Your floor size is not on this booking yet, so this is a ${SAMPLE_FLOOR.widthM}m x ${SAMPLE_FLOOR.lengthM}m sample. It is not your floor.`
+          ? "This is your dance floor at its exact size. The reactions are recordings from Stomp Sphere's floor, with someone walking across it."
+          : `Width and length are not on this booking yet, so this is a ${SAMPLE_FLOOR.widthM}m x ${SAMPLE_FLOOR.lengthM}m sample. It is not your floor.`
       }
     >
       <div className="toolbar">
@@ -209,12 +207,12 @@ export function FloorPreview({
         <p className="muted small center">
           Made from your invite{generated.noteCues.length ? ' and styling note' : ''}, with the date from your
           booking.{generated.inverted ? ' Your invite is light, so it is flipped to a dark floor with light lettering.' : ''}{' '}
-          Stomp will refine the finished version.
+          Stomp Sphere will refine the finished version.
         </p>
       ) : style ? (
         <p className="muted small center">
-          Your names on the {style.name} style{style.live.date ? ', with the date from your booking' : ''}. Stomp will
-          make the finished version{style.usesPhoto ? ' with your photo' : ''}.
+          Your names on the {style.name} style{style.live.date ? ', with the date from your booking' : ''}. Stomp Sphere
+          will make the finished version{style.usesPhoto ? ' with your photo' : ''}.
         </p>
       ) : plainNames ? (
         <p className="muted small center">Your names on a plain floor for now. Once you pick a style, it shows here.</p>
@@ -225,8 +223,8 @@ export function FloorPreview({
       ) : dancingNote ? (
         <p className="muted small center">
           {(design.dancingNote ?? '').trim()
-            ? 'Stomp will follow your note for a different design while people dance.'
-            : 'Describe what you have in mind, and Stomp will follow that for dancing time.'}
+            ? 'Stomp Sphere will follow your note for a different design while people dance.'
+            : 'Describe what you have in mind, and Stomp Sphere will follow that for dancing time.'}
         </p>
       ) : null}
       {reaction && (

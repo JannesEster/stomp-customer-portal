@@ -3,9 +3,9 @@ import {
   DEPOSIT_PAID_CHOICE,
   deriveHireStep,
   hireStepFromFacts,
-  LOST_HIRE_NOTE,
   type HireSources,
   httpsOnHost,
+  withDesignProgress,
 } from './hireStep';
 
 const FILLOUT = 'https://forms.fillout.com/t/hire-terms';
@@ -72,8 +72,10 @@ describe('hire step rules', () => {
       }),
     );
     expect(step.kind).toBe('pay');
+    expect(step.title).toBe('Pay the balance');
     expect(step.signedNote).toBe('Hire terms signed');
-    expect(step.actions).toEqual([{ label: 'Pay now', href: FINAL }]);
+    expect(step.actions).toEqual([{ label: 'Pay the balance', href: FINAL }]);
+    expect(step.next).toBe('After you pay, come back to this page.');
     expect(step.actions.map((action) => action.label)).not.toContain('Sign hire terms');
     expect(`${step.signedNote} ${step.body}`).not.toMatch(/[—–]/);
   });
@@ -136,8 +138,8 @@ describe('hire step rules', () => {
       }),
     );
     expect(step.kind).toBe('lost');
-    expect(step.title).not.toBe('All set');
-    expect(step.body).toBe(LOST_HIRE_NOTE);
+    expect(step.title).toBe('Please get in touch');
+    expect(step.body).toBe('We need to talk about this booking before you plan the floor.');
     expect(step.actions).toEqual([]);
     expect(step.signedNote).toBeNull();
     expect(JSON.stringify(step)).not.toContain('forms.fillout.com');
@@ -201,11 +203,12 @@ describe('hire step rules', () => {
       }),
     );
     expect(step.kind).toBe('both');
-    expect(step.title).toBe('Sign and pay');
+    expect(step.title).toBe('Sign');
     expect(step.actions).toEqual([
       { label: 'Sign hire terms', href: FILLOUT },
-      { label: 'Pay now', href: DEPOSIT },
+      { label: 'Pay your deposit', href: DEPOSIT },
     ]);
+    expect(step.next).toBe('After you sign or pay, come back to this page.');
     expect(step.body).not.toMatch(/[—–]| - /);
   });
 
@@ -219,13 +222,13 @@ describe('hire step rules', () => {
       }),
     );
     expect(unpaid.kind).toBe('pay');
-    expect(unpaid.actions).toEqual([{ label: 'Pay now', href: FINAL }]);
+    expect(unpaid.actions).toEqual([{ label: 'Pay your deposit', href: FINAL }]);
     expect(JSON.stringify(unpaid)).not.toContain('go.xero.com');
 
     const onlyFinal = deriveHireStep(
       source({ termsAccepted: true, depositInvoiceLink: null, finalInvoiceLink: FINAL }),
     );
-    expect(onlyFinal.actions).toEqual([{ label: 'Pay now', href: FINAL }]);
+    expect(onlyFinal.actions).toEqual([{ label: 'Pay your deposit', href: FINAL }]);
 
     const balance = deriveHireStep(
       source({
@@ -236,7 +239,7 @@ describe('hire step rules', () => {
         finalInvoiceLink: FINAL,
       }),
     );
-    expect(balance.actions).toEqual([{ label: 'Pay now', href: FINAL }]);
+    expect(balance.actions).toEqual([{ label: 'Pay the balance', href: FINAL }]);
     expect(JSON.stringify(balance)).not.toContain(DEPOSIT);
   });
 
@@ -255,7 +258,8 @@ describe('hire step rules', () => {
     );
     expect(step.kind).toBe('pay');
     expect(step.actions).toEqual([]);
-    expect(step.body).toBe('A payment is still due. Your payment link is in the email from Stomp Sphere.');
+    expect(step.body).toBe('Pay the balance. Your payment link is in the email from Stomp Sphere.');
+    expect(step.signedNote).toBe('Hire terms signed');
     const json = JSON.stringify(step);
     expect(json).not.toContain('go.xero.com');
     expect(json).not.toContain('in.xero.com');
@@ -264,7 +268,13 @@ describe('hire step rules', () => {
 
   it('is All set only when signed, the deposit is Paid, and no balance is Requested', () => {
     const ready = deriveHireStep(source({ termsAccepted: true, depositStatus: 'Paid', balanceStatus: 'Not due' }));
-    expect(ready).toMatchObject({ kind: 'ready', title: 'All set', actions: [] });
+    expect(ready).toMatchObject({ kind: 'ready', title: 'All set', signedNote: 'Hire terms signed', actions: [] });
+    expect(withDesignProgress(ready, false)).toMatchObject({
+      kind: 'send',
+      title: 'Send your design',
+      signedNote: 'Hire terms signed',
+    });
+    expect(withDesignProgress(ready, true).title).toBe('All set');
 
     const owed = deriveHireStep(
       source({ termsAccepted: true, depositStatus: 'Paid', balanceStatus: 'Requested', finalInvoiceLink: FINAL }),

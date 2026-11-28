@@ -44,5 +44,7 @@ describe('phone copy', () => {
     expect(floorReviewLine({ widthM: 6, lengthM: 4.5 }, 27, floorPixels(6, 4.5))).toBe(
       'Floor 6m x 4.5m (1536 x 1152 px)',
     );
+    expect(floorReviewLine(null, 15, null)).toBe('Width and length are not listed yet.');
+    expect(floorReviewLine(null, 15, null)).not.toMatch(/sqm/);
   });
 });

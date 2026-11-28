@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useServices } from './services';
 import { MockAuthProvider } from './services/auth';
 import { TokenAuthProvider } from './services/portalSession';
+import { ContactRow } from './design/ContactRow';
+import { countdownLabel, eventCalendar } from './lib/eventWhen';
 import { MyBookingsTab } from './tabs/MyBookingsTab';
 import { NotesTab } from './tabs/NotesTab';
 import { DesignTab } from './tabs/DesignTab';
@@ -11,8 +13,8 @@ import { formatEventDate } from './lib/format';
 import type { Booking, Customer } from './types';
 
 const TABS = [
-  { id: 'bookings', label: 'My Bookings' },
-  { id: 'notes', label: 'Notes/Details' },
+  { id: 'bookings', label: 'Your booking' },
+  { id: 'notes', label: 'Times and notes' },
   { id: 'design', label: 'Design' },
 ] as const;
 
@@ -73,6 +75,18 @@ export function App() {
             {booking.venue ? ` at ${booking.venue}` : ''}. Choose effects and patterns, and upload your files. This
             is not the booking form.
           </p>
+          {countdownLabel(booking.eventDate) ? <p className="countdown">{countdownLabel(booking.eventDate)}</p> : null}
+          {eventCalendar(booking) ? (
+            <p>
+              <a
+                className="home-action secondary"
+                href={`data:text/calendar;charset=utf-8,${encodeURIComponent(eventCalendar(booking) ?? '')}`}
+                download="stomp-sphere-event.ics"
+              >
+                Add to calendar
+              </a>
+            </p>
+          ) : null}
         </section>
       )}
 
@@ -96,8 +110,9 @@ export function App() {
         ) : !booking ? (
           <p className="muted">
             {auth instanceof TokenAuthProvider
-              ? (auth.problemMessage() ?? "We couldn't find a booking for your account. Please get in touch with Stomp.")
-              : "We couldn't find a booking for your account. Please get in touch with Stomp."}
+              ? (auth.problemMessage() ??
+                "We couldn't find a booking for your account. Please get in touch with Stomp Sphere.")
+              : "We couldn't find a booking for your account. Please get in touch with Stomp Sphere."}
           </p>
         ) : tab === 'bookings' ? (
           <MyBookingsTab booking={booking} />
@@ -110,9 +125,10 @@ export function App() {
 
       <p className="muted small portal-pending">
         {auth instanceof TokenAuthProvider
-          ? 'Your design choices and photos are saved to your Stomp booking. Videos over 5 MB need to be emailed or texted to Stomp Sphere.'
+          ? 'Your design choices and photos are saved to your Stomp Sphere booking. Videos over 5 MB need to be emailed or texted to Stomp Sphere.'
           : DEMO_STORAGE_NOTE}
       </p>
+      <ContactRow />
       {auth instanceof MockAuthProvider && <DemoSwitcher auth={auth} current={customer} />}
     </div>
   );

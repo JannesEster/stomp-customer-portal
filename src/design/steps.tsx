@@ -64,7 +64,7 @@ const STEPS: StepDef[] = [
       </>
     ),
     intro:
-      'This is on the floor while guests arrive, before the bridal entrance. Pick a style, add a photo of the two of you, or upload your invite or styling and generate a design from it.',
+      'This look stays on the floor while guests arrive, before the bridal entrance. Pick a style, add a photo of the two of you, or upload your invite or styling and generate a design from it.',
     preview: 'floor',
     phase: 'holding',
   },
@@ -79,7 +79,7 @@ const STEPS: StepDef[] = [
       </>
     ),
     intro:
-      "Before the bridal entrance, while guests arrive, the floor can react when people walk across your holding screen. Pick as many as you like and they take turns, then they carry on after the entrance. If you'd rather wait, leave them all unticked and you can choose reactions for after the entrance instead. These are recordings from Stomp's floor, so tap one to see it move.",
+      "Before the bridal entrance, while guests arrive, the floor can react when people walk across your holding screen. Pick as many as you like and they take turns, then they carry on after the entrance. If you'd rather wait, leave them all unticked and you can choose reactions for after the entrance instead. These are recordings from Stomp Sphere's floor, so tap one to see it move.",
     preview: 'floor',
     phase: 'holding',
   },
@@ -108,7 +108,7 @@ const STEPS: StepDef[] = [
       </>
     ),
     intro:
-      "You didn't pick any reactions before the entrance, so the floor stays still while guests arrive. After the bridal entrance, it can react when people walk across it until the dancing starts. Pick as many as you like and they take turns. If you'd rather not have any reactions at all, leave them unticked. These are recordings from Stomp's floor, so tap one to see it move.",
+      "You didn't pick any reactions before the entrance, so the floor stays still while guests arrive. After the bridal entrance, it can react when people walk across it until the dancing starts. Pick as many as you like and they take turns. If you'd rather not have any reactions at all, leave them unticked. These are recordings from Stomp Sphere's floor, so tap one to see it move.",
     preview: 'floor',
     phase: 'after',
   },
@@ -137,7 +137,7 @@ const STEPS: StepDef[] = [
       </>
     ),
     intro:
-      'Pick a welcome sign or an order of the day for your portrait screens, and write what you want on them, such as a welcome line, a food menu or a photo slideshow. The samples show example names. Stomp makes the finished version with your names and date.',
+      'Pick a welcome sign or an order of the day for your portrait screens, and write what you want on them, such as a welcome line, a food menu or a photo slideshow. The samples show example names. Stomp Sphere makes the finished version with your names and date.',
     preview: 'screens',
     phase: 'holding',
   },
@@ -194,7 +194,7 @@ const STEPS: StepDef[] = [
       </>
     ),
     intro:
-      "Have a last look over your plan, then send it to Stomp. You can still make changes after you submit. Just submit again so Stomp has the latest.",
+      "Have a last look over your plan, then send it to Stomp Sphere. You can still make changes after you submit. Just submit again so Stomp Sphere has the latest.",
     preview: null,
     phase: 'holding',
   },
@@ -204,10 +204,24 @@ const STEPS: StepDef[] = [
  * Bookings without portrait screens skip the screens steps.
  * The reactions step after the entrance only appears when nothing was picked before it.
  */
+const WIZARD_ORDER: StepId[] = [
+  'floor-design',
+  'floor-reactions',
+  'floor-after',
+  'floor-after-reactions',
+  'floor-dancing',
+  'screens-design',
+  'screens-holding',
+  'screens-after',
+  'screens-dancing',
+  'details',
+  'review',
+];
+
 export function stepsFor(screens: number, showAfterReactions = false): StepDef[] {
   return STEPS.filter(
     (s) => (screens > 0 || s.group !== 'screens') && (showAfterReactions || s.id !== 'floor-after-reactions'),
-  );
+  ).sort((a, b) => WIZARD_ORDER.indexOf(a.id) - WIZARD_ORDER.indexOf(b.id));
 }
 
 /** Every step id the portal knows, in step order. Saved ids outside this list are dropped. */
