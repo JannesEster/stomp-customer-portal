@@ -19,7 +19,7 @@ export const PAY_NEXT = 'After you pay, come back to this page.';
 export const SIGN_OR_PAY_NEXT = 'After you sign or pay, come back to this page.';
 export const SEND_TITLE = 'Send your design';
 export const SEND_BODY = 'Your hire is sorted. Choose a look and send it to Stomp Sphere.';
-export const SEND_NEXT = 'Choose effects and patterns, upload your files, then send the design.';
+export const SEND_NEXT = 'Choose your look, upload your files, then send the design.';
 export const ALL_SET_NEXT =
   'Stomp Sphere will set your floor and screens from this design. You can still change it here.';
 export const LOST_TITLE = 'Please get in touch';

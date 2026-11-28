@@ -112,7 +112,7 @@ export function AfterEntranceStep({ design, update, eventDate }: StepProps) {
     <>
       <OptionList
         name="after-entrance"
-        label="After the bridal entrance"
+        label="After the entrance"
         options={afterOptions(design.reactions.length > 0)}
         value={design.afterMode}
         onChange={setAfter}

@@ -3,7 +3,7 @@ import type { DesignState, Phase } from '../types';
 
 export const PHASES: { id: Phase; label: string; short: string }[] = [
   { id: 'holding', label: 'Holding screen', short: 'Holding screen' },
-  { id: 'after', label: 'After bridal entrance', short: 'After entrance' },
+  { id: 'after', label: 'After the entrance', short: 'After entrance' },
   { id: 'dancing', label: 'Dancing time', short: 'Dancing time' },
 ];
 

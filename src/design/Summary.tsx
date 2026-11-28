@@ -88,7 +88,7 @@ export function DesignSummary({ booking, design }: { booking: Booking; design: D
             {booking.venue ? `, ${booking.venue}` : ''}
           </li>
           <li>
-            Bridal entrance: {design.entranceTime ? formatTime(design.entranceTime) : 'Not set'}
+            Entrance: {design.entranceTime ? formatTime(design.entranceTime) : 'Not set'}
             {design.submittedWithoutTimes && !design.entranceTime && <span className="time-tag">Times not included</span>}
           </li>
           <li>
@@ -133,7 +133,7 @@ export function DesignSummary({ booking, design }: { booking: Booking; design: D
       </div>
 
       <div className="summary-group">
-        <h3>After the bridal entrance</h3>
+        <h3>After the entrance</h3>
         {design.afterMode === 'same' ? (
           <p>The holding screen stays on until dancing time.</p>
         ) : (
