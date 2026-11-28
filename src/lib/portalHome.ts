@@ -61,7 +61,7 @@ export function portalTaskList(design: DesignState): PortalTask[] {
     design.inviteStyle != null;
   const files = holding.media != null || design.invite != null || design.media.length > 0;
   return [
-    { id: 'patterns', label: 'Choose effects and patterns', done: patterns, step: 'floor-design' },
+    { id: 'patterns', label: 'Choose your look', done: patterns, step: 'floor-design' },
     { id: 'files', label: 'Upload your photos and files', done: files, step: 'floor-design' },
     { id: 'send', label: 'Send your design to Stomp Sphere', done: design.status === 'submitted', step: 'review' },
   ];

@@ -64,7 +64,7 @@ const STEPS: StepDef[] = [
       </>
     ),
     intro:
-      'This look stays on the floor while guests arrive, before the bridal entrance. Pick a style, add a photo of the two of you, or upload your invite or styling and generate a design from it.',
+      'This look stays on the floor while guests arrive, before the entrance. Pick a style, add a photo of the two of you, or upload your invite or styling and generate a design from it.',
     preview: 'floor',
     phase: 'holding',
   },
@@ -75,22 +75,22 @@ const STEPS: StepDef[] = [
     short: 'Reactions',
     title: (
       <>
-        Reactions before the bridal <Accent>entrance</Accent>
+        Reactions before the <Accent>entrance</Accent>
       </>
     ),
     intro:
-      "Before the bridal entrance, while guests arrive, the floor can react when people walk across your holding screen. Pick as many as you like and they take turns, then they carry on after the entrance. If you'd rather wait, leave them all unticked and you can choose reactions for after the entrance instead. These are recordings from Stomp Sphere's floor, so tap one to see it move.",
+      "Before the entrance, while guests arrive, the floor can react when people walk across your holding screen. Pick as many as you like and they take turns, then they carry on after the entrance. If you'd rather wait, leave them all unticked and you can choose reactions for after the entrance instead. These are recordings from Stomp Sphere's floor, so tap one to see it move.",
     preview: 'floor',
     phase: 'holding',
   },
   {
     id: 'floor-after',
     group: 'floor',
-    name: 'After the bridal entrance',
+    name: 'After the entrance',
     short: 'After the entrance',
     title: (
       <>
-        After the bridal <Accent>entrance</Accent>
+        After the <Accent>entrance</Accent>
       </>
     ),
     intro: "Once you've made your entrance, what should the floor show until the dancing starts?",
@@ -104,11 +104,11 @@ const STEPS: StepDef[] = [
     short: 'Reactions after',
     title: (
       <>
-        Reactions after the bridal <Accent>entrance</Accent>
+        Reactions after the <Accent>entrance</Accent>
       </>
     ),
     intro:
-      "You didn't pick any reactions before the entrance, so the floor stays still while guests arrive. After the bridal entrance, it can react when people walk across it until the dancing starts. Pick as many as you like and they take turns. If you'd rather not have any reactions at all, leave them unticked. These are recordings from Stomp Sphere's floor, so tap one to see it move.",
+      "You didn't pick any reactions before the entrance, so the floor stays still while guests arrive. After the entrance, it can react when people walk across it until the dancing starts. Pick as many as you like and they take turns. If you'd rather not have any reactions at all, leave them unticked. These are recordings from Stomp Sphere's floor, so tap one to see it move.",
     preview: 'floor',
     phase: 'after',
   },
@@ -151,7 +151,7 @@ const STEPS: StepDef[] = [
         Screens before the <Accent>entrance</Accent>
       </>
     ),
-    intro: 'What should your screens show while guests arrive, before the bridal entrance?',
+    intro: 'What should your screens show while guests arrive, before the entrance?',
     preview: 'screens',
     phase: 'holding',
   },

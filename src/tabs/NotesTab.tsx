@@ -14,12 +14,12 @@ export function NotesTab({ booking }: { booking: Booking }) {
         Times and <Accent>notes</Accent>
       </h2>
       <p className="muted">
-        Tell Stomp Sphere when the bridal entrance is and when the dancing starts. These are when the floor and
+        Tell Stomp Sphere when the entrance is and when the dancing starts. These are when the floor and
         screens change. Leave a time blank if you're not sure yet.
       </p>
       <div className="time-fields">
         <label className="field">
-          <span>Bridal entrance</span>
+          <span>Entrance</span>
           <input
             type="time"
             value={design?.entranceTime ?? ''}
@@ -57,7 +57,7 @@ export function NotesTab({ booking }: { booking: Booking }) {
         rows={10}
         value={design?.notes ?? ''}
         disabled={!design}
-        placeholder="Add entrance and dancing times."
+        placeholder="Anything else Stomp Sphere should know?"
         onChange={(e) => update((d) => ({ ...d, notes: e.target.value }))}
       />
     </section>

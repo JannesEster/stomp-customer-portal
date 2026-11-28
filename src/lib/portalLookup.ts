@@ -6,6 +6,7 @@ import {
 } from './airtableFields';
 import { mapPortalRecords, type AirtableRecord, type ExtraCatalogItem, type MappedPortal } from './bookingMap';
 import { DESIGN_VERSION } from './design';
+import { withDesignProgress } from './hireStep';
 import { buildPortalUrl, isValidPortalToken, portalTokenFormula, unwrapPortalToken } from './portalToken';
 
 const RECORD_ID = /^rec[A-Za-z0-9]{14}$/;
@@ -68,13 +69,18 @@ export async function lookupBookingByToken(
     }
   }
   const venue = await venuePromise;
+  const savedAnswers = parseSavedAnswers(booking.fields[PORTAL_ANSWERS_FIELD]);
+  const portal = mapPortalRecords(booking, lead, venue, opts.fields, opts.extras, { leadUnavailable });
+  if (portal.booking.hire) {
+    portal.booking.hire = withDesignProgress(portal.booking.hire, designWasSent(savedAnswers));
+  }
 
   return {
     ok: true,
-    portal: mapPortalRecords(booking, lead, venue, opts.fields, opts.extras, { leadUnavailable }),
+    portal,
     portalUrl: buildPortalUrl(opts.publicBaseUrl, cleanToken),
     saved: {
-      savedAnswers: parseSavedAnswers(booking.fields[PORTAL_ANSWERS_FIELD]),
+      savedAnswers,
       lastSavedAt: readTimestamp(booking.fields[PORTAL_LAST_SAVED_FIELD]),
       firstOpenedAt: readTimestamp(booking.fields[PORTAL_FIRST_OPENED_FIELD]),
     },
@@ -88,6 +94,10 @@ export function firstRecordId(value: unknown): string | null {
     if (id && RECORD_ID.test(id)) return id;
   }
   return null;
+}
+
+function designWasSent(saved: unknown): boolean {
+  return !!saved && typeof saved === 'object' && (saved as { status?: unknown }).status === 'submitted';
 }
 
 function parseSavedAnswers(value: unknown): unknown {

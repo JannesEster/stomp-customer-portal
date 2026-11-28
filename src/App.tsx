@@ -72,8 +72,7 @@ export function App() {
           <p>
             {booking.coupleNames ? `${booking.coupleNames}. ` : ''}
             {formatEventDate(booking.eventDate) || 'Date not listed yet'}
-            {booking.venue ? ` at ${booking.venue}` : ''}. Choose effects and patterns, and upload your files. This
-            is not the booking form.
+            {booking.venue ? ` at ${booking.venue}` : ''}. Choose effects and patterns, and upload your files.
           </p>
           {countdownLabel(booking.eventDate) ? <p className="countdown">{countdownLabel(booking.eventDate)}</p> : null}
           {eventCalendar(booking) ? (

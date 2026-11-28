@@ -3,6 +3,7 @@ import { useServices } from '../services';
 import type { Booking, DesignState } from '../types';
 import type { StepId } from '../design/steps';
 import { confirmStep, withConfirmed } from '../lib/design';
+import { migrateLegacyNotes } from '../lib/legacyNotes';
 import { createCoalescedSaver, pickHydratedDesign, type SaveStatus } from './designSync';
 import { sharePortalUpload, uploadPortalFile } from '../services/uploadClient';
 import { openPortalOnDevice, shouldSendFloorPreview } from './portalVisit';
@@ -82,11 +83,21 @@ export function useDesignState(booking: Booking) {
         },
       });
       if (cancelled) return;
-      // Loading, migration, and a second tab must not post answers or a floor preview.
-      dirty.current = opened.dirty;
+      const legacy = await storage.loadData<string>(`notes:${booking.id}`);
+      const serverNotes =
+        remote?.savedAnswers && typeof remote.savedAnswers === 'object'
+          ? (remote.savedAnswers as DesignState).notes
+          : '';
+      const notes = migrateLegacyNotes(opened.design, legacy, serverNotes);
+      // File migration must not post. A one-time notes copy should, so the server keeps them.
+      dirty.current = notes.migrated || opened.dirty;
+      if (notes.migrated) {
+        await storage.saveData(key, notes.design);
+        await storage.saveData(`notes:${booking.id}`, '');
+      }
       previewHash.current = opened.previewHash;
-      latest.current = opened.design;
-      setDesign(opened.design);
+      latest.current = notes.design;
+      setDesign(notes.design);
     })();
 
     return () => {

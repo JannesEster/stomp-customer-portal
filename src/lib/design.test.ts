@@ -302,6 +302,7 @@ describe('validateUpload', () => {
 describe('stepsFor', () => {
   it('adds a reactions step after the entrance only when none were picked before', () => {
     const ids = (show: boolean) => stepsFor(2, show).map((s) => s.id);
+    expect(ids(false)[0]).toBe('floor-design');
     expect(ids(false)).not.toContain('floor-after-reactions');
     const withStep = ids(true);
     expect(withStep.indexOf('floor-after-reactions')).toBe(withStep.indexOf('floor-after') + 1);

@@ -43,14 +43,14 @@ describe('portal step progress', () => {
   it('counts a default only after that step is confirmed', () => {
     const fresh = portalStepReport(design(), 0);
     expect(fresh.missing).toContain('Reactions before the entrance');
-    expect(fresh.missing).toContain('After the bridal entrance');
+    expect(fresh.missing).toContain('After the entrance');
     expect(fresh.missing).toContain('Dancing time');
     expect(fresh.missing).toContain('Your holding screen');
 
     const confirmed = design({ confirmedSteps: ['floor-reactions', 'floor-after', 'floor-dancing'] });
     const report = portalStepReport(confirmed, 0);
     expect(report.missing).not.toContain('Reactions before the entrance');
-    expect(report.missing).not.toContain('After the bridal entrance');
+    expect(report.missing).not.toContain('After the entrance');
     expect(report.missing).not.toContain('Dancing time');
     expect(report.missing).toContain('Your holding screen');
     expect(report.progress).toBeGreaterThan(0);

@@ -10,8 +10,8 @@
     "slideSeconds": 5
   },
   "timings": [
-    { "id": "start", "label": "Before the bridal entrance" },
-    { "id": "middle", "label": "After the bridal entrance" },
+    { "id": "start", "label": "Before the entrance" },
+    { "id": "middle", "label": "After the entrance" },
     { "id": "end", "label": "Dancing time" }
   ],
   "uploads": {

@@ -177,6 +177,47 @@ describe('token lookup', () => {
     expect(JSON.stringify(result)).not.toContain('go.xero.com');
   });
 
+  it('does not say All set when the saved design has not been sent', async () => {
+    const source = gateway({
+      async findBookingsByFormula() {
+        return [
+          booking({
+            'Deposit status': 'Paid',
+            'Balance status': 'Not due',
+            'Portal answers': JSON.stringify({ version: 3, status: 'draft' }),
+          }),
+        ];
+      },
+      async getLead(id: string) {
+        return { id, fields: { Name: 'Fake Customer', Email: 'fake@example.com', 'Terms accepted': true } };
+      },
+    });
+    const draft = await lookup(TOKEN, source);
+    expect(draft.ok).toBe(true);
+    if (!draft.ok) return;
+    expect(draft.portal.booking.hire?.title).toBe('Send your design');
+    expect(draft.portal.booking.hire?.kind).toBe('send');
+
+    const sent = gateway({
+      async findBookingsByFormula() {
+        return [
+          booking({
+            'Deposit status': 'Paid',
+            'Balance status': 'Not due',
+            'Portal answers': JSON.stringify({ version: 3, status: 'submitted' }),
+          }),
+        ];
+      },
+      async getLead(id: string) {
+        return { id, fields: { Name: 'Fake Customer', Email: 'fake@example.com', 'Terms accepted': true } };
+      },
+    });
+    const done = await lookup(TOKEN, sent);
+    expect(done.ok).toBe(true);
+    if (!done.ok) return;
+    expect(done.portal.booking.hire?.title).toBe('All set');
+  });
+
   it('stays neutral when the booking has no linked lead', async () => {
     const source = gateway({
       async findBookingsByFormula() {

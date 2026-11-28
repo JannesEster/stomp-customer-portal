@@ -19,16 +19,17 @@ import { stepsFor, type StepDef, type StepId } from '../design/steps';
 import { ArrowIcon, Section } from '../design/common';
 import type { Booking, DesignState, Phase } from '../types';
 
-const STEP_KEY = (bookingId: string) => `stomp-portal:design-step:${bookingId}`;
+const STEP_KEY = (bookingId: string) => `stomp-portal:wizard-step:${bookingId}`;
 
 function storedStep(bookingId: string, steps: StepDef[]): StepId {
+  const start = steps.find((step) => step.id === 'floor-design') ?? steps[0];
   try {
     const saved = sessionStorage.getItem(STEP_KEY(bookingId));
     if (saved && steps.some((s) => s.id === saved)) return saved as StepId;
   } catch {
     /* sessionStorage can be blocked */
   }
-  return steps[0].id;
+  return start.id;
 }
 
 function timeReminder(stepId: StepId, design: DesignState): string | null {
@@ -161,7 +162,7 @@ export function DesignTab({ booking }: { booking: Booking }) {
             <div className="time-alert" role="alert">
               <p>{timeReminder(step.id, design)}</p>
               <button type="button" onClick={() => { window.location.hash = 'notes'; }}>
-                Insert times here
+                Add entrance and dancing times
               </button>
             </div>
           )

@@ -16,10 +16,11 @@ export function PortalHome({
   const tasks = design && step.kind !== 'lost' ? portalTaskList(design) : [];
   const primary = tasks.find((task) => !task.done)?.id;
   const showContact = step.kind === 'lost' || step.kind === 'unknown';
+  const showEyebrow = step.kind === 'sign' || step.kind === 'pay' || step.kind === 'both' || step.kind === 'send';
 
   return (
     <section className="home-card" aria-label="Next step">
-      <span className="eyebrow">Next step</span>
+      {showEyebrow ? <span className="eyebrow">Next step</span> : null}
       <h2>{step.title}</h2>
       {step.signedNote ? (
         <p className="hire-signed">
