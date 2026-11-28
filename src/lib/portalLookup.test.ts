@@ -144,7 +144,7 @@ describe('token lookup', () => {
       kind: 'both',
       actions: [
         { label: 'Sign hire terms', href: 'https://forms.fillout.com/t/hire' },
-        { label: 'Pay now', href: 'https://in.xero.com/invoice/final' },
+        { label: 'Pay your deposit', href: 'https://in.xero.com/invoice/final' },
       ],
     });
     const json = JSON.stringify(result);

@@ -31,7 +31,7 @@ export function LiveContentSection({
       <p className="muted small">{LIVE_CONTENT_PRICE_NOTE}</p>
       {!view.included && view.checked && (
         <p className="note">
-          Thanks, we've noted your request. Stomp will be in touch to confirm. Nothing is charged through the portal.
+          Thanks, we've noted your request. Stomp Sphere will be in touch to confirm. Nothing is charged through the portal.
         </p>
       )}
     </div>

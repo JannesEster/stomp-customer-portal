@@ -97,6 +97,7 @@ function readDesign(input: unknown, coupleNames: string): DesignState {
     inviteStyle: root.inviteStyle == null ? null : readGenerated(root.inviteStyle),
     afterInviteStyle: root.afterInviteStyle == null ? null : readGenerated(root.afterInviteStyle),
     stylingNote: optionalString(root.stylingNote, LIMITS.note),
+    notes: optionalString(root.notes, LIMITS.note),
     liveContentRequested: optionalBoolean(root.liveContentRequested),
     confirmedSteps: root.confirmedSteps == null ? [] : readConfirmedSteps(root.confirmedSteps),
     weddingPlanner: optionalString(root.weddingPlanner, LIMITS.names),

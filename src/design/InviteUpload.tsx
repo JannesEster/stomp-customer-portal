@@ -167,7 +167,7 @@ export function InviteUpload({
     <aside className="invite">
       <h3>Invite or styling</h3>
       <p className="muted small">
-        Upload your wedding invite or a styling document. We'll pick up its colours for your names, and it helps Stomp
+        Upload your wedding invite or a styling document. We'll pick up its colours for your names, and it helps Stomp Sphere
         match the font and styling on and around your holding screen.
       </p>
 

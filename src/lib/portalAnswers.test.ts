@@ -27,6 +27,19 @@ describe('sanitizePortalAnswers', () => {
     expect(json).not.toContain('Important notes');
   });
 
+  it('keeps couple notes with the portal answers and fills them when an older save has none', () => {
+    const withNotes = sanitizePortalAnswers({ ...posted(), notes: 'Gate code is on the fridge' }, names);
+    expect(withNotes.ok).toBe(true);
+    if (!withNotes.ok) return;
+    expect(withNotes.design.notes).toBe('Gate code is on the fridge');
+    const older = posted();
+    const { notes: _notes, ...without } = older;
+    const filled = sanitizePortalAnswers(without, names);
+    expect(filled.ok).toBe(true);
+    if (!filled.ok) return;
+    expect(filled.design.notes).toBe('');
+  });
+
   it('drops unknown step ids and keeps each known id once', () => {
     const result = sanitizePortalAnswers(
       { ...posted(), confirmedSteps: ['details', 'not-a-step', 'details', 'review', 'secret'] },

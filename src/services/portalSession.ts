@@ -82,7 +82,7 @@ export class TokenAuthProvider implements AuthProvider {
     switch (this.session.problem) {
       case 'invalid':
       case 'missing':
-        return "This link doesn't match a booking. Check the link Stomp sent you, or get in touch.";
+        return "This link doesn't match a booking. Check the link Stomp Sphere sent you, or get in touch.";
       case 'unavailable':
       case 'failed':
         return "We couldn't load your booking just now. Please try again in a moment.";

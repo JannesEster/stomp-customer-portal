@@ -75,16 +75,16 @@ describe('portal step progress', () => {
   it('does not confirm a step when the couple goes back', () => {
     const steps = stepsFor(2, true);
     const start = design();
-    const forward = confirmOnLeave(start, 'details', 'floor-design', steps);
-    expect(forward.confirmedSteps).toEqual(['details']);
+    const forward = confirmOnLeave(start, 'floor-design', 'floor-reactions', steps);
+    expect(forward.confirmedSteps).toEqual(['floor-design']);
 
-    const back = confirmOnLeave(forward, 'floor-design', 'details', steps);
+    const back = confirmOnLeave(forward, 'floor-reactions', 'floor-design', steps);
     expect(back).toBe(forward);
-    expect(back.confirmedSteps).toEqual(['details']);
+    expect(back.confirmedSteps).toEqual(['floor-design']);
 
     const skipped = confirmOnLeave(start, 'floor-design', 'review', steps);
     expect(skipped.confirmedSteps).toEqual(['floor-design']);
-    expect(confirmOnLeave(start, 'details', 'details', steps)).toBe(start);
+    expect(confirmOnLeave(start, 'floor-design', 'floor-design', steps)).toBe(start);
   });
 
   it('confirms the step when a choice on it changes', () => {

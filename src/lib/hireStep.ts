@@ -12,6 +12,19 @@ export const LOST_HIRE_NOTE = 'Please contact Stomp Sphere about this booking.';
 /** Tick line when Terms accepted is ticked. Not a link. */
 export const HIRE_TERMS_SIGNED = 'Hire terms signed';
 
+export const PAY_DEPOSIT = 'Pay your deposit';
+export const PAY_BALANCE = 'Pay the balance';
+export const SIGN_NEXT = 'After you sign, come back to this page.';
+export const PAY_NEXT = 'After you pay, come back to this page.';
+export const SIGN_OR_PAY_NEXT = 'After you sign or pay, come back to this page.';
+export const SEND_TITLE = 'Send your design';
+export const SEND_BODY = 'Your hire is sorted. Choose a look and send it to Stomp Sphere.';
+export const SEND_NEXT = 'Choose effects and patterns, upload your files, then send the design.';
+export const ALL_SET_NEXT =
+  'Stomp Sphere will set your floor and screens from this design. You can still change it here.';
+export const LOST_TITLE = 'Please get in touch';
+export const LOST_BODY = 'We need to talk about this booking before you plan the floor.';
+
 /** Built when the lead's Booking form link is missing or not on forms.fillout.com. */
 export const FILLOUT_TERMS_FORM = 'https://forms.fillout.com/t/jYwCSWM41Eus';
 
@@ -23,11 +36,13 @@ export interface HireAction {
 }
 
 export interface HireStep {
-  kind: 'sign' | 'pay' | 'both' | 'ready' | 'unknown' | 'lost';
+  kind: 'sign' | 'pay' | 'both' | 'ready' | 'send' | 'unknown' | 'lost';
   title: string;
   body: string;
   /** Set when terms are accepted and the lead is not Lost. */
   signedNote: string | null;
+  /** Shown under What happens next. */
+  next: string;
   actions: HireAction[];
 }
 
@@ -89,6 +104,7 @@ export function neutralHireStep(): HireStep {
     title: 'Next step',
     body: 'We cannot see your hire terms or payment on this page yet. Those links stay in your emails from Stomp Sphere.',
     signedNote: null,
+    next: 'Email or call Stomp Sphere if you need a signing or pay link.',
     actions: [],
   };
 }
@@ -96,9 +112,10 @@ export function neutralHireStep(): HireStep {
 export function lostHireStep(): HireStep {
   return {
     kind: 'lost',
-    title: 'Next step',
-    body: LOST_HIRE_NOTE,
+    title: LOST_TITLE,
+    body: LOST_BODY,
     signedNote: null,
+    next: 'Email or call and we will help with this booking.',
     actions: [],
   };
 }
@@ -119,12 +136,14 @@ export function deriveHireStep(source: HireSources): HireStep {
   const signUrl = signLink(source.bookingFormLink, source.leadId, source.bookingFormUrlUsed);
   const depositUrl = httpsOnHost(source.depositInvoiceLink, XERO_INVOICE_HOST);
   const finalUrl = httpsOnHost(source.finalInvoiceLink, XERO_INVOICE_HOST);
-  const payUrl = !depositPaid ? (depositUrl ?? finalUrl) : balanceOwed ? finalUrl : null;
+  const payKind: 'deposit' | 'balance' | null = !depositPaid ? 'deposit' : balanceOwed ? 'balance' : null;
+  const payUrl = payKind === 'deposit' ? (depositUrl ?? finalUrl) : payKind === 'balance' ? finalUrl : null;
 
   return hireStepFromFacts({
     signed,
     signUrl,
-    paymentOutstanding: !depositPaid || balanceOwed,
+    paymentOutstanding: payKind != null,
+    payKind,
     payUrl,
   });
 }
@@ -133,39 +152,45 @@ export function hireStepFromFacts(facts: {
   signed: boolean | null;
   signUrl: string | null;
   paymentOutstanding: boolean | null;
+  payKind?: 'deposit' | 'balance' | null;
   payUrl: string | null;
 }): HireStep {
   if (facts.signed == null || facts.paymentOutstanding == null) return neutralHireStep();
+  const payKind = facts.payKind ?? (facts.paymentOutstanding ? 'deposit' : null);
+  const payText = payKind === 'balance' ? PAY_BALANCE : PAY_DEPOSIT;
 
   if (!facts.signed) {
     const actions: HireAction[] = [];
     if (facts.signUrl) actions.push({ label: 'Sign hire terms', href: facts.signUrl });
     const showPay = facts.paymentOutstanding && !!facts.payUrl;
-    if (showPay && facts.payUrl) actions.push({ label: 'Pay now', href: facts.payUrl });
+    if (showPay && facts.payUrl) actions.push({ label: payText, href: facts.payUrl });
     const signing = facts.signUrl ? '' : ' Your signing link is in the email from Stomp Sphere.';
     const paying = !facts.paymentOutstanding
       ? ''
       : showPay
-        ? ' A payment is still due.'
-        : ' A payment is still due. Your payment link is in the email from Stomp Sphere.';
+        ? ` ${payText}.`
+        : ` ${payText}. Your payment link is in the email from Stomp Sphere.`;
     return {
       kind: showPay ? 'both' : 'sign',
-      title: showPay ? 'Sign and pay' : 'Sign',
+      title: 'Sign',
       body: `Your hire terms are not signed yet.${signing}${paying}`,
       signedNote: null,
+      next: showPay ? SIGN_OR_PAY_NEXT : SIGN_NEXT,
       actions,
     };
   }
 
   if (facts.paymentOutstanding) {
+    const body = facts.payUrl
+      ? `${payText}.`
+      : `${payText}. Your payment link is in the email from Stomp Sphere.`;
     return {
       kind: 'pay',
-      title: 'Pay',
-      body: facts.payUrl
-        ? 'A payment is still due.'
-        : 'A payment is still due. Your payment link is in the email from Stomp Sphere.',
+      title: payText,
+      body,
       signedNote: HIRE_TERMS_SIGNED,
-      actions: facts.payUrl ? [{ label: 'Pay now', href: facts.payUrl }] : [],
+      next: PAY_NEXT,
+      actions: facts.payUrl ? [{ label: payText, href: facts.payUrl }] : [],
     };
   }
 
@@ -173,6 +198,22 @@ export function hireStepFromFacts(facts: {
     kind: 'ready',
     title: 'All set',
     body: 'Your hire terms are signed and nothing is left to pay.',
+    signedNote: HIRE_TERMS_SIGNED,
+    next: ALL_SET_NEXT,
+    actions: [],
+  };
+}
+
+/** All set only when hire is finished and the design has been sent. */
+export function withDesignProgress(step: HireStep, designSent: boolean): HireStep {
+  if (step.kind !== 'ready') return step;
+  if (designSent) return step;
+  return {
+    ...step,
+    kind: 'send',
+    title: SEND_TITLE,
+    body: SEND_BODY,
+    next: SEND_NEXT,
     signedNote: HIRE_TERMS_SIGNED,
     actions: [],
   };

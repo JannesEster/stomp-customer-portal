@@ -1,4 +1,4 @@
-import { customerHireActions, hireStepFromFacts, type HireStep } from './hireStep';
+import { customerHireActions, hireStepFromFacts, withDesignProgress, type HireStep } from './hireStep';
 import type { Booking, DesignState } from '../types';
 
 /** https links for the seeded demo. Live links are filtered to Fillout and Xero invoice hosts on the server. */
@@ -33,17 +33,22 @@ export function hireStepView(booking: Pick<Booking, 'termsSigned' | 'signUrl' | 
 }
 
 /** Prefer the server step. Drop any action that is not a customer Fillout or Xero invoice link. */
-export function hireForBooking(booking: Pick<Booking, 'hire' | 'termsSigned' | 'signUrl' | 'paymentDue' | 'payUrl'>): HireStep {
-  if (booking.hire && Array.isArray(booking.hire.actions)) {
-    return { ...booking.hire, actions: customerHireActions(booking.hire.actions) };
-  }
-  return hireStepView(booking);
+export function hireForBooking(
+  booking: Pick<Booking, 'hire' | 'termsSigned' | 'signUrl' | 'paymentDue' | 'payUrl'>,
+  designSent = false,
+): HireStep {
+  const step =
+    booking.hire && Array.isArray(booking.hire.actions)
+      ? { ...booking.hire, actions: customerHireActions(booking.hire.actions) }
+      : hireStepView(booking);
+  return withDesignProgress(step, designSent);
 }
 
 export interface PortalTask {
   id: string;
   label: string;
   done: boolean;
+  step: 'floor-design' | 'review';
 }
 
 /** Short list of what this page is for. Separate from hire terms and payment. */
@@ -56,8 +61,8 @@ export function portalTaskList(design: DesignState): PortalTask[] {
     design.inviteStyle != null;
   const files = holding.media != null || design.invite != null || design.media.length > 0;
   return [
-    { id: 'patterns', label: 'Choose effects and patterns', done: patterns },
-    { id: 'files', label: 'Upload your photos and files', done: files },
-    { id: 'send', label: 'Send your design to Stomp Sphere', done: design.status === 'submitted' },
+    { id: 'patterns', label: 'Choose effects and patterns', done: patterns, step: 'floor-design' },
+    { id: 'files', label: 'Upload your photos and files', done: files, step: 'floor-design' },
+    { id: 'send', label: 'Send your design to Stomp Sphere', done: design.status === 'submitted', step: 'review' },
   ];
 }

@@ -44,12 +44,11 @@ export function formatMetres(m: number): string {
 /** Review line for a floor. Sizes use a plain x, as in 4m x 3m and 1024 x 768 px. */
 export function floorReviewLine(
   floor: { widthM: number; lengthM: number } | null,
-  floorSqm: number | null | undefined,
+  _floorSqm: number | null | undefined,
   px: { width: number; height: number } | null,
 ): string {
   if (floor && px) return `Floor ${floor.widthM}m x ${floor.lengthM}m (${px.width} x ${px.height} px)`;
-  if (floorSqm != null) return `Floor ${floorSqm} sqm. Width and length are not listed yet.`;
-  return 'Floor size is not listed yet.';
+  return 'Width and length are not listed yet.';
 }
 
 export function formatFileSize(bytes: number): string {

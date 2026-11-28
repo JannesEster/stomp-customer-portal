@@ -174,6 +174,8 @@ export interface DesignState extends SupplierDetails {
   /** Another generated version, for after the entrance. Chosen with INVITE_AFTER_STYLE_ID */
   afterInviteStyle: GeneratedStyle | null;
   stylingNote: string;
+  /** Free notes saved with the portal answers, including entrance context. */
+  notes: string;
   /** Only meaningful when the booking does not already include live content */
   liveContentRequested: boolean;
   /**

@@ -8,7 +8,7 @@ export function DancingVideosStrip() {
     <div className="post-design">
       <h3>A taste of the visuals</h3>
       <p className="muted small">
-        Stomp mixes visuals like these through the dancing, changing from one video to the next. The preview below does the same.
+        Stomp Sphere mixes visuals like these through the dancing, changing from one video to the next. The preview below does the same.
       </p>
       <div className="video-grid">
         {dancingVideosConfig.videos.map((v) => (

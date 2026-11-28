@@ -23,7 +23,7 @@ export const HEIC_FAILED_MESSAGE =
   "We couldn't read this HEIC photo. Please export it as a JPEG and try again.";
 
 export const PREVIEW_FAILED_MESSAGE =
-  "Couldn't update the floor preview for Stomp. Your answers are still saved.";
+  "Couldn't update the floor preview for Stomp Sphere. Your answers are still saved.";
 
 /**
  * What the file is for. The server turns this into the staff label.

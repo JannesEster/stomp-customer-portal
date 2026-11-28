@@ -45,7 +45,7 @@ const DANCING_OPTIONS: OptionDef<DancingMode>[] = [
   {
     id: 'different',
     label: 'Use a different design',
-    hint: 'Tell Stomp what you have in mind for the floor while people dance.',
+    hint: 'Tell Stomp Sphere what you have in mind for the floor while people dance.',
   },
 ];
 
@@ -79,7 +79,7 @@ export function DetailsStep({
         <dd>{booking.venue || 'Not listed yet'}</dd>
       </dl>
       <p className="muted small">
-        We've filled these in from your booking. If the date or venue isn't right, let Stomp know.
+        We've filled these in from your booking. If the date or venue isn't right, let Stomp Sphere know.
       </p>
       <SupplierFields design={design} update={update} />
     </div>

@@ -9,12 +9,13 @@ describe('hire next step', () => {
   it('shows Sign and Pay when hire terms are unsigned and a payment is due', () => {
     expect(hireStepView({ termsSigned: false, signUrl: SIGN, paymentDue: true, payUrl: PAY })).toEqual({
       kind: 'both',
-      title: 'Sign and pay',
-      body: 'Your hire terms are not signed yet. A payment is still due.',
+      title: 'Sign',
+      body: 'Your hire terms are not signed yet. Pay your deposit.',
       signedNote: null,
+      next: 'After you sign or pay, come back to this page.',
       actions: [
         { label: 'Sign hire terms', href: SIGN },
-        { label: 'Pay now', href: PAY },
+        { label: 'Pay your deposit', href: PAY },
       ],
     });
   });
@@ -22,8 +23,9 @@ describe('hire next step', () => {
   it('shows Pay when terms are signed and a payment is due', () => {
     expect(hireStepView({ termsSigned: true, paymentDue: true, payUrl: `  ${PAY}  ` })).toMatchObject({
       kind: 'pay',
-      title: 'Pay',
-      actions: [{ label: 'Pay now', href: PAY }],
+      title: 'Pay your deposit',
+      signedNote: 'Hire terms signed',
+      actions: [{ label: 'Pay your deposit', href: PAY }],
     });
   });
 
@@ -73,13 +75,14 @@ describe('server hire step on the client', () => {
         title: 'Pay',
         body: 'A payment is still due.',
         signedNote: 'Hire terms signed',
+        next: 'After you pay, come back to this page.',
         actions: [
-          { label: 'Pay now', href: 'https://go.xero.com/AccountsReceivable/View.aspx?InvoiceID=staff' },
-          { label: 'Pay now', href: 'https://in.xero.com/invoice/final' },
+          { label: 'Pay your deposit', href: 'https://go.xero.com/AccountsReceivable/View.aspx?InvoiceID=staff' },
+          { label: 'Pay your deposit', href: 'https://in.xero.com/invoice/final' },
         ],
       },
     });
-    expect(step.actions).toEqual([{ label: 'Pay now', href: 'https://in.xero.com/invoice/final' }]);
+    expect(step.actions).toEqual([{ label: 'Pay your deposit', href: 'https://in.xero.com/invoice/final' }]);
     expect(JSON.stringify(step)).not.toContain('go.xero.com');
   });
 });
